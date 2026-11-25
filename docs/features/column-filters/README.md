@@ -179,3 +179,6 @@ El sistema genera criterios compatibles con Etendo Classic:
 - [ ] Persistencia de filtros en localStorage
 - [ ] Filtros predefinidos/guardados
 - [ ] Soporte para más tipos de campos
+## See also
+
+- [Date column filter](../date-column-filter/README.md): one date, range and typed dates in date columns.

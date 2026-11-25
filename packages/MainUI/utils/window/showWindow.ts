@@ -20,6 +20,7 @@ import { useUnsavedChangesStore } from "@/stores/unsavedChangesStore";
 import { isPreferenceYes } from "@/utils/preferences/classicPreferences";
 import { isWindowDirty } from "@/utils/window/dirtyState";
 import type { WindowState } from "@/utils/window/constants";
+import { prefetchWindowViewSettings } from "@/utils/savedViews/defaultViews";
 
 /** Classic preference that lets a window be open more than once (`OBStandardWindow.isSameTab`). */
 export const ALLOW_MULTI_TAB_PREFERENCE = "AllowMultiTab";
@@ -78,12 +79,15 @@ export interface ShowWindowParams {
 export function showWindow({ windowId, windowIdentifier, windowData }: ShowWindowParams): void {
   const openIdentifier = findWindowToReplace(windowId);
   if (!openIdentifier) {
+    // The grids wait for these settings before their first load: request them now, while the window mounts
+    prefetchWindowViewSettings(windowIdentifier);
     useWindowStore.getState().setWindowActive({ windowIdentifier, windowData });
     return;
   }
-  runReplacingWindow(openIdentifier, () =>
+  runReplacingWindow(openIdentifier, () => {
+    prefetchWindowViewSettings(windowIdentifier);
     useWindowStore
       .getState()
-      .replaceWindow({ windowIdentifier: openIdentifier, newWindowIdentifier: windowIdentifier, windowData })
-  );
+      .replaceWindow({ windowIdentifier: openIdentifier, newWindowIdentifier: windowIdentifier, windowData });
+  });
 }

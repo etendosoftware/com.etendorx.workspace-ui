@@ -25,7 +25,28 @@ import {
   getLocaleDatePlaceholder,
   getLocaleDatetimePlaceholder,
   AUDIT_DATE_FIELD_NAMES,
+  getLocaleDateOrder,
+  parseLocaleDate,
+  toISODate,
+  type DateOrder,
 } from "../dateFormatter";
+
+const PART_TYPES: Record<string, Intl.DateTimeFormatPartTypes> = { d: "day", m: "month", y: "year" };
+
+/** Makes the browser locale format dates in the given order of parts, e.g. "mdy" for the US. */
+const mockLocaleOrder = (order: string) =>
+  jest.spyOn(Intl.DateTimeFormat.prototype, "formatToParts").mockReturnValue(
+    order.split("").flatMap((letter, index) => {
+      const part = { type: PART_TYPES[letter], value: "01" };
+      return index === 0 ? [part] : [{ type: "literal" as const, value: "/" }, part];
+    })
+  );
+
+/** Checks that a parsed value is the given local day. */
+const expectDay = (date: Date | null, year: number, month: number, day: number) => {
+  expect(date).not.toBeNull();
+  expect([date?.getFullYear(), date?.getMonth(), date?.getDate()]).toEqual([year, month - 1, day]);
+};
 
 describe("dateFormatter", () => {
   describe("parseOBDate", () => {
@@ -186,6 +207,67 @@ describe("dateFormatter", () => {
       const result = getLocaleDatetimePlaceholder();
       expect(typeof result).toBe("string");
       expect(result.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("getLocaleDateOrder", () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    it.each<DateOrder>(["dmy", "mdy", "ymd"])("returns the %s order of the browser locale", (order) => {
+      mockLocaleOrder(order);
+      expect(getLocaleDateOrder()).toBe(order);
+    });
+
+    it("falls back to day-month-year for an unknown order", () => {
+      mockLocaleOrder("ydm");
+      expect(getLocaleDateOrder()).toBe("dmy");
+    });
+
+    it("falls back to day-month-year when the locale cannot be read", () => {
+      jest.spyOn(Intl.DateTimeFormat.prototype, "formatToParts").mockImplementation(() => {
+        throw new Error("no locale");
+      });
+      expect(getLocaleDateOrder()).toBe("dmy");
+    });
+  });
+
+  describe("parseLocaleDate", () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    it("reads day-month-year dates with any separator and one or two digits", () => {
+      mockLocaleOrder("dmy");
+      expectDay(parseLocaleDate("13/10/2026"), 2026, 10, 13);
+      expectDay(parseLocaleDate("13-10-2026"), 2026, 10, 13);
+      expectDay(parseLocaleDate(" 1.2.2026 "), 2026, 2, 1);
+    });
+
+    it("reads month-day-year dates in a US locale", () => {
+      mockLocaleOrder("mdy");
+      expectDay(parseLocaleDate("10/13/2026"), 2026, 10, 13);
+    });
+
+    it("reads year-month-day dates in a locale that starts with the year", () => {
+      mockLocaleOrder("ymd");
+      expectDay(parseLocaleDate("2026/10/13"), 2026, 10, 13);
+    });
+
+    it("always reads ISO dates as year-month-day", () => {
+      mockLocaleOrder("mdy");
+      expectDay(parseLocaleDate("2026-10-13"), 2026, 10, 13);
+    });
+
+    it.each(["31/02/2026", "13/13/2026", "00/10/2026", "13/10/26", "130/10/2026", "abc", "", "13/10/2026x"])(
+      "returns null for %p",
+      (text) => {
+        mockLocaleOrder("dmy");
+        expect(parseLocaleDate(text)).toBeNull();
+      }
+    );
+  });
+
+  describe("toISODate", () => {
+    it("formats the local day as YYYY-MM-DD with padding", () => {
+      expect(toISODate(new Date(2026, 0, 5, 23, 30))).toBe("2026-01-05");
     });
   });
 });

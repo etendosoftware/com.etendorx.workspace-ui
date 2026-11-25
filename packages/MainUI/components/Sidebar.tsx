@@ -14,6 +14,7 @@ import { useLanguage } from "@/contexts/language";
 import { useMenu } from "@/hooks/useMenu";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { showWindow } from "@/utils/window/showWindow";
+import { preloadWindowViewSettings } from "@/utils/savedViews/defaultViews";
 import { useWindowStore } from "@/stores/windowStore";
 import type { ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
 import ProcessDefinitionModal from "./ProcessModal/ProcessDefinitionModal";
@@ -131,6 +132,8 @@ export default function Sidebar() {
 
       hoverDebounceRef.current = setTimeout(() => {
         prefetchWindowData(windowId);
+        // The grids of the window wait for its saved views and stored columns when it opens
+        preloadWindowViewSettings(windowId);
       }, 150);
     },
     [prefetchWindowData]

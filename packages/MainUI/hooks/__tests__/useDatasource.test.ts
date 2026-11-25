@@ -16,6 +16,7 @@
  *************************************************************************
  */
 
+import { useEffect } from "react";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useDatasource } from "../useDatasource";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
@@ -101,6 +102,52 @@ describe("useDatasource hook", () => {
     // The retried request carried the filter criteria (the whole point of the fix).
     const secondCallParams = (datasource.get as jest.Mock).mock.calls[1][1];
     expect(JSON.stringify(secondCallParams)).toContain("Order 1");
+  });
+
+  describe("first load after skipping", () => {
+    interface SkipProps {
+      skip: boolean;
+      pageSize: number;
+    }
+
+    /** Renders the hook skipped, recording the `loading` of every committed render (a discarded one never shows). */
+    const renderSkipped = (pageSize: number) => {
+      const loadingEveryRender: boolean[] = [];
+      const hook = renderHook(
+        ({ skip, pageSize: size }: SkipProps) => {
+          const value = useDatasource({ entity: mockEntity, skip, params: { pageSize: size } });
+          useEffect(() => {
+            loadingEveryRender.push(value.loading);
+          });
+          return value;
+        },
+        { initialProps: { skip: true, pageSize } }
+      );
+      return { ...hook, loadingEveryRender };
+    };
+
+    it("shows as loading from the render that stops skipping, before the fetch effect runs", async () => {
+      const { result, rerender, loadingEveryRender } = renderSkipped(100);
+      expect(result.current.loading).toBe(false);
+
+      loadingEveryRender.length = 0;
+      rerender({ skip: false, pageSize: 100 });
+
+      expect(loadingEveryRender[0]).toBe(true);
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      expect(datasource.get).toHaveBeenCalledTimes(1);
+    });
+
+    it("asks for the page size the params have when it stops skipping, in a single request", async () => {
+      const { result, rerender } = renderSkipped(100);
+
+      // e.g. the default view switched the tab to a tree, whose page size is the tree fetch limit
+      rerender({ skip: false, pageSize: 200 });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(datasource.get).toHaveBeenCalledTimes(1);
+      expect((datasource.get as jest.Mock).mock.calls[0][1]).toEqual(expect.objectContaining({ pageSize: 200 }));
+    });
   });
 
   it("exposes the params of the current query without paging", async () => {
@@ -290,6 +337,90 @@ describe("useDatasource hook", () => {
     expect(result.current.records).toHaveLength(0);
   });
 
+  describe("paging (ETP-6303)", () => {
+    const PAGE_SIZE = 2;
+    const page = (...ids: string[]) => ({ ok: true, data: { response: { data: ids.map((id) => ({ id })) } } });
+    const restartedPage = (...ids: string[]) => {
+      const response = page(...ids);
+      return { ...response, data: { response: { ...response.data.response, startRow: 0 } } };
+    };
+    const lastRange = () => {
+      const params = (datasource.get as jest.Mock).mock.calls.at(-1)[1];
+      return { startRow: params.startRow, endRow: params.endRow };
+    };
+    const renderPaged = async (...pages: unknown[]) => {
+      for (const response of pages) {
+        (datasource.get as jest.Mock).mockResolvedValueOnce(response);
+      }
+      const hook = renderHook(() => useDatasource({ entity: mockEntity, params: { pageSize: PAGE_SIZE } }));
+      await waitFor(() => expect(hook.result.current.loading).toBe(false));
+      return hook;
+    };
+    const loadNextPage = async (result: { current: ReturnType<typeof useDatasource> }, calls: number) => {
+      act(() => result.current.fetchMore());
+      await waitFor(() => expect(datasource.get).toHaveBeenCalledTimes(calls));
+      await waitFor(() => expect(result.current.loading).toBe(false));
+    };
+
+    it("starts the next page right after the last loaded row, without repeating it", async () => {
+      // Classic answers pageSize + 1 rows: the first page holds rows 0..2
+      const { result } = await renderPaged(page("1", "2", "3"), page("4", "5"));
+      expect(lastRange()).toEqual({ startRow: 0, endRow: PAGE_SIZE });
+
+      await loadNextPage(result, 2);
+
+      expect(lastRange()).toEqual({ startRow: 3, endRow: 3 + PAGE_SIZE });
+      expect(result.current.records.map((r) => r.id)).toEqual(["1", "2", "3", "4", "5"]);
+    });
+
+    it("never shows a record twice when two pages overlap", async () => {
+      const { result } = await renderPaged(page("1", "2", "3"), page("3", "4"));
+
+      await loadNextPage(result, 2);
+
+      expect(result.current.records.map((r) => r.id)).toEqual(["1", "2", "3", "4"]);
+    });
+
+    it("stops paging when Classic answers the first rows again", async () => {
+      const { result } = await renderPaged(page("1", "2", "3"), restartedPage("1", "2", "3"));
+
+      await loadNextPage(result, 2);
+
+      expect(result.current.hasMoreRecords).toBe(false);
+      expect(result.current.records.map((r) => r.id)).toEqual(["1", "2", "3"]);
+    });
+
+    it("moves the next page back one row after a loaded record is removed", async () => {
+      const { result } = await renderPaged(page("1", "2", "3"), page("4", "5"));
+
+      act(() => result.current.removeRecordLocally("2"));
+      await loadNextPage(result, 2);
+
+      expect(lastRange().startRow).toBe(2);
+    });
+
+    it("keeps the next page when the removed record was not loaded from the server", async () => {
+      const { result } = await renderPaged(page("1", "2", "3"), page("4", "5"));
+
+      act(() => result.current.removeRecordLocally("missing"));
+      await loadNextPage(result, 2);
+
+      expect(lastRange().startRow).toBe(3);
+    });
+
+    it("asks for the first rows again on a refetch", async () => {
+      const { result } = await renderPaged(page("1", "2", "3"), page("4", "5"), page("1", "2", "3"));
+      await loadNextPage(result, 2);
+
+      await act(async () => {
+        await result.current.refetch();
+      });
+
+      expect(lastRange().startRow).toBe(0);
+      expect(result.current.records.map((r) => r.id)).toEqual(["1", "2", "3"]);
+    });
+  });
+
   describe("hasFirstFetchCompleted", () => {
     // Distinguishes "a real datasource fetch has delivered a result" from the
     // pre-fetch placeholder (initial state or the `skip` phase). Consumers gate
@@ -402,6 +533,76 @@ describe("useDatasource hook", () => {
         expect(result.current.records.some((r) => r.id === "99")).toBe(true);
         expect(result.current.records.some((r) => r.id === "transient")).toBe(false);
       });
+    });
+  });
+
+  it("does not repeat a first load still on its way when it is asked again for the same query", async () => {
+    let resolveFirst: (v: unknown) => void = () => {};
+    const firstPromise = new Promise((res) => {
+      resolveFirst = res;
+    });
+    (datasource.get as jest.Mock).mockReturnValueOnce(firstPromise);
+    const columnsOf = () => [{ id: "name", columnName: "name", accessorKey: "name" }] as unknown as Column[];
+    const { rerender } = renderHook(
+      ({ columns }: { columns: Column[] }) => useDatasource({ entity: mockEntity, columns }),
+      {
+        initialProps: { columns: columnsOf() },
+      }
+    );
+    await waitFor(() => expect(datasource.get).toHaveBeenCalledTimes(1));
+
+    // Same columns, rebuilt: the query is recomputed with the same content while the first load is in flight
+    rerender({ columns: columnsOf() });
+    await act(async () => {
+      resolveFirst({ ok: true, data: { response: { data: mockRecords } } });
+      await firstPromise;
+    });
+
+    expect(datasource.get).toHaveBeenCalledTimes(1);
+  });
+
+  describe("withRequestContext", () => {
+    const CONTEXT_KEY = "@Order.id@";
+    type Props = { selected: string };
+    /** The record selected in the grid's own tab, added when each request is sent. */
+    const renderWithContext = (initialProps: Props) =>
+      renderHook(
+        ({ selected }: Props) =>
+          useDatasource({
+            entity: mockEntity,
+            withRequestContext: (params) => ({ ...params, [CONTEXT_KEY]: selected }),
+          }),
+        { initialProps }
+      );
+    const lastSent = () => (datasource.get as jest.Mock).mock.calls.at(-1)?.[1];
+
+    it("adds the context to the request and to the params other requests reuse", async () => {
+      const { result } = renderWithContext({ selected: "r1" });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(lastSent()[CONTEXT_KEY]).toBe("r1");
+      expect(result.current.getRequestParams()[CONTEXT_KEY]).toBe("r1");
+    });
+
+    it("does not fetch again when only the context changes, and sends the new one with the next request", async () => {
+      const { result, rerender } = renderWithContext({ selected: "r1" });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      const callsAfterFirstFetch = (datasource.get as jest.Mock).mock.calls.length;
+
+      rerender({ selected: "r2" });
+      expect(datasource.get).toHaveBeenCalledTimes(callsAfterFirstFetch);
+
+      await act(async () => {
+        await result.current.refetch();
+      });
+      expect(lastSent()[CONTEXT_KEY]).toBe("r2");
+    });
+
+    it("sends the params as they are without it", async () => {
+      const { result } = renderHook(() => useDatasource({ entity: mockEntity }));
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(lastSent()).not.toHaveProperty(CONTEXT_KEY);
     });
   });
 

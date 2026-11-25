@@ -1,6 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import type { KeyboardEvent } from "react";
 import {
+  usePendingSearch,
   handleKeyboardActivation,
   useClickOutside,
   useFocusHandler,
@@ -276,5 +277,55 @@ describe("useOpenDropdownEffect", () => {
 
     expect(setSearchTerm).not.toHaveBeenCalled();
     expect(setHighlightedIndex).not.toHaveBeenCalled();
+  });
+});
+
+describe("usePendingSearch (ETP-6431)", () => {
+  const changeEvent = (value: string) => ({ target: { value } }) as React.ChangeEvent<HTMLInputElement>;
+
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  const setup = (onSearch?: jest.Mock, minSearchChars = 0) =>
+    renderHook(() => usePendingSearch(onSearch, minSearchChars));
+
+  it("marks the term as pending until its debounced search runs", () => {
+    const onSearch = jest.fn();
+    const { result } = setup(onSearch);
+
+    let term = "";
+    act(() => {
+      term = result.current.handleSearchChange(changeEvent("alp"));
+    });
+
+    expect(term).toBe("alp");
+    expect(result.current.isSearchPending).toBe(true);
+
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+
+    expect(onSearch).toHaveBeenCalledWith("alp");
+    expect(result.current.isSearchPending).toBe(false);
+  });
+
+  it("does not mark a term below the minimum, which is never searched", () => {
+    const { result } = setup(jest.fn(), 3);
+
+    act(() => {
+      result.current.handleSearchChange(changeEvent("al"));
+    });
+
+    expect(result.current.isSearchPending).toBe(false);
+  });
+
+  it("never marks a term as pending without a server search", () => {
+    const { result } = setup();
+
+    act(() => {
+      result.current.handleSearchChange(changeEvent("alp"));
+    });
+
+    expect(result.current.isSearchPending).toBe(false);
   });
 });

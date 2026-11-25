@@ -1,7 +1,9 @@
-import { render, screen, fireEvent } from "@testing-library/react";
-import { TabButton } from "../TabButton";
+import { act, render, screen, fireEvent } from "@testing-library/react";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
+import { CHILD_TAB_LABEL_CLASSES, TabButton } from "../TabButton";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useWindowStore } from "@/stores/windowStore";
+import { getTabCountKey, useTabCountsStore } from "@/stores/tabCountsStore";
 import { DIRTY_TITLE_PREFIX, DIRTY_SOURCE_KINDS, buildDirtySourceKey } from "@/utils/window/dirtyState";
 
 // Mocks
@@ -51,6 +53,80 @@ describe("TabButton", () => {
       render(<TabButton tab={mockTab} onClick={mockOnClick} onDoubleClick={mockOnDoubleClick} active={false} />);
 
       expect(screen.getByText("Tab Name")).toBeInTheDocument();
+    });
+  });
+
+  describe("record count badge", () => {
+    const renderWithCount = (count: number, hasMore: boolean) => {
+      useTabCountsStore.getState().setCount(getTabCountKey(WINDOW_IDENTIFIER, mockTab.id), count, hasMore);
+      render(<TabButton tab={mockTab} onClick={mockOnClick} onDoubleClick={mockOnDoubleClick} active={false} />);
+      return screen.getByTestId(`TabButton__count_${mockTab.id}`);
+    };
+
+    beforeEach(() => useTabCountsStore.setState({ counts: {}, partial: {} }));
+
+    it("shows the exact count once every record is loaded", () => {
+      expect(renderWithCount(119, false)).toHaveTextContent(/^119$/);
+    });
+
+    it("marks the count as partial while more records exist", () => {
+      expect(renderWithCount(101, true)).toHaveTextContent(/^101\+$/);
+    });
+
+    // ETP-6431: the tab keeps room for the count; the title is centered until the count is known.
+    const renderTab = () => {
+      render(
+        <TabButton
+          tab={mockTab as unknown as Tab}
+          onClick={mockOnClick}
+          onDoubleClick={mockOnDoubleClick}
+          active={false}
+        />
+      );
+      return { badge: screen.queryByTestId(`TabButton__count_${mockTab.id}`), title: screen.getByText(mockTab.name) };
+    };
+    const setCount = (count: number) =>
+      act(() => useTabCountsStore.getState().setCount(getTabCountKey(WINDOW_IDENTIFIER, mockTab.id), count, false));
+
+    it("keeps the title centered in the room of the count while the count is unknown", () => {
+      const { badge, title } = renderTab();
+
+      expect(badge).toBeNull();
+      expect(title.parentElement).toHaveClass(...CHILD_TAB_LABEL_CLASSES.split(" "));
+      expect(title).toHaveClass("translate-x-3.5");
+    });
+
+    it("keeps the count shown right after the title once it is known", () => {
+      setCount(7);
+      const { badge, title } = renderTab();
+
+      expect(badge).toHaveTextContent(/^7$/);
+      expect(badge).toBeVisible();
+      expect(badge?.parentElement).toBe(title);
+      expect(title).not.toHaveClass("translate-x-3.5");
+    });
+
+    it("slides the title aside when the count arrives and centers it again when it is cleared", () => {
+      const { title } = renderTab();
+      setCount(3);
+      expect(title).not.toHaveClass("translate-x-3.5");
+
+      act(() => useTabCountsStore.getState().clearCount(getTabCountKey(WINDOW_IDENTIFIER, mockTab.id)));
+
+      expect(screen.queryByTestId(`TabButton__count_${mockTab.id}`)).toBeNull();
+      expect(title).toHaveClass("translate-x-3.5");
+    });
+
+    it("shows no count on the header tab", () => {
+      render(
+        <TabButton
+          tab={{ ...mockTab, tabLevel: 0 } as unknown as Tab}
+          onClick={mockOnClick}
+          onDoubleClick={mockOnDoubleClick}
+          active={false}
+        />
+      );
+      expect(screen.queryByTestId(`TabButton__count_${mockTab.id}`)).toBeNull();
     });
   });
 

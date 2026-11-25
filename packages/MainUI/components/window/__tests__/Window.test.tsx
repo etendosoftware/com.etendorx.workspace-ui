@@ -28,6 +28,7 @@ import { render, screen } from "@testing-library/react";
 import Window from "../Window";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import type { WindowState } from "@/utils/window/constants";
+import { prefetchWindowViewSettings } from "../../../utils/savedViews/defaultViews";
 
 // Mock all required contexts and hooks with controllable behavior
 const mockMetadataContext = {
@@ -138,6 +139,10 @@ jest.mock("../../../contexts/selected", () => ({
 }));
 
 // Mock TabsContainer
+jest.mock("../../../utils/savedViews/defaultViews", () => ({
+  prefetchWindowViewSettings: jest.fn(),
+}));
+
 jest.mock("../TabsContainer", () => ({
   __esModule: true,
   default: () => <div data-testid="tabs-container">Tabs Container</div>,
@@ -216,6 +221,14 @@ describe("Window Component Multi-Window Instance Support", () => {
         ],
       } as unknown as Etendo.WindowMetadata),
       loadWindowData: jest.fn().mockResolvedValue({}),
+    });
+  });
+
+  describe("View settings prefetch", () => {
+    it("requests the default views and stored columns of the window when it opens", () => {
+      render(<Window window={createWindowState("TestWindow", "TestWindow_123")} />);
+
+      expect(prefetchWindowViewSettings).toHaveBeenCalledWith("TestWindow_123");
     });
   });
 

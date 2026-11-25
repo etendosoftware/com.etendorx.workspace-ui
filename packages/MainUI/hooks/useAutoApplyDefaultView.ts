@@ -18,14 +18,14 @@
 import { useEffect, useRef } from "react";
 import { logger } from "@/utils/logger";
 import { loadTabColumnConfiguration, toColumnTableState } from "@/utils/savedViews/gridConfiguration";
-import { parseGridConfiguration, rawRecordToSavedView, toAppliedViewState } from "@/utils/savedViews/transform";
-import type { AppliedViewState, MRTViewConfig, RawSavedViewRecord } from "@/utils/savedViews/types";
+import { loadTabDefaultView } from "@/utils/savedViews/defaultViews";
+import { toAppliedViewState } from "@/utils/savedViews/transform";
+import type { AppliedViewState } from "@/utils/savedViews/types";
 import type { TableState } from "@/utils/window/constants";
+import { markInitialViewResolved } from "@/stores/initialViewStore";
 import { useUserStore } from "@/stores/userStore";
 import { useWindowStore } from "@/stores/windowStore";
 import { registerSessionReset } from "@/utils/session/resetSessionState";
-
-const SAVED_VIEWS_URL = "/api/meta/saved-views";
 
 interface UseAutoApplyDefaultViewParams {
   tabId: string;
@@ -46,45 +46,12 @@ interface UseAutoApplyDefaultViewParams {
 const restoredColumnConfigurations = new Set<string>();
 registerSessionReset(() => restoredColumnConfigurations.clear());
 
-/** Fetches the default saved view of a tab. Resolves to null when there is none or it cannot be read. */
-async function fetchDefaultViewConfig(tabId: string, token: string): Promise<MRTViewConfig | null> {
-  const url = `${SAVED_VIEWS_URL}?tab=${encodeURIComponent(tabId)}&isdefault=true`;
-
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!res.ok) {
-    logger.warn("[useAutoApplyDefaultView] Failed to fetch default view for tab:", tabId, res.status);
-    return null;
-  }
-
-  const json = (await res.json()) as { response?: { status?: number; data?: unknown[] } };
-
-  if (json?.response?.status !== 0) {
-    logger.warn("[useAutoApplyDefaultView] Non-zero status fetching default view for tab:", tabId);
-    return null;
-  }
-
-  const records = (json.response?.data ?? []) as RawSavedViewRecord[];
-  if (records.length === 0) return null;
-
-  const sv = rawRecordToSavedView(records[0]);
-  const config = parseGridConfiguration(sv.gridConfiguration);
-
-  if (!config) {
-    logger.warn("[useAutoApplyDefaultView] Default view has no parseable config:", sv.name);
-  }
-  return config;
-}
-
 /**
  * Fetches the default saved view for a tab and applies it automatically,
  * once per window open session (keyed by windowIdentifier + tabId).
  * When the tab has no default view, the column configuration the user stored is restored instead.
+ * Once either is applied, or known to be absent, the tab is marked as resolved so its grid makes its
+ * first load (the grid waits for it, see `useInitialViewPending`).
  */
 export function useAutoApplyDefaultView({
   tabId,
@@ -96,12 +63,15 @@ export function useAutoApplyDefaultView({
   const appliedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!tabId || !windowIdentifier || !token) return;
+    if (!tabId || !windowIdentifier || !token) {
+      // Nothing can be applied: the grid must not wait for it
+      markInitialViewResolved(windowIdentifier, tabId);
+      return;
+    }
 
     const key = `${windowIdentifier}_${tabId}`;
     if (appliedRef.current.has(key)) return;
 
-    const authToken = token;
     let cancelled = false;
 
     async function restoreColumnConfiguration() {
@@ -116,7 +86,7 @@ export function useAutoApplyDefaultView({
 
     async function fetchAndApply() {
       try {
-        const config = await fetchDefaultViewConfig(tabId, authToken);
+        const config = await loadTabDefaultView(windowIdentifier, tabId);
 
         if (cancelled) return;
 
@@ -140,6 +110,11 @@ export function useAutoApplyDefaultView({
         await restoreColumnConfiguration();
       } catch (err) {
         logger.error("[useAutoApplyDefaultView] Failed to fetch default view:", err);
+      } finally {
+        // Applied, absent or unreadable: the grid loads now, with whatever was applied
+        if (!cancelled) {
+          markInitialViewResolved(windowIdentifier, tabId);
+        }
       }
     }
 

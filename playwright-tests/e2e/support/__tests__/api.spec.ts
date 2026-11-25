@@ -5,7 +5,9 @@ import {
   datasourceFetchBody,
   datasourceWriteUrl,
   fetchedRecordsFrom,
+  gridConfigurationBody,
   gridConfigurationResetBody,
+  recentDocumentRemoveUrl,
   savedRecordFrom,
   treeNodeMoveBody,
   treeNodeMoveUrl,
@@ -44,6 +46,17 @@ test.describe("datasourceAddBody", () => {
     const body = datasourceAddBody({ name: "x" });
     expect(body).toMatchObject({ operationType: "add", componentId: "isc_OBViewForm_0", data: { name: "x" } });
     expect(body.csrfToken).toBeTruthy();
+  });
+});
+
+test.describe("gridConfigurationBody", () => {
+  test("stores the configuration of one tab of the window", () => {
+    const configuration = { version: 1, sorting: [{ id: "Name", desc: true }] };
+    expect(gridConfigurationBody("143", "187", configuration)).toEqual({
+      windowId: "143",
+      tabId: "187",
+      configuration,
+    });
   });
 });
 
@@ -90,6 +103,13 @@ test.describe("assertRemoved", () => {
 
 test.describe("datasourceFetchBody", () => {
   const criterion = { fieldName: "bankStatement.processed", operator: "equals", value: true };
+
+  test("reads the inactive records too only when asked, as a window grid does", () => {
+    expect(datasourceFetchBody(TARGET, { criteria: [] }).params).not.toHaveProperty("_noActiveFilter");
+    expect(datasourceFetchBody(TARGET, { criteria: [], includeInactive: true }).params).toMatchObject({
+      _noActiveFilter: "true",
+    });
+  });
 
   test("reads the entity with the window and tab of the target and every condition", () => {
     const body = datasourceFetchBody(TARGET, { criteria: [criterion] });
@@ -154,5 +174,15 @@ test.describe("tree node move", () => {
       data: { id: "N1", parentId: "P1" },
       oldValues: { id: "N1" },
     });
+  });
+});
+
+test.describe("recentDocumentRemoveUrl", () => {
+  test("names the tab and the record of the document to remove", () => {
+    const url = recentDocumentRemoveUrl({ tabId: TARGET.tabId, recordId: RECORD_ID });
+    expect(url.startsWith("/api/erp/sws/com.etendoerp.metadata.meta/recent-documents?")).toBe(true);
+    const query = queryOf(url);
+    expect(query.get("tabId")).toBe(TARGET.tabId);
+    expect(query.get("recordId")).toBe(RECORD_ID);
   });
 });

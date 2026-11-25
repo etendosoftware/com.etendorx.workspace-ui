@@ -38,7 +38,13 @@ import AboutButtonComp from "./About/AboutButton";
 import AboutModalComp from "./About/AboutModal";
 import HelpButtonComp from "./Help/HelpButton";
 import LinkedItemsCustom from "./LinkedItems";
-import { RecordCounterBar, RecordCounter, SelectionCounter } from "./Table/RecordCounters";
+import {
+  RecordCounterBar,
+  RecordCounter,
+  SelectionCounter,
+  formatRecordCount,
+  MORE_RECORDS_SUFFIX,
+} from "./Table/RecordCounters";
 
 const Modal = ModalCustom;
 const TextInput = TextInputMUI;
@@ -91,6 +97,8 @@ export {
   RecordCounterBar,
   RecordCounter,
   SelectionCounter,
+  formatRecordCount,
+  MORE_RECORDS_SUFFIX,
 };
 
 // Export Copilot constants from api-client

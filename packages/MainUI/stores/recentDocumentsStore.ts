@@ -19,6 +19,7 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import {
   fetchRecentDocuments,
+  removeRecentDocument as removeRecentDocumentApi,
   trackRecentDocument as trackRecentDocumentApi,
 } from "@workspaceui/api-client/src/api/dashboard";
 import type { RecentDocumentItem } from "@workspaceui/api-client/src/api/dashboard";
@@ -32,6 +33,8 @@ interface RecentDocumentsStore {
   resetForRole: () => void;
   fetchForRole: () => Promise<void>;
   track: (doc: Omit<RecentDocumentItem, "viewedAt">) => Promise<void>;
+  /** Removes the documents of a tab and record, e.g. because the record no longer exists. */
+  remove: (tabId: string, recordId: string) => Promise<void>;
 }
 
 function upsertDocument(current: RecentDocumentItem[], doc: RecentDocumentItem): RecentDocumentItem[] {
@@ -72,6 +75,17 @@ export const useRecentDocumentsStore = create<RecentDocumentsStore>()(
           logger.warn("[RecentDocumentsStore] Failed to track recent document:", err);
           // Revert optimistic update
           set({ documents: previous });
+        }
+      },
+
+      remove: async (tabId: string, recordId: string) => {
+        set({ documents: get().documents.filter((d) => !(d.tabId === tabId && d.recordId === recordId)) });
+
+        try {
+          await removeRecentDocumentApi({ tabId, recordId });
+        } catch (err) {
+          // Not reverted: the entry points to a record that no longer exists.
+          logger.warn("[RecentDocumentsStore] Failed to remove recent document:", err);
         }
       },
     }),

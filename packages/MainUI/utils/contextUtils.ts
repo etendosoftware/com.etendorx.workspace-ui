@@ -72,35 +72,60 @@ const formatDateContext = (value: unknown): unknown => {
  * @returns A record of context variables.
  */
 export const buildEtendoContext = (tab: Tab, graph: Graph<Tab>): EtendoContext => {
-  // Get Parent Context first (ancestors)
-  const parentTab = graph.getParent(tab);
-  const parentContext = parentTab ? buildEtendoContext(parentTab, graph) : {};
+  // Merge: Parent context is base, Current context overrides/adds to it
+  return { ...buildAncestorContext(tab, graph), ...buildRecordContext(tab, graph.getSelected(tab)) };
+};
 
-  // Build Current Tab Context
-  const currentContext: EtendoContext = {};
-  const record = graph.getSelected(tab);
+/**
+ * Context of a record of a tab: its id and its session properties, as `@EntityName.property@`.
+ *
+ * @param tab - Tab the record belongs to, whose `entityName` names the keys.
+ * @param record - The record; none gives an empty context.
+ */
+export const buildRecordContext = (tab: Tab, record: Record<string, unknown> | null | undefined): EtendoContext => {
+  const context: EtendoContext = {};
+  if (!record) {
+    return context;
+  }
+  for (const field of Object.values(tab.fields)) {
+    // Rule: Include if it is the ID (Mandatory) OR it is a Session Attribute
+    // Note: storedInSession is a string "true" in the column definition record
+    const isSessionAttr = field.column?.storedInSession;
+    const isId = field.hqlName === "id";
 
-  if (record) {
-    for (const field of Object.values(tab.fields)) {
-      // Rule: Include if it is the ID (Mandatory) OR it is a Session Attribute
-      // Note: storedInSession is a string "true" in the column definition record
-      const isSessionAttr = field.column?.storedInSession;
-      const isId = field.hqlName === "id";
+    if (isId || isSessionAttr) {
+      const value = record[field.hqlName];
 
-      if (isId || isSessionAttr) {
-        const value = record[field.hqlName];
-
-        if (value !== undefined) {
-          // Format: @EntityName.PropertyName@
-          const contextKey = `@${tab.entityName}.${field.hqlName}@`;
-          currentContext[contextKey] = formatDateContext(value);
-        }
+      if (value !== undefined) {
+        context[`@${tab.entityName}.${field.hqlName}@`] = formatDateContext(value);
       }
     }
   }
+  return context;
+};
 
-  // Merge: Parent context is base, Current context overrides/adds to it
-  return { ...parentContext, ...currentContext };
+/**
+ * Context of the records selected in the ancestors of a tab, without the tab's own record: what decides the
+ * records a child tab shows. The nearer ancestor overrides the farther one.
+ *
+ * @param tab - Tab whose ancestors give the context.
+ * @param graph - Tabs of the window with their selected records.
+ * @param parentRecord - Record of the direct parent to use instead of the one in the graph (a child tab passes
+ *   the parent record it fetches with, which the graph may have cleared without notice).
+ */
+export const buildAncestorContext = (
+  tab: Tab,
+  graph: Graph<Tab>,
+  parentRecord?: Record<string, unknown> | null
+): EtendoContext => {
+  const parentTab = graph.getParent(tab);
+  if (!parentTab) {
+    return {};
+  }
+  return {
+    ...buildAncestorContext(parentTab, graph),
+    ...buildRecordContext(parentTab, parentRecord ?? graph.getSelected(parentTab)),
+  };
 };
 
 /**

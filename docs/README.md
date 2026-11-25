@@ -52,6 +52,10 @@ docs/
 │   │   └── README.md                # OBUIAPP_ProcessFileUploadMaxSize check before sending
 │   ├── recent-items/                 # Feature: Recently viewed items (drawer + Home widget)
 │   │   └── README.md                # AD_Preference storage, size limit vs UINAVBA_RecentListSize
+│   ├── unavailable-recent-entries/   # Feature: Recent documents, favorites and recents that can no longer be opened
+│   │   └── README.md                # Deleted record check, role menu filter, ETMETA_RecordNoLongerExists
+│   ├── selector-loading-state/       # Feature: Loading state of selectors while searching
+│   │   └── README.md                # Pending search as loading, queued search, grid editor and filters
 │   ├── saved-views/                  # Feature: Saved views and per-user grid configuration
 │   │   └── README.md                # Widths, pinning, window layout, ETMETA_GridConfiguration
 │   ├── dashboard-widget-refresh/     # Feature: Manual refresh of dashboard widgets
@@ -67,7 +71,10 @@ docs/
 │   ├── profile-menu/                 # Feature: Profile menu feedback and current context
 │   │   └── README.md                # Password confirmation, context tooltip, accessible password panel
 │   ├── grid-default-sort/            # Feature: Grid default sort as classic (order-by clause or default field)
+│   ├── grid-paging-and-record-count/   # Feature: Grid paging without repeated records and the N+ record count
 │   │   └── README.md                # _orderBy as classic, defaultSortField, sort indicator, manual sort precedence
+│   ├── date-column-filter/           # Feature: Date column filter (one date, range, typed dates)
+│   │   └── README.md                # One date / Range switch, typed-date parsing, filter value, Classic differences
 │   ├── sr-tabs/                      # Feature: Single Record (SR) child tabs
 │   │   └── README.md                # 1:1, logical, no-link and same-table variants, criteria and auto-open
 │   ├── property-fields/              # Feature: Grid columns of property fields (related-record paths)

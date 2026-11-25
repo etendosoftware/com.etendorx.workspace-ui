@@ -65,6 +65,8 @@ jest.mock("@/stores/windowStore", () => ({
     { getState: () => ({ windows: {}, dirtyWindows: {}, setWindowActive: mockSetWindowActive }) }
   ),
 }));
+// Opening a window also requests its saved views: not what these tests check
+jest.mock("@/utils/savedViews/defaultViews", () => ({ prefetchWindowViewSettings: jest.fn() }));
 jest.mock("@/stores/metadataStore", () => ({
   useMetadataZustandStore: (selector: (s: unknown) => unknown) => selector({ loadWindowData: mockLoadWindowData }),
 }));

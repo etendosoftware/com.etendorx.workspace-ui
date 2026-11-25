@@ -24,6 +24,7 @@ import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useWindowStore } from "@/stores/windowStore";
 import { formatDirtyTitle, isTabDirty } from "@/utils/window/dirtyState";
 import { getTabCountKey, useTabCountsStore } from "@/stores/tabCountsStore";
+import { formatRecordCount } from "@workspaceui/componentlibrary/src/components/Table/RecordCounters/formatRecordCount";
 
 export const TabButton = ({
   tab,
@@ -40,7 +41,9 @@ export const TabButton = ({
   // Outside a Window subtree the identifier defaults to "", which is never dirty.
   const windowIdentifier = useCurrentWindowIdentifier();
   const isDirty = useWindowStore((s) => isTabDirty(s.dirtyWindows, windowIdentifier, tab.id));
-  const recordCount = useTabCountsStore((s) => s.counts[getTabCountKey(windowIdentifier, tab.id)]);
+  const tabCountKey = getTabCountKey(windowIdentifier, tab.id);
+  const recordCount = useTabCountsStore((s) => s.counts[tabCountKey]);
+  const hasMoreRecords = useTabCountsStore((s) => Boolean(s.partial[tabCountKey]));
 
   const baseTitle = useMemo(() => {
     if (isWindow) {
@@ -169,16 +172,59 @@ export const TabButton = ({
       title={title}
       aria-label={title}
       className={baseClass}>
-      {title}
-      {tab.tabLevel > 0 && recordCount !== undefined && (
-        <span
-          className="flex h-5 min-w-6 items-center justify-center rounded-full bg-(--ui-hover) px-2 text-[11px] font-medium leading-4 text-(--ui-text-soft)"
-          data-testid={`TabButton__count_${tab.id}`}>
-          {recordCount}
-        </span>
+      {tab.tabLevel > 0 ? (
+        <ChildTabLabel
+          tabId={tab.id}
+          title={title}
+          count={recordCount}
+          hasMoreRecords={hasMoreRecords}
+          data-testid="ChildTabLabel__48772b"
+        />
+      ) : (
+        title
       )}
     </button>
   );
 };
+
+/**
+ * Label of a child tab: its title and its record count (ETP-6431). The tab always keeps room for a count of two
+ * digits, so the tab strip does not move when the count arrives. Until the count is known the title is centered in
+ * the tab; once it is known the title slides aside and the count stays shown right after it.
+ */
+export const CHILD_TAB_LABEL_CLASSES = "inline-flex items-center pr-7";
+const TITLE_CLASSES = "relative transition-transform duration-150 motion-reduce:transition-none";
+const TITLE_CENTERED_CLASSES = "translate-x-3.5";
+export const TAB_COUNT_BADGE_CLASSES =
+  "absolute left-full top-1/2 ml-1 -translate-y-1/2 flex h-5 min-w-5 items-center justify-center rounded-full bg-(--ui-hover) px-1.5 text-[11px] font-medium leading-4 tabular-nums text-(--ui-text-soft)";
+
+/** Classes of the title: centered in the tab until its count is known. */
+export function getChildTabTitleClasses(hasCount: boolean): string {
+  if (hasCount) {
+    return TITLE_CLASSES;
+  }
+  return `${TITLE_CLASSES} ${TITLE_CENTERED_CLASSES}`;
+}
+
+interface ChildTabLabelProps {
+  tabId: string;
+  title: string;
+  /** Records of the tab; undefined while it is unknown (tab not loaded yet, loading, or several parents selected). */
+  count?: number;
+  hasMoreRecords: boolean;
+}
+
+const ChildTabLabel = ({ tabId, title, count, hasMoreRecords }: ChildTabLabelProps) => (
+  <span className={CHILD_TAB_LABEL_CLASSES}>
+    <span className={getChildTabTitleClasses(count !== undefined)}>
+      {title}
+      {count !== undefined && (
+        <span className={TAB_COUNT_BADGE_CLASSES} data-testid={`TabButton__count_${tabId}`}>
+          {formatRecordCount(count, hasMoreRecords)}
+        </span>
+      )}
+    </span>
+  </span>
+);
 
 export default TabButton;

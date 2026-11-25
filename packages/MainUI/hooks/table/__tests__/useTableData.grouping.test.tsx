@@ -8,6 +8,10 @@ import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
 import { useTableData } from "../useTableData";
 import { DEFAULT_TREE_FETCH_LIMIT, TOO_MANY_NODES_MESSAGE } from "@/utils/table/treeMode";
 import { toast } from "sonner";
+import { markInitialViewResolved, useInitialViewStore } from "@/stores/initialViewStore";
+import { useWindowStore } from "@/stores/windowStore";
+import { getSettledTabDefaultView } from "@/utils/savedViews/defaultViews";
+import { getSettledTabColumnConfiguration } from "@/utils/savedViews/gridConfiguration";
 
 const GROUP_COLUMN = "Business Partner";
 const GROUP_FIELD = "businessPartner";
@@ -68,8 +72,20 @@ jest.mock("../../../contexts/language", () => ({
   useLanguage: () => ({ language: "en_US", getLabel: (code: string) => code }),
 }));
 jest.mock("sonner", () => ({ toast: { error: jest.fn() } }));
+jest.mock("@/utils/savedViews/defaultViews", () => ({
+  ...jest.requireActual("@/utils/savedViews/defaultViews"),
+  getSettledTabDefaultView: jest.fn(),
+}));
+jest.mock("@/utils/savedViews/gridConfiguration", () => ({
+  ...jest.requireActual("@/utils/savedViews/gridConfiguration"),
+  getSettledTabColumnConfiguration: jest.fn(),
+}));
+const mockTabContext: { parentTab: Record<string, unknown> | null; parentRecord: Record<string, unknown> | null } = {
+  parentTab: null,
+  parentRecord: null,
+};
 jest.mock("../../../contexts/tab", () => ({
-  useTabContext: () => ({ tab: mockTab, parentTab: null, parentRecord: null, parentRecords: [] }),
+  useTabContext: () => ({ tab: mockTab, parentRecords: [], ...mockTabContext }),
 }));
 jest.mock("../../../contexts/CurrentWindowContext", () => ({ useCurrentWindowIdentifier: () => "143_1" }));
 jest.mock("../../../contexts/ToolbarContext", () => ({
@@ -106,7 +122,15 @@ jest.mock("@workspaceui/api-client/src/hooks/useColumnFilterData", () => ({
 jest.mock("@workspaceui/api-client/src/api/datasource", () => ({
   datasource: { get: (...args: unknown[]) => mockDatasourceGet(...args) },
 }));
-jest.mock("@/utils/contextUtils", () => ({ buildEtendoContext: () => ({}), buildParentSessionContext: () => ({}) }));
+const mockRecordContext = jest.fn((): Record<string, unknown> => ({}));
+/** Context of the record selected in the tab, as the requests that do not go through the datasource send it. */
+const OWN_RECORD_CONTEXT = { "@Order.id@": "own-1" };
+afterEach(() => mockRecordContext.mockImplementation(() => ({})));
+jest.mock("@/utils/contextUtils", () => ({
+  buildAncestorContext: () => ({}),
+  buildParentSessionContext: () => ({}),
+  buildRecordContext: () => mockRecordContext(),
+}));
 
 /** Renders the hook and returns the query it sent to the datasource. */
 const renderQuery = (isTreeMode = false): DatasourceOptions => {
@@ -318,6 +342,7 @@ describe("useTableData default order-by clause", () => {
     mockTab.hqlorderbyclause = ORDER_BY_CLAUSE;
     mockColumns.push({ id: SORT_COLUMN, columnName: SORT_FIELD });
     mockDatasourceGet.mockResolvedValue({ ok: true, data: { response: { data: [{ [SORT_FIELD]: 2 }] } } });
+    mockRecordContext.mockReturnValue(OWN_RECORD_CONTEXT);
     const { result } = renderHook(() => useTableData({ isTreeMode: false }));
 
     await act(async () => {
@@ -328,6 +353,7 @@ describe("useTableData default order-by clause", () => {
     expect(summaryQuery._summary).toBeDefined();
     expect(summaryQuery[ORDER_BY_PARAM]).toBeUndefined();
     expect(summaryQuery.sortBy).toBeUndefined();
+    expect(summaryQuery).toMatchObject(OWN_RECORD_CONTEXT);
   });
 });
 
@@ -360,6 +386,7 @@ describe("useTableData tree fetch limit", () => {
   it("asks for the children up to the limit and shows the message when they are over it", async () => {
     mockDatasourceResult.records = [{ id: NODE_ID, __isParent: true }];
     mockDatasourceGet.mockResolvedValue(TOO_MANY_NODES);
+    mockRecordContext.mockReturnValue(OWN_RECORD_CONTEXT);
     const { result } = renderHook(() => useTableData({ isTreeMode: true }));
 
     await waitFor(() => expect(result.current.displayRecords).toHaveLength(1));
@@ -368,7 +395,120 @@ describe("useTableData tree fetch limit", () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith(TOO_MANY_NODES_MESSAGE));
     expect(mockDatasourceGet).toHaveBeenCalledWith(
       mockTab.entityName,
-      expect.objectContaining({ startRow: 0, endRow: DEFAULT_TREE_FETCH_LIMIT })
+      expect.objectContaining({ startRow: 0, endRow: DEFAULT_TREE_FETCH_LIMIT, ...OWN_RECORD_CONTEXT })
     );
+  });
+});
+
+describe("useTableData first load", () => {
+  const lastDatasourceSkip = () => (mockUseDatasource.mock.calls.at(-1)?.[0] as { skip: boolean }).skip;
+
+  beforeEach(() => {
+    mockUseDatasource.mockClear();
+    useInitialViewStore.setState({ resolved: {} });
+    // The settings of the window have not answered yet
+    (getSettledTabDefaultView as jest.Mock).mockReturnValue(undefined);
+    (getSettledTabColumnConfiguration as jest.Mock).mockReturnValue(undefined);
+  });
+
+  it("waits for the initial view of the tab before loading, showing the grid as loading", () => {
+    const { result } = renderHook(() => useTableData({ isTreeMode: false }));
+
+    expect(lastDatasourceSkip()).toBe(true);
+    expect(result.current.loading).toBe(true);
+  });
+
+  it("loads once the initial view of the tab is resolved", () => {
+    const { result } = renderHook(() => useTableData({ isTreeMode: false }));
+
+    act(() => markInitialViewResolved("143_1", mockTab.id));
+
+    expect(lastDatasourceSkip()).toBe(false);
+    expect(result.current.loading).toBe(false);
+  });
+
+  it("loads on the first render when the window settings answered nothing for the tab", () => {
+    (getSettledTabDefaultView as jest.Mock).mockReturnValue(null);
+    (getSettledTabColumnConfiguration as jest.Mock).mockReturnValue(null);
+
+    renderHook(() => useTableData({ isTreeMode: false }));
+
+    expect((mockUseDatasource.mock.calls[0]?.[0] as { skip: boolean }).skip).toBe(false);
+  });
+});
+
+describe("useTableData request context", () => {
+  const WINDOW = "143_1";
+  const PARENT_TAB = { id: "parent-tab", entityName: "Order", fields: {} };
+  const PARENT_ID = "parent-1";
+  const OWN_ID_KEY = "@Order.id@";
+
+  type DatasourceArgs = {
+    params: DatasourceOptions;
+    skip: boolean;
+    withRequestContext: (params: DatasourceOptions) => DatasourceOptions;
+  };
+  const lastDatasourceArgs = () => mockUseDatasource.mock.calls.at(-1)?.[0] as DatasourceArgs;
+
+  /** The parent tab as a recovered window leaves it: only the id of its record is known. */
+  const givenRecoveredParent = (tabState: Record<string, unknown>) => {
+    mockTabContext.parentTab = PARENT_TAB;
+    useWindowStore.setState({
+      windows: {
+        [WINDOW]: { tabs: { [PARENT_TAB.id]: { selectedRecord: PARENT_ID, ...tabState } } },
+      },
+    } as never);
+  };
+
+  beforeEach(() => {
+    mockUseDatasource.mockClear();
+    mockRecordContext.mockReturnValue(OWN_RECORD_CONTEXT);
+    useInitialViewStore.setState({ resolved: { [`${WINDOW}_${mockTab.id}`]: true } });
+  });
+
+  afterEach(() => {
+    mockTabContext.parentTab = null;
+    mockTabContext.parentRecord = null;
+    useWindowStore.setState({ windows: {} } as never);
+  });
+
+  it("sends the record selected in the tab with every request without reloading for it", () => {
+    renderHook(() => useTableData({ isTreeMode: false }));
+    const { params, withRequestContext } = lastDatasourceArgs();
+
+    expect(params[OWN_ID_KEY]).toBeUndefined();
+    expect(withRequestContext(params)[OWN_ID_KEY]).toBe("own-1");
+  });
+
+  it("keeps the parent context over the record of the tab when both name the same key", () => {
+    // A tab whose parent has the same entity: the parent id wins, as when the context was part of the query
+    givenRecoveredParent({});
+    mockTabContext.parentRecord = { id: PARENT_ID };
+
+    renderHook(() => useTableData({ isTreeMode: false }));
+    const { params, withRequestContext } = lastDatasourceArgs();
+
+    expect(withRequestContext(params)[OWN_ID_KEY]).toBe(PARENT_ID);
+  });
+
+  it("waits for the parent record of a recovered window, showing the grid as loading", () => {
+    givenRecoveredParent({ initializedWithDirectLink: true });
+
+    const { result, rerender } = renderHook(() => useTableData({ isTreeMode: false }));
+
+    expect(lastDatasourceArgs().skip).toBe(true);
+    expect(result.current.loading).toBe(true);
+
+    mockTabContext.parentRecord = { id: PARENT_ID };
+    rerender();
+    expect(lastDatasourceArgs().skip).toBe(false);
+  });
+
+  it("loads with the parent id when its record is not on its way, as before", () => {
+    givenRecoveredParent({});
+
+    renderHook(() => useTableData({ isTreeMode: false }));
+
+    expect(lastDatasourceArgs().skip).toBe(false);
   });
 });

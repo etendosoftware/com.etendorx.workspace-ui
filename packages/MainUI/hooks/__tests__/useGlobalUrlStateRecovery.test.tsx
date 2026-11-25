@@ -41,6 +41,7 @@ import { toast } from "sonner";
 import { WindowAccessDeniedError } from "@workspaceui/api-client/src/api/errors";
 import { useWindowStore } from "@/stores/windowStore";
 import { recoverExternalPageWindow } from "@/utils/window/externalPageRecovery";
+import { prefetchWindowViewSettings } from "@/utils/savedViews/defaultViews";
 
 // Mock dependencies
 jest.mock("next/navigation", () => ({
@@ -54,6 +55,7 @@ jest.mock("@/utils/recovery/stateReconstructor");
 jest.mock("@/utils/recovery/reconstructedSessionSync");
 jest.mock("sonner", () => ({ toast: { warning: jest.fn() } }));
 jest.mock("@/utils/window/externalPageRecovery", () => ({ recoverExternalPageWindow: jest.fn() }));
+jest.mock("@/utils/savedViews/defaultViews", () => ({ prefetchWindowViewSettings: jest.fn() }));
 
 const mockUseSearchParams = useSearchParams as jest.Mock;
 const mockUseMetadataStore = useMetadataStore as jest.MockedFunction<typeof useMetadataStore>;
@@ -331,6 +333,7 @@ describe("useGlobalUrlStateRecovery", () => {
       const { result } = await renderHookAndWait();
 
       expect(mockLoadWindowData).toHaveBeenCalledWith("143");
+      expect(prefetchWindowViewSettings).toHaveBeenCalledWith("143_123456");
       expect(mockGetWindowName).toHaveBeenCalledWith(windowMetadata);
       expect(result.current.recoveredWindows).toHaveLength(1);
       expectRecoveredWindow(result.current.recoveredWindows[0], {
@@ -358,6 +361,8 @@ describe("useGlobalUrlStateRecovery", () => {
       const { result } = await renderHookAndWait();
 
       expect(mockLoadWindowData).toHaveBeenCalledTimes(2);
+      // The grids of every recovered window wait for their view settings: requested with the metadata
+      expect((prefetchWindowViewSettings as jest.Mock).mock.calls).toEqual([["143_123456"], ["144_789012"]]);
       expect(result.current.recoveredWindows).toHaveLength(2);
       expect(result.current.recoveredWindows[0].isActive).toBe(false);
       expect(result.current.recoveredWindows[1].isActive).toBe(true);

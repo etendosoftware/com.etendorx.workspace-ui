@@ -8,6 +8,8 @@ const mockSeed = jest.fn();
 const mockPrefetchOnHover = jest.fn();
 const mockNewWindowIdentifier = jest.fn((windowId: string) => `${windowId}_123`);
 
+// Opening a window also requests its saved views: not what these tests check
+jest.mock("@/utils/savedViews/defaultViews", () => ({ prefetchWindowViewSettings: jest.fn() }));
 jest.mock("@/stores/windowStore", () => ({
   useWindowStore: Object.assign(
     (selector: (state: unknown) => unknown) => selector({ setWindowActive: mockSetWindowActive }),
@@ -27,11 +29,27 @@ jest.mock("@/utils/window/utils", () => ({
   getNewWindowIdentifier: (windowId: string) => mockNewWindowIdentifier(windowId),
 }));
 
+const mockGetCachedMenu = jest.fn(() => [] as unknown[]);
+jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
+  Metadata: { getCachedMenu: () => mockGetCachedMenu() },
+}));
+
+// The list is drawn with the live menu; unless a test sets it, it is the cached menu the click checks.
+let mockLiveMenu: unknown[] | undefined;
+jest.mock("@/hooks/useLiveMenu", () => ({ useLiveMenu: () => mockLiveMenu ?? mockGetCachedMenu() }));
+
+const mockNotifyEntryUnavailable = jest.fn();
+jest.mock("@/hooks/useEntryUnavailableNotice", () => ({
+  useEntryUnavailableNotice: () => mockNotifyEntryUnavailable,
+}));
+
 const dataWith = (items: Array<{ windowId: string; label: string }>) => ({ items }) as unknown as FavoritesWidgetData;
 
 describe("FavoritesRenderer", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetCachedMenu.mockReturnValue([]);
+    mockLiveMenu = undefined;
   });
 
   it("shows a dash when there are no favorites", () => {
@@ -100,5 +118,40 @@ describe("FavoritesRenderer", () => {
 
     expect(mockPrefetchOnHover).toHaveBeenCalledTimes(2);
     expect(mockPrefetchOnHover).toHaveBeenCalledWith("143");
+  });
+
+  describe("favorites the role can no longer open (ETP-6431)", () => {
+    const salesOrderEntry = { id: "MENU_143", name: "Sales Order", type: "Window", windowId: "143" };
+    const twoFavorites = dataWith([
+      { windowId: "143", label: "Sales Order" },
+      { windowId: "140", label: "Product" },
+    ]);
+
+    it("offers only the favorites of the role's menu", () => {
+      mockGetCachedMenu.mockReturnValue([salesOrderEntry]);
+      render(<FavoritesRenderer data={twoFavorites} />);
+
+      expect(screen.getByTestId("FavoritesRenderer__item_143")).toBeInTheDocument();
+      expect(screen.queryByTestId("FavoritesRenderer__item_140")).not.toBeInTheDocument();
+    });
+
+    it("shows the empty state when no favorite is in the role's menu, keeping the store seeded", () => {
+      mockGetCachedMenu.mockReturnValue([{ ...salesOrderEntry, windowId: "999" }]);
+      render(<FavoritesRenderer data={twoFavorites} />);
+
+      expect(screen.getByTestId("FavoritesRenderer__empty")).toBeInTheDocument();
+      expect(mockSeed).toHaveBeenCalledWith((twoFavorites as unknown as { items: unknown }).items);
+    });
+
+    it("tells the user and opens nothing when the current menu no longer has the window", () => {
+      mockLiveMenu = [salesOrderEntry];
+      mockGetCachedMenu.mockReturnValue([{ ...salesOrderEntry, windowId: "999" }]);
+      render(<FavoritesRenderer data={dataWith([{ windowId: "143", label: "Sales Order" }])} />);
+
+      fireEvent.click(screen.getByTestId("FavoritesRenderer__item_143"));
+
+      expect(mockNotifyEntryUnavailable).toHaveBeenCalledTimes(1);
+      expect(mockSetWindowActive).not.toHaveBeenCalled();
+    });
   });
 });

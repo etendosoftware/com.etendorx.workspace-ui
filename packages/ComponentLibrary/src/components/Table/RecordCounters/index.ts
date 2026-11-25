@@ -18,4 +18,5 @@
 export { default as RecordCounterBar } from "./RecordCounterBar";
 export { default as RecordCounter } from "./RecordCounter";
 export { default as SelectionCounter } from "./SelectionCounter";
+export { formatRecordCount, MORE_RECORDS_SUFFIX } from "./formatRecordCount";
 export type { RecordCounterBarProps, RecordCounterProps, SelectionCounterProps } from "./types";

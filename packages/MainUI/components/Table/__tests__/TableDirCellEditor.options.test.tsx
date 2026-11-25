@@ -28,10 +28,10 @@ jest.mock("../utils/keyboardNavigation", () => ({
 }));
 
 import type React from "react";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 import type { Field } from "@workspaceui/api-client/src/api/types";
-import { TableDirCellEditor } from "../CellEditors/TableDirCellEditor";
+import { searchesOnServer, TableDirCellEditor } from "../CellEditors/TableDirCellEditor";
 
 const OPTIONS = [
   { id: "1", label: "Acme Corp", value: "1" },
@@ -115,5 +115,84 @@ describe("TableDirCellEditor — option list", () => {
     await openAndSearch("zzz");
 
     expect(screen.getByText("No options found")).toBeInTheDocument();
+  });
+});
+
+describe("TableDirCellEditor — loading while searching (ETP-6431)", () => {
+  const NO_OPTIONS = "No options found";
+  const LOADING = "Loading...";
+  const optionList = () => within(screen.getByRole("listbox"));
+
+  /** A loader whose answer for each term is released by the test. */
+  const deferredLoader = () => {
+    const releases = new Map<string, (options: typeof OPTIONS) => void>();
+    const loadOptions = jest.fn(
+      (_field: Field, term = "") =>
+        new Promise((resolve) => {
+          releases.set(term, resolve);
+        })
+    );
+    const release = async (term: string, options: typeof OPTIONS) => {
+      await act(async () => {
+        releases.get(term)?.(options);
+      });
+    };
+    return { loadOptions, release };
+  };
+
+  it("shows the loading text, not 'No options found', while the search runs", async () => {
+    const { loadOptions, release } = deferredLoader();
+    renderEditor({ loadOptions });
+    await openAndSearch("zzz");
+
+    expect(optionList().getByText(LOADING)).toBeInTheDocument();
+    expect(optionList().queryByText(NO_OPTIONS)).not.toBeInTheDocument();
+
+    await release("zzz", []);
+
+    expect(optionList().getByText(NO_OPTIONS)).toBeInTheDocument();
+  });
+
+  it("shows 'No options found' when the search fails", async () => {
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    renderEditor({ loadOptions: jest.fn().mockRejectedValue(new Error("down")) });
+
+    await openAndSearch("zzz");
+
+    expect(optionList().getByText(NO_OPTIONS)).toBeInTheDocument();
+    consoleError.mockRestore();
+  });
+
+  it("keeps the options of the latest search when an older answer arrives later", async () => {
+    const { loadOptions, release } = deferredLoader();
+    renderEditor({ loadOptions });
+    await openAndSearch("acm");
+    await act(async () => {
+      fireEvent.change(screen.getByRole("textbox"), { target: { value: "bet" } });
+    });
+
+    await release("bet", OPTIONS);
+    await release("acm", [OPTIONS[0]]);
+
+    expect(optionList().getByText("Beta SA")).toBeInTheDocument();
+    expect(optionList().queryByText(LOADING)).not.toBeInTheDocument();
+  });
+});
+
+describe("searchesOnServer (ETP-6431)", () => {
+  const MIN_CHARS = 3;
+
+  it("is true for a term long enough on a TABLEDIR column with a loader", () => {
+    expect(searchesOnServer(field, true, "acm", MIN_CHARS)).toBe(true);
+  });
+
+  it.each([
+    ["there is no loader", field, false, "acm"],
+    ["the column has a static list", { ...field, refList: OPTIONS } as unknown as Field, true, "acm"],
+    ["the column is not a TABLEDIR", { ...field, type: FieldType.LIST } as unknown as Field, true, "acm"],
+    ["the term is empty", field, true, " "],
+    ["the term is below the minimum", field, true, "ac"],
+  ])("is false when %s", (_case, testField, hasLoader, term) => {
+    expect(searchesOnServer(testField, hasLoader, term, MIN_CHARS)).toBe(false);
   });
 });

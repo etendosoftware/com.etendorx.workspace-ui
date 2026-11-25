@@ -27,6 +27,8 @@ const mockGetWindow = jest.fn();
 const mockCalculateHierarchy = jest.fn();
 const mockReconstructState = jest.fn();
 
+// Opening a window also requests its saved views: not what these tests check
+jest.mock("@/utils/savedViews/defaultViews", () => ({ prefetchWindowViewSettings: jest.fn() }));
 jest.mock("@/stores/windowStore", () => ({
   useWindowStore: Object.assign(
     (selector: (s: Record<string, unknown>) => unknown) => selector({ setWindowActive: mockSetWindowActive }),

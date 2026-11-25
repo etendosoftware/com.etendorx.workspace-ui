@@ -2,10 +2,20 @@ import type React from "react";
 import { useState, useEffect, useRef } from "react";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import DateRangeModal from "../../../ComponentLibrary/src/components/RangeDateModal/RangeDateModal";
-import { formatBrowserDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
+import {
+  buildDateFilterValue,
+  type DateFilterMode,
+  type DateFilterSelection,
+  formatDateFilterLabel,
+  parseDateFilterValue,
+} from "@workspaceui/componentlibrary/src/components/RangeDateModal/dateFilterSelection";
 import CalendarIcon from "../../../ComponentLibrary/src/assets/icons/calendar.svg";
 import { useTranslation } from "@/hooks/useTranslation";
+import { resolveTypedDateFilter } from "@/utils/table/filters/dateColumnFilter";
 import { useDebouncedCallback } from "./utils/performanceOptimizations";
+
+const TYPING_DEBOUNCE_MS = 500;
+const ENTER_KEY = "Enter";
 
 export interface DateSelectorProps {
   column: Column;
@@ -15,93 +25,60 @@ export interface DateSelectorProps {
 
 export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChange, filterValue }) => {
   const { t } = useTranslation();
+  const translate = t as (key: string) => string;
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [selection, setSelection] = useState<DateFilterSelection | null>(null);
   const [inputValue, setInputValue] = useState("");
-  const isFromModalRef = useRef(false);
+  const [hasInvalidDate, setHasInvalidDate] = useState(false);
+  // Last value applied from the text typed in the column: its echo must not rewrite what the user typed
+  const typedValueRef = useRef<string | undefined>(undefined);
+  // The text was edited since the filter was last shown, so it has to be checked when leaving the field
+  const isEditingRef = useRef(false);
 
-  // Create a debounced version of the filter change handler
-  const debouncedFilterChange = useDebouncedCallback((value: string) => {
-    onFilterChange(value);
-  }, 500);
-
-  // Synchronize inputValue when filterValue changes externally (e.g., from "Use as filter")
-  // Also handle clearing when filterValue becomes undefined
-  // Parse and format the filterValue from state properly
+  // Show the applied filter (from the window, "Use as filter", a saved view or a clear) as a readable text
   useEffect(() => {
-    if (!filterValue) {
-      setInputValue("");
-      setStartDate(null);
-      setEndDate(null);
+    const parsed = parseDateFilterValue(filterValue);
+    setSelection(parsed);
+    setHasInvalidDate(false);
+    if (filterValue && filterValue === typedValueRef.current) return;
+
+    typedValueRef.current = undefined;
+    isEditingRef.current = false;
+    setInputValue(parsed ? formatDateFilterLabel(parsed, translate) : (filterValue ?? ""));
+  }, [filterValue, translate]);
+
+  const applyTypedValue = (value: string) => {
+    if (value === typedValueRef.current) return;
+    typedValueRef.current = value;
+    onFilterChange(value);
+  };
+
+  // While typing, only a date or an expression is applied; invalid text is reported when leaving the field
+  const debouncedApply = useDebouncedCallback((text: string) => {
+    const value = resolveTypedDateFilter(text);
+    if (value !== null) applyTypedValue(value);
+  }, TYPING_DEBOUNCE_MS);
+
+  const commitTypedText = () => {
+    if (!isEditingRef.current) return;
+    debouncedApply.cancel();
+    const value = resolveTypedDateFilter(inputValue);
+    if (value === null) {
+      setHasInvalidDate(true);
       return;
     }
-
-    // Only reformat and add "from"/"to" labels if it comes from the modal
-    if (!isFromModalRef.current) {
-      // Check for ISO date format (YYYY-MM-DD) which comes from "Use as filter"
-      const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
-      if (isoDateRegex.test(filterValue)) {
-        const [year, month, day] = filterValue.split("-").map(Number);
-        const date = new Date(year, month - 1, day);
-        if (!isNaN(date.getTime())) {
-          setInputValue(formatBrowserDate(date));
-          setStartDate(date);
-          setEndDate(null);
-          return;
-        }
-      }
-
-      setInputValue(filterValue);
-      return;
-    }
-
-    // Reset the flag after processing
-    isFromModalRef.current = false;
-
-    // Parse the filter value which could be:
-    // "YYYY-MM-DD - YYYY-MM-DD" (range)
-    // "YYYY-MM-DD - " (desde/from only)
-    // " - YYYY-MM-DD" (hasta/to only)
-    const parts = filterValue.split(" - ");
-    const startStr = parts[0]?.trim();
-    const endStr = parts[1]?.trim();
-
-    let displayValue = "";
-    let parsedStart: Date | null = null;
-    let parsedEnd: Date | null = null;
-
-    // Parse the dates if they exist
-    if (startStr) {
-      const [year, month, day] = startStr.split("-");
-      parsedStart = new Date(Number(year), Number(month) - 1, Number(day));
-      setStartDate(parsedStart);
-    }
-
-    if (endStr) {
-      const [year, month, day] = endStr.split("-");
-      parsedEnd = new Date(Number(year), Number(month) - 1, Number(day));
-      setEndDate(parsedEnd);
-    }
-
-    // Format the display value the same way handleDateConfirm does
-    if (parsedStart && parsedEnd) {
-      displayValue = `${formatBrowserDate(parsedStart)} - ${formatBrowserDate(parsedEnd)}`;
-    } else if (parsedStart && !parsedEnd) {
-      displayValue = `${t("dateModal.from")} - ${formatBrowserDate(parsedStart)}`;
-    } else if (!parsedStart && parsedEnd) {
-      displayValue = `${t("dateModal.to")} - ${formatBrowserDate(parsedEnd)}`;
-    }
-
-    setInputValue(displayValue);
-  }, [filterValue, t]);
+    applyTypedValue(value);
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    isFromModalRef.current = false;
+    isEditingRef.current = true;
+    setHasInvalidDate(false);
     setInputValue(e.target.value);
-    setStartDate(null);
-    setEndDate(null);
-    debouncedFilterChange(e.target.value);
+    debouncedApply(e.target.value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === ENTER_KEY) commitTypedText();
   };
 
   const handleDatePickerClick = () => {
@@ -112,63 +89,41 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
     setIsModalOpen(false);
   };
 
-  // Helper to format date as YYYY-MM-DD for backend (respects timezone)
-  const formatDateAsISO = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+  const handleDateConfirm = (start: Date | null, end: Date | null, mode: DateFilterMode) => {
+    const confirmed: DateFilterSelection = { mode, start, end };
+    debouncedApply.cancel();
+    typedValueRef.current = undefined;
+    isEditingRef.current = false;
+    setHasInvalidDate(false);
+    setSelection(confirmed);
+    setInputValue(formatDateFilterLabel(confirmed, translate));
+    onFilterChange(buildDateFilterValue(confirmed));
   };
 
-  const handleDateConfirm = (start: Date | null, end: Date | null) => {
-    isFromModalRef.current = true;
-    setStartDate(start);
-    setEndDate(end);
-
-    // Format dates using browser locale for display and YYYY-MM-DD for backend
-    if (start && end) {
-      // Range: desde y hasta
-      // Display in browser locale format
-      const displayValue = `${formatBrowserDate(start)} - ${formatBrowserDate(end)}`;
-      setInputValue(displayValue);
-      // Send in YYYY-MM-DD format for consistent parsing
-      const filterValue = `${formatDateAsISO(start)} - ${formatDateAsISO(end)}`;
-      onFilterChange(filterValue);
-    } else if (start && !end) {
-      // Only start date: should be treated as "desde" (greaterOrEqual)
-      const displayValue = `${t("dateModal.from")} ${formatBrowserDate(start)}`;
-      setInputValue(displayValue);
-      // Format: "YYYY-MM-DD - " to be detected as range by LegacyColumnFilterUtils
-      const filterValue = `${formatDateAsISO(start)} - `;
-      onFilterChange(filterValue);
-    } else if (!start && end) {
-      // Only end date: should be treated as "hasta" (lessOrEqual)
-      const displayValue = `${t("dateModal.to")} ${formatBrowserDate(end)}`;
-      setInputValue(displayValue);
-      // Format: " - YYYY-MM-DD" to be detected as range by LegacyColumnFilterUtils
-      const filterValue = ` - ${formatDateAsISO(end)}`;
-      onFilterChange(filterValue);
-    } else {
-      setInputValue("");
-      onFilterChange("");
-    }
-  };
+  const columnLabel = column.name || column.columnName;
+  const invalidDateMessage = translate("dateModal.invalidDate");
+  const underlineClass = hasInvalidDate ? "border-red-500" : "border-baseline-10 hover:border-baseline-100";
 
   return (
     <>
-      <div className="w-full flex items-center py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 transition-colors gap-2">
+      <div
+        className={`w-full flex items-center py-2 h-10 border-b ${underlineClass} transition-colors gap-2`}
+        title={hasInvalidDate ? invalidDateMessage : undefined}>
         <input
           type="text"
-          placeholder={`Filter ${column.name || column.columnName}...`}
+          placeholder={`Filter ${columnLabel}...`}
           value={inputValue}
+          aria-invalid={hasInvalidDate}
           onChange={handleInputChange}
+          onBlur={commitTypedText}
+          onKeyDown={handleKeyDown}
           className="min-w-0 flex-1 bg-transparent text-sm font-normal outline-none placeholder:text-(--ui-text-muted) placeholder:font-normal"
         />
         <button
           type="button"
           onClick={handleDatePickerClick}
           className="flex-shrink-0 text-xl hover:opacity-70 transition-opacity"
-          title={`Open date picker for ${column.name || column.columnName}`}>
+          title={`Open date picker for ${columnLabel}`}>
           <CalendarIcon className={"fill-(--color-baseline-110)"} data-testid="CalendarIcon__72491e" />
         </button>
       </div>
@@ -176,9 +131,10 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
         isOpen={isModalOpen}
         onClose={handleModalClose}
         onConfirm={handleDateConfirm}
-        initialStartDate={startDate || undefined}
-        initialEndDate={endDate || undefined}
-        t={t as (key: string) => string}
+        initialStartDate={selection?.start ?? undefined}
+        initialEndDate={selection?.end ?? undefined}
+        initialMode={selection?.mode}
+        t={translate}
         data-testid="DateRangeModal__72491e"
       />
     </>

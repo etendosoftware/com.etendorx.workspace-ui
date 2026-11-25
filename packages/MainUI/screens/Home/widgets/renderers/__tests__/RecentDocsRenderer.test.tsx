@@ -18,17 +18,17 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import RecentDocsRenderer from "@/screens/Home/widgets/renderers/RecentDocsRenderer";
 import { useRecentDocuments } from "@/hooks/useRecentDocuments";
-import { useRedirect } from "@/hooks/navigation/useRedirect";
+import { useOpenRecentDocument } from "@/hooks/navigation/useOpenRecentDocument";
 
 jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
 jest.mock("@/hooks/useRecentDocuments");
-jest.mock("@/hooks/navigation/useRedirect");
+jest.mock("@/hooks/navigation/useOpenRecentDocument");
 
 const mockedUseRecentDocuments = useRecentDocuments as jest.Mock;
-const mockedUseRedirect = useRedirect as jest.Mock;
+const mockedUseOpenRecentDocument = useOpenRecentDocument as jest.Mock;
 
 const doc = {
   recordId: "rec-1",
@@ -41,11 +41,11 @@ const doc = {
 };
 
 describe("RecentDocsRenderer", () => {
-  const handleClickRedirect = jest.fn();
+  const openRecentDocument = jest.fn();
 
   beforeEach(() => {
-    handleClickRedirect.mockClear();
-    mockedUseRedirect.mockReturnValue({ handleClickRedirect });
+    openRecentDocument.mockClear();
+    mockedUseOpenRecentDocument.mockReturnValue(openRecentDocument);
   });
 
   it("shows the empty state when there are no recent documents", () => {
@@ -79,7 +79,7 @@ describe("RecentDocsRenderer", () => {
     expect(item).toHaveAttribute("title", doc.identifier);
   });
 
-  it("renders one entry per document and navigates via useRedirect on click", () => {
+  it("renders one entry per document and opens it through useOpenRecentDocument on click", () => {
     mockedUseRecentDocuments.mockReturnValue({ documents: [doc] });
     render(<RecentDocsRenderer />);
 
@@ -88,14 +88,7 @@ describe("RecentDocsRenderer", () => {
 
     fireEvent.click(item);
 
-    expect(handleClickRedirect).toHaveBeenCalledTimes(1);
-    const call = handleClickRedirect.mock.calls[0][0];
-    expect(call).toMatchObject({
-      windowId: doc.windowId,
-      windowTitle: doc.windowTitle,
-      referencedTabId: doc.tabId,
-      selectedRecordId: doc.recordId,
-      tabLevel: doc.tabLevel,
-    });
+    expect(openRecentDocument).toHaveBeenCalledTimes(1);
+    expect(openRecentDocument).toHaveBeenCalledWith(expect.anything(), doc);
   });
 });

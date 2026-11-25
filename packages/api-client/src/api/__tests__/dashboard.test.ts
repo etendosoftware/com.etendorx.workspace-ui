@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { acknowledgeAlerts, updateDashboardLayout } from "../dashboard";
+import { acknowledgeAlerts, removeRecentDocument, updateDashboardLayout } from "../dashboard";
 import { Metadata } from "../metadata";
 
 jest.mock("../metadata", () => ({
@@ -56,5 +56,24 @@ describe("acknowledgeAlerts", () => {
     (Metadata.client.request as jest.Mock).mockResolvedValue({ ok: false, status: 500 });
 
     await expect(acknowledgeAlerts(["A1"])).rejects.toThrow("500");
+  });
+});
+
+describe("removeRecentDocument (ETP-6431)", () => {
+  const document = { tabId: "TAB1", recordId: "REC 1" };
+
+  it("deletes the document of the tab and record, encoded in the query", async () => {
+    (Metadata.client.request as jest.Mock).mockResolvedValue({ ok: true, data: { status: "removed" } });
+
+    await expect(removeRecentDocument(document)).resolves.toEqual({ status: "removed" });
+    const [url, options] = (Metadata.client.request as jest.Mock).mock.calls.at(-1);
+    expect(url).toContain("/recent-documents?tabId=TAB1&recordId=REC+1");
+    expect(options).toEqual({ method: "DELETE" });
+  });
+
+  it("fails when the server rejects the request", async () => {
+    (Metadata.client.request as jest.Mock).mockResolvedValue({ ok: false, status: 422 });
+
+    await expect(removeRecentDocument(document)).rejects.toThrow("422");
   });
 });
