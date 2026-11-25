@@ -15,9 +15,15 @@
  *************************************************************************
  */
 
-import { loadTabDefaultView, prefetchWindowViewSettings, toDefaultViewsByTab } from "../defaultViews";
+import {
+  getSettledTabDefaultView,
+  loadTabDefaultView,
+  prefetchWindowViewSettings,
+  toDefaultViewsByTab,
+} from "../defaultViews";
 import { loadWindowGridConfiguration } from "../gridConfiguration";
 import { useUserStore } from "@/stores/userStore";
+import { buildExternalPageWindowId } from "@/utils/menu/externalMenuEntry";
 import { resetSessionState } from "@/utils/session/resetSessionState";
 import {
   DEFAULT_VIEW_TAB_ID,
@@ -132,6 +138,48 @@ describe("loadTabDefaultView", () => {
   });
 });
 
+describe("getSettledTabDefaultView", () => {
+  /** Saved-views request that answers only when the test says so. */
+  const givenPendingRequest = () => {
+    let answer: () => void = () => undefined;
+    mockFetch.mockReturnValue(
+      new Promise<Response>((resolve) => {
+        answer = () => resolve(makeSavedViewsResponse([makeDefaultViewRecord()]));
+      })
+    );
+    return () => answer();
+  };
+
+  it("is unknown until the views of the window answer, then gives the tab view or null", async () => {
+    const answer = givenPendingRequest();
+    const windowIdentifier = nextWindow();
+    const request = loadTabDefaultView(windowIdentifier, DEFAULT_VIEW_TAB_ID);
+
+    expect(getSettledTabDefaultView(windowIdentifier, DEFAULT_VIEW_TAB_ID)).toBeUndefined();
+    answer();
+    await request;
+
+    expect(getSettledTabDefaultView(windowIdentifier, DEFAULT_VIEW_TAB_ID)?.filters).toEqual(FILTERS);
+    expect(getSettledTabDefaultView(windowIdentifier, OTHER_TAB_ID)).toBeNull();
+  });
+
+  it("forgets the answers on logout, also one that arrives after it", async () => {
+    mockFetch.mockReturnValue(makeSavedViewsResponse([]));
+    const answered = nextWindow();
+    await loadTabDefaultView(answered, DEFAULT_VIEW_TAB_ID);
+    const answer = givenPendingRequest();
+    const late = nextWindow();
+    const request = loadTabDefaultView(late, DEFAULT_VIEW_TAB_ID);
+
+    resetSessionState();
+    answer();
+    await request;
+
+    expect(getSettledTabDefaultView(answered, DEFAULT_VIEW_TAB_ID)).toBeUndefined();
+    expect(getSettledTabDefaultView(late, DEFAULT_VIEW_TAB_ID)).toBeUndefined();
+  });
+});
+
 describe("toDefaultViewsByTab", () => {
   it.each([
     ["unparseable", "{invalid json}"],
@@ -156,5 +204,14 @@ describe("prefetchWindowViewSettings", () => {
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
     expect(loadWindowGridConfiguration).toHaveBeenCalledWith(windowIdentifier);
+  });
+
+  it("requests nothing for the in-app page of an external menu entry", () => {
+    (loadWindowGridConfiguration as jest.Mock).mockClear();
+
+    prefetchWindowViewSettings(`${buildExternalPageWindowId("MENU1")}_1`);
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(loadWindowGridConfiguration).not.toHaveBeenCalled();
   });
 });

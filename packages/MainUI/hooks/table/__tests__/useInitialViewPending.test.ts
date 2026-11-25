@@ -16,20 +16,37 @@
  */
 
 import { act, renderHook } from "@testing-library/react";
-import { INITIAL_VIEW_WAIT_MS, useInitialViewPending } from "../useInitialViewPending";
+import { INITIAL_VIEW_WAIT_MS, tabNeedsInitialView, useInitialViewPending } from "../useInitialViewPending";
 import { markInitialViewResolved } from "@/stores/initialViewStore";
+import { getSettledTabDefaultView } from "@/utils/savedViews/defaultViews";
+import { getSettledTabColumnConfiguration } from "@/utils/savedViews/gridConfiguration";
 import { resetSessionState } from "@/utils/session/resetSessionState";
 
 jest.mock("@/utils/session/resetSessionState");
+jest.mock("@/utils/savedViews/defaultViews", () => ({ getSettledTabDefaultView: jest.fn() }));
+jest.mock("@/utils/savedViews/gridConfiguration", () => ({ getSettledTabColumnConfiguration: jest.fn() }));
 
 const WINDOW = "143_1";
 const TAB = "tab-1";
 
 const renderPending = () => renderHook(() => useInitialViewPending(WINDOW, TAB));
 
+const UNKNOWN = undefined;
+const NONE = null;
+const DEFAULT_VIEW = { filters: [] };
+const COLUMNS = { version: 1, visibility: { name: false }, order: ["name"] };
+const SORTED_COLUMNS = { ...COLUMNS, sorting: [{ id: "name", desc: true }] };
+
+/** What the window requests answered for the tab (`undefined` while they have not answered). */
+const givenSettled = (defaultView: unknown, columnConfiguration: unknown) => {
+  (getSettledTabDefaultView as jest.Mock).mockReturnValue(defaultView);
+  (getSettledTabColumnConfiguration as jest.Mock).mockReturnValue(columnConfiguration);
+};
+
 beforeEach(() => {
   jest.useFakeTimers();
   resetSessionState();
+  givenSettled(UNKNOWN, UNKNOWN);
 });
 
 afterEach(() => jest.useRealTimers());
@@ -68,11 +85,35 @@ describe("useInitialViewPending", () => {
     expect(jest.getTimerCount()).toBe(0);
   });
 
+  it("does not wait, from the first render, for a tab with nothing that changes its first request", () => {
+    givenSettled(NONE, COLUMNS);
+
+    const { result } = renderPending();
+
+    expect(result.current).toBe(false);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
   it("cancels the wait when the grid unmounts", () => {
     const { unmount } = renderPending();
 
     unmount();
 
     expect(jest.getTimerCount()).toBe(0);
+  });
+});
+
+describe("tabNeedsInitialView", () => {
+  it.each([
+    ["the default views have not answered", UNKNOWN, NONE, true],
+    ["the stored columns have not answered", NONE, UNKNOWN, true],
+    ["the tab has a default view", DEFAULT_VIEW, NONE, true],
+    ["the stored columns sort the grid", NONE, SORTED_COLUMNS, true],
+    ["the stored columns do not sort the grid", NONE, COLUMNS, false],
+    ["nothing is stored for the tab", NONE, NONE, false],
+  ])("is %s → %s", (_case, defaultView, columnConfiguration, expected) => {
+    givenSettled(defaultView, columnConfiguration);
+
+    expect(tabNeedsInitialView(WINDOW, TAB)).toBe(expected);
   });
 });

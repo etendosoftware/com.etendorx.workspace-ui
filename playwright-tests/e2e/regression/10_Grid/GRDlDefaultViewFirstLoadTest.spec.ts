@@ -3,6 +3,7 @@ import { TABS, WINDOW_IDS } from "../../support/registry/windows";
 import { collectGridFetches, type DatasourceRequestParams } from "../../support/wait";
 
 const NAME = "Name";
+const SYMBOL = "Symbol";
 const KILOGRAM = "Kilogram";
 const CENTIMETER = "Centimeter";
 const ISO_CODE = "ISO Code";
@@ -114,6 +115,23 @@ test.describe("Grid - default view on the first load @regression @grid", () => {
     await expect(app.grid.rows().first()).toBeVisible();
     expect(fetches, "the grid loaded more than once").toHaveLength(1);
     expect(fetches[0][SORT_BY]).toMatch(DESCENDING_SORT);
+  });
+
+  test("loads on mount and keeps the stored columns when they do not sort the grid", async ({ api, app, page }) => {
+    await api.setGridConfiguration(WINDOW_IDS.UNIT_OF_MEASURE, TABS.UNIT_OF_MEASURE, {
+      version: 1,
+      visibility: { [SYMBOL]: false },
+      order: [],
+    });
+    const fetches = collectGridFetches(page, TABS.UNIT_OF_MEASURE);
+
+    await app.sidebar.navigateTo("unitOfMeasure");
+
+    await expect(app.grid.rowWithCell(CENTIMETER)).toBeVisible();
+    // Hiding a column does not change the request: the grid loads without waiting for it, and only once
+    await expect(app.grid.columnHeader(SYMBOL)).toBeHidden();
+    await expect(app.grid.columnHeader(NAME)).toBeVisible();
+    expect(fetches, "the grid loaded again when the stored columns were applied").toHaveLength(1);
   });
 
   test("loads without the default view when it cannot be read", async ({ app, data, page }) => {

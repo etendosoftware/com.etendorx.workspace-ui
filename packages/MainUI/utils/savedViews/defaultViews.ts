@@ -28,6 +28,7 @@ import { parseGridConfiguration, rawRecordToSavedView } from "@/utils/savedViews
 import type { MRTViewConfig, RawSavedViewRecord } from "@/utils/savedViews/types";
 import { registerSessionReset } from "@/utils/session/resetSessionState";
 import { getWindowIdFromIdentifier } from "@/utils/window/utils";
+import { isExternalPageWindowId } from "@/utils/menu/externalMenuEntry";
 
 export const SAVED_VIEWS_URL = "/api/meta/saved-views";
 
@@ -38,7 +39,12 @@ const NO_DEFAULT_VIEWS: WindowDefaultViews = {};
 
 /** One request per opened window (the identifier is unique per open), shared by all its tabs. */
 const windowDefaultViews = new Map<string, Promise<WindowDefaultViews>>();
-registerSessionReset(() => windowDefaultViews.clear());
+/** Answers already received, so a grid can know on its first render whether its tab has a default view. */
+const settledDefaultViews = new Map<string, WindowDefaultViews>();
+registerSessionReset(() => {
+  windowDefaultViews.clear();
+  settledDefaultViews.clear();
+});
 
 /** Default views of a saved-views response, by tab. A view whose configuration cannot be read is left out. */
 export const toDefaultViewsByTab = (records: RawSavedViewRecord[]): WindowDefaultViews => {
@@ -87,7 +93,23 @@ const loadWindowDefaultViews = (windowIdentifier: string): Promise<WindowDefault
 
   const request = fetchWindowDefaultViews(windowIdentifier, token);
   windowDefaultViews.set(windowIdentifier, request);
+  request.then((viewsByTab) => {
+    // A logout in between discarded this request: its answer belongs to the previous session
+    if (windowDefaultViews.get(windowIdentifier) === request) {
+      settledDefaultViews.set(windowIdentifier, viewsByTab);
+    }
+  });
   return request;
+};
+
+/**
+ * Default view of a tab when the views of its window have already answered: `null` when the tab has none,
+ * `undefined` while the answer is not there yet.
+ */
+export const getSettledTabDefaultView = (windowIdentifier: string, tabId: string): MRTViewConfig | null | undefined => {
+  const viewsByTab = settledDefaultViews.get(windowIdentifier);
+  if (!viewsByTab) return undefined;
+  return viewsByTab[tabId] ?? null;
 };
 
 /**
@@ -104,6 +126,8 @@ export const loadTabDefaultView = async (windowIdentifier: string, tabId: string
  * configuration) as soon as the window opens, in parallel with its metadata, so the grids do not wait for it.
  */
 export const prefetchWindowViewSettings = (windowIdentifier: string): void => {
+  // In-app pages of external menu entries have no grid
+  if (isExternalPageWindowId(getWindowIdFromIdentifier(windowIdentifier))) return;
   // Both loaders swallow their errors: they resolve to "nothing stored"
   loadWindowDefaultViews(windowIdentifier);
   loadWindowGridConfiguration(windowIdentifier);

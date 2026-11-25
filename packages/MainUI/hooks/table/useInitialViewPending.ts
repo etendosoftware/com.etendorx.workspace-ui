@@ -17,6 +17,8 @@
 
 import { useEffect } from "react";
 import { getInitialViewKey, markInitialViewResolved, useInitialViewStore } from "@/stores/initialViewStore";
+import { getSettledTabDefaultView } from "@/utils/savedViews/defaultViews";
+import { getSettledTabColumnConfiguration } from "@/utils/savedViews/gridConfiguration";
 
 /**
  * Longest wait for the initial view of a tab. The views are requested when the window opens, so they are
@@ -26,11 +28,27 @@ import { getInitialViewKey, markInitialViewResolved, useInitialViewStore } from 
 export const INITIAL_VIEW_WAIT_MS = 2000;
 
 /**
+ * Whether the first load of a tab must wait for its initial view. It must unless the views and the stored
+ * columns of its window have already answered with nothing that changes the request: no default view and no
+ * stored sort. Visibility, order, width and pinning do not change the request, so they are applied after it.
+ */
+export function tabNeedsInitialView(windowIdentifier: string, tabId: string): boolean {
+  const defaultView = getSettledTabDefaultView(windowIdentifier, tabId);
+  const configuration = getSettledTabColumnConfiguration(windowIdentifier, tabId);
+  if (defaultView !== null || configuration === undefined) {
+    // A default view, or an answer still on its way
+    return true;
+  }
+  return (configuration?.sorting?.length ?? 0) > 0;
+}
+
+/**
  * Whether the grid of a tab still waits for its initial view (default saved view or stored column
  * configuration) before its first load.
  */
 export function useInitialViewPending(windowIdentifier: string, tabId: string): boolean {
-  const isPending = useInitialViewStore((state) => !state.resolved[getInitialViewKey(windowIdentifier, tabId)]);
+  const isUnresolved = useInitialViewStore((state) => !state.resolved[getInitialViewKey(windowIdentifier, tabId)]);
+  const isPending = isUnresolved && tabNeedsInitialView(windowIdentifier, tabId);
 
   useEffect(() => {
     if (!isPending) return;

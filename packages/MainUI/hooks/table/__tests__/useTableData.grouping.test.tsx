@@ -9,6 +9,8 @@ import { useTableData } from "../useTableData";
 import { DEFAULT_TREE_FETCH_LIMIT, TOO_MANY_NODES_MESSAGE } from "@/utils/table/treeMode";
 import { toast } from "sonner";
 import { markInitialViewResolved, useInitialViewStore } from "@/stores/initialViewStore";
+import { getSettledTabDefaultView } from "@/utils/savedViews/defaultViews";
+import { getSettledTabColumnConfiguration } from "@/utils/savedViews/gridConfiguration";
 
 const GROUP_COLUMN = "Business Partner";
 const GROUP_FIELD = "businessPartner";
@@ -69,6 +71,14 @@ jest.mock("../../../contexts/language", () => ({
   useLanguage: () => ({ language: "en_US", getLabel: (code: string) => code }),
 }));
 jest.mock("sonner", () => ({ toast: { error: jest.fn() } }));
+jest.mock("@/utils/savedViews/defaultViews", () => ({
+  ...jest.requireActual("@/utils/savedViews/defaultViews"),
+  getSettledTabDefaultView: jest.fn(),
+}));
+jest.mock("@/utils/savedViews/gridConfiguration", () => ({
+  ...jest.requireActual("@/utils/savedViews/gridConfiguration"),
+  getSettledTabColumnConfiguration: jest.fn(),
+}));
 jest.mock("../../../contexts/tab", () => ({
   useTabContext: () => ({ tab: mockTab, parentTab: null, parentRecord: null, parentRecords: [] }),
 }));
@@ -380,6 +390,9 @@ describe("useTableData first load", () => {
   beforeEach(() => {
     mockUseDatasource.mockClear();
     useInitialViewStore.setState({ resolved: {} });
+    // The settings of the window have not answered yet
+    (getSettledTabDefaultView as jest.Mock).mockReturnValue(undefined);
+    (getSettledTabColumnConfiguration as jest.Mock).mockReturnValue(undefined);
   });
 
   it("waits for the initial view of the tab before loading, showing the grid as loading", () => {
@@ -396,5 +409,14 @@ describe("useTableData first load", () => {
 
     expect(lastDatasourceSkip()).toBe(false);
     expect(result.current.loading).toBe(false);
+  });
+
+  it("loads on the first render when the window settings answered nothing for the tab", () => {
+    (getSettledTabDefaultView as jest.Mock).mockReturnValue(null);
+    (getSettledTabColumnConfiguration as jest.Mock).mockReturnValue(null);
+
+    renderHook(() => useTableData({ isTreeMode: false }));
+
+    expect((mockUseDatasource.mock.calls[0]?.[0] as { skip: boolean }).skip).toBe(false);
   });
 });

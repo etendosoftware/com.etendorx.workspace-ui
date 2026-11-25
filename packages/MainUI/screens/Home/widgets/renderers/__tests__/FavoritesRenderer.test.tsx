@@ -8,6 +8,8 @@ const mockSeed = jest.fn();
 const mockPrefetchOnHover = jest.fn();
 const mockNewWindowIdentifier = jest.fn((windowId: string) => `${windowId}_123`);
 
+// Opening a window also requests its saved views: not what these tests check
+jest.mock("@/utils/savedViews/defaultViews", () => ({ prefetchWindowViewSettings: jest.fn() }));
 jest.mock("@/stores/windowStore", () => ({
   useWindowStore: Object.assign(
     (selector: (state: unknown) => unknown) => selector({ setWindowActive: mockSetWindowActive }),

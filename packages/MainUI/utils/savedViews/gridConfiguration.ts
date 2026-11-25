@@ -58,6 +58,8 @@ export const GRID_CONFIGURATION_SAVE_DELAY_MS = 1000;
 
 const pendingSaves = new Map<string, ReturnType<typeof setTimeout>>();
 const windowConfigurations = new Map<string, Promise<WindowGridConfiguration<ColumnConfiguration>>>();
+/** Answers already received, so a grid can know on its first render whether anything is stored for its tab. */
+const settledWindowConfigurations = new Map<string, WindowGridConfiguration<ColumnConfiguration>>();
 
 const getTabKey = (windowIdentifier: string, tabId: string) => `${windowIdentifier}_${tabId}`;
 
@@ -107,10 +109,30 @@ export const loadWindowGridConfiguration = (
 ): Promise<WindowGridConfiguration<ColumnConfiguration>> => {
   let request = windowConfigurations.get(windowIdentifier);
   if (!request) {
-    request = fetchWindowConfiguration(windowIdentifier);
+    const pending = fetchWindowConfiguration(windowIdentifier);
+    pending.then((configuration) => {
+      // A logout in between discarded this request: its answer belongs to the previous session
+      if (windowConfigurations.get(windowIdentifier) === pending) {
+        settledWindowConfigurations.set(windowIdentifier, configuration);
+      }
+    });
+    request = pending;
     windowConfigurations.set(windowIdentifier, request);
   }
   return request;
+};
+
+/**
+ * Stored configuration of a tab when the request of its window has already answered: `null` when nothing is
+ * stored for the tab, `undefined` while the answer is not there yet.
+ */
+export const getSettledTabColumnConfiguration = (
+  windowIdentifier: string,
+  tabId: string
+): ColumnConfiguration | null | undefined => {
+  const configuration = settledWindowConfigurations.get(windowIdentifier);
+  if (!configuration) return undefined;
+  return configuration[tabId] ?? null;
 };
 
 /**
@@ -136,6 +158,7 @@ registerSessionReset(() => {
     cancelPendingSave(key);
   }
   windowConfigurations.clear();
+  settledWindowConfigurations.clear();
 });
 
 const storeTabConfiguration = async (
