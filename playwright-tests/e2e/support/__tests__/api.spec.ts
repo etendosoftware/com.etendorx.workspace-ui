@@ -5,6 +5,7 @@ import {
   datasourceFetchBody,
   datasourceWriteUrl,
   fetchedRecordsFrom,
+  gridConfigurationBody,
   gridConfigurationResetBody,
   savedRecordFrom,
   treeNodeMoveBody,
@@ -44,6 +45,17 @@ test.describe("datasourceAddBody", () => {
     const body = datasourceAddBody({ name: "x" });
     expect(body).toMatchObject({ operationType: "add", componentId: "isc_OBViewForm_0", data: { name: "x" } });
     expect(body.csrfToken).toBeTruthy();
+  });
+});
+
+test.describe("gridConfigurationBody", () => {
+  test("stores the configuration of one tab of the window", () => {
+    const configuration = { version: 1, sorting: [{ id: "Name", desc: true }] };
+    expect(gridConfigurationBody("143", "187", configuration)).toEqual({
+      windowId: "143",
+      tabId: "187",
+      configuration,
+    });
   });
 });
 

@@ -3,6 +3,7 @@ import { runAndWaitForResponse } from "../wait";
 import { Toolbar } from "./Toolbar";
 
 const SAVED_VIEWS_REQUEST = /\/api\/meta\/saved-views/;
+const SAVED_VIEWS_PATH = "/api/meta/saved-views";
 const READ_METHOD = "GET";
 const ACTION_TIMEOUT = 5_000;
 const MENU_TIMEOUT = 30_000;
@@ -96,13 +97,38 @@ export class SavedViews {
     await expect(this.content).toBeHidden();
   }
 
+  /**
+   * Creates a personal view of a tab through the API and makes it the default of the tab, with the grid
+   * state given as the UI stores it (`version`, `filters`, `sorting`, `treeView`…); returns its id.
+   * Builds exact grid states the menu cannot set in one step (e.g. a tree view) without opening the window.
+   */
+  async addDefault(tabId: string, name: string, gridConfiguration: Record<string, unknown>): Promise<string> {
+    const response = await this.page.request.post(SAVED_VIEWS_PATH, {
+      headers: await this.authHeaders(),
+      data: {
+        name,
+        tab: tabId,
+        isdefault: true,
+        filterclause: "",
+        gridconfiguration: JSON.stringify(gridConfiguration),
+      },
+    });
+    expect(response.ok(), `saved view ${name} was not created: ${response.status()}`).toBe(true);
+    return savedViewId(response);
+  }
+
   /** Deletes a saved view through the API (cleanup, also when the test failed halfway). */
   async remove(id: string): Promise<void> {
-    const token = await this.page.evaluate(() => localStorage.getItem("token"));
-    const response = await this.page.request.delete(`/api/meta/saved-views/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
+    const response = await this.page.request.delete(`${SAVED_VIEWS_PATH}/${id}`, {
+      headers: await this.authHeaders(),
     });
     expect(response.ok(), `saved view ${id} was not deleted: ${response.status()} ${await response.text()}`).toBe(true);
+  }
+
+  /** Token of the logged-in page, for the API requests. */
+  private async authHeaders(): Promise<Record<string, string>> {
+    const token = await this.page.evaluate(() => localStorage.getItem("token"));
+    return { Authorization: `Bearer ${token}` };
   }
 }
 
@@ -115,7 +141,7 @@ function isSavedViewWrite(response: Response): boolean {
 }
 
 /** The id of the view a save request created: `{ response: { status, data: { id } } }`. */
-async function savedViewId(response: Response): Promise<string> {
+async function savedViewId(response: Pick<Response, "json">): Promise<string> {
   const body = (await response.json()) as { response?: { data?: { id?: string } } };
   const id = body.response?.data?.id;
   if (!id) {

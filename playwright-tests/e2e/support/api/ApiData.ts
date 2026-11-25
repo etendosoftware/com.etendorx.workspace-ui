@@ -109,9 +109,18 @@ export function fetchedRecordsFrom(body: unknown, entity: string): RecordValues[
   return records as RecordValues[];
 }
 
+/** Body that stores the grid configuration of one tab, as the UI sends it; `null` removes it. */
+export function gridConfigurationBody(
+  windowId: string,
+  tabId: string,
+  configuration: RecordValues | null
+): RecordValues {
+  return { windowId, tabId, configuration };
+}
+
 /** Body that removes the saved grid configuration of one tab, as the UI sends it (`configuration: null`). */
 export function gridConfigurationResetBody(windowId: string, tabId: string): RecordValues {
-  return { windowId, tabId, configuration: null };
+  return gridConfigurationBody(windowId, tabId, null);
 }
 
 /**
@@ -239,12 +248,20 @@ export class ApiData {
    * so the grid shows its defaults. The grid saves it by itself when it is sorted or rearranged.
    */
   async resetGridConfiguration(windowId: string, tabId: string): Promise<void> {
+    await this.setGridConfiguration(windowId, tabId, null);
+  }
+
+  /**
+   * Stores a grid configuration (column order, visibility, sort) for the user and a tab, as the grid does
+   * when the user rearranges or sorts it; `null` removes it.
+   */
+  async setGridConfiguration(windowId: string, tabId: string, configuration: RecordValues | null): Promise<void> {
     const response = await this.page.request.put(GRID_CONFIGURATION_PATH, {
       headers: await this.authHeaders(),
-      data: gridConfigurationResetBody(windowId, tabId),
+      data: gridConfigurationBody(windowId, tabId, configuration),
     });
     if (!response.ok()) {
-      throw new Error(`Resetting the grid configuration of tab ${tabId} failed: ${response.status()}`);
+      throw new Error(`Storing the grid configuration of tab ${tabId} failed: ${response.status()}`);
     }
   }
 

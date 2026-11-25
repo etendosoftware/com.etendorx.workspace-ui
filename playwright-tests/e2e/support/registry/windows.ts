@@ -76,6 +76,8 @@ export const WINDOWS = {
   // ── General setup ────────────────────────────────────────────────────────
   currency: { search: "currency", menuId: "102", breadcrumb: /Currency/i },
   countryAndRegion: { search: "country", menuId: "109", breadcrumb: /Country and Region/i },
+  /** Organizations of the client: the tab can show them as a tree. */
+  organization: { search: "organization", menuId: "149", breadcrumb: /Organization/i },
   processRequest: {
     search: "Process",
     menuId: "BE86736DF4AB4568A316A3922E6D6B7B",
@@ -101,6 +103,9 @@ export const WINDOW_IDS = {
   SALES_INVOICE: "167",
   /** Opened by no other regression spec: its window preferences reach no one else. */
   TAX_CATEGORY: "138",
+  UNIT_OF_MEASURE: "120",
+  ORGANIZATION: "110",
+  CURRENCY: "115",
 } as const;
 
 /**
@@ -142,4 +147,9 @@ export const TABS = {
   COUNTRY_REGION: "136",
   /** Accounts of an element in Account Tree, a tab that can show them as a tree. */
   ACCOUNT_TREE_ELEMENT_VALUE: "132",
+  UNIT_OF_MEASURE: "133",
+  /** Conversion rates of a currency, a child tab without display logic. */
+  CURRENCY_CONVERSION_RATES: "127",
+  /** Root tab of Organization, which can show the organizations as a tree. */
+  ORGANIZATION: "143",
 } as const;
