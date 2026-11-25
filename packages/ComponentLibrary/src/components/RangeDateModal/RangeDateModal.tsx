@@ -1,5 +1,5 @@
 import type React from "react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import CalendarIcon from "../../assets/icons/calendar.svg";
 import ChevronLeftIcon from "../../assets/icons/chevron-left.svg";
@@ -8,7 +8,7 @@ import ChevronDownIcon from "../../assets/icons/chevron-down.svg";
 import EraserIcon from "../../assets/icons/eraser.svg";
 import XIcon from "../../assets/icons/x.svg";
 import Button from "../Button/Button";
-import { formatBrowserDate, getLocaleDatePlaceholder } from "../../utils/dateFormatter";
+import { formatBrowserDate, getLocaleDatePlaceholder, toISODate } from "../../utils/dateFormatter";
 import { DATE_FILTER_MODE, type DateFilterMode, formatDateFilterLabel } from "./dateFilterSelection";
 import { type DateSelectionEdge, useDateFilterSelection } from "./useDateFilterSelection";
 
@@ -124,6 +124,7 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
   } = useDateFilterSelection({ isOpen, initialMode, initialStartDate, initialEndDate });
   const { mode, start: startDate, end: endDate } = selection;
   const isSingleMode = mode === DATE_FILTER_MODE.SINGLE;
+  const titleId = useId();
 
   // Refs for month and year selects
   const monthSelectRef = useRef<HTMLSelectElement>(null);
@@ -306,6 +307,7 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
 
           <button
             type="button"
+            data-testid={`DateRangeModal__day-${toISODate(currentDate)}`}
             onClick={() => handleDateClick(currentDate)}
             className={`
               relative h-8 w-8 flex items-center justify-center text-sm font-medium transition-all rounded-full
@@ -358,14 +360,18 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
         onKeyUp={(e) => (e.key === "Enter" ? onClose() : null)}
       />
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="bg-white rounded-xl shadow-2xl w-[650px] pointer-events-auto overflow-hidden">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          className="bg-white rounded-xl shadow-2xl w-[650px] pointer-events-auto overflow-hidden">
           {/* Header Modal */}
           <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 bg-white">
             <div className="flex items-center gap-2 text-gray-800">
               <div className="rounded-full bg-gray-100 p-2">
                 <CalendarIcon height={20} width={20} className="fill-(--color-baseline-80)" />
               </div>
-              <h2 className="text-lg font-semibold">{translate("dateModal.selectDates", "Select dates")}</h2>
+              <h2 id={titleId} className="text-lg font-semibold">{translate("dateModal.selectDates", "Select dates")}</h2>
             </div>
             <button
               type="button"
@@ -410,6 +416,7 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
                   <div className="relative w-20 flex justify-center items-center group hover:cursor-pointer transition-colors gap-1">
                     <select
                       ref={monthSelectRef}
+                      data-testid="DateRangeModal__month"
                       value={currentMonth.getMonth()}
                       onChange={handleMonthChange}
                       className="absolute inset-0 w-full h-full appearance-none bg-transparent text-lg text-(--color-baseline-80) cursor-pointer outline-none opacity-0">
@@ -435,6 +442,7 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
                   <div className="relative w-20 flex justify-center items-center group hover:cursor-pointer transition-colors gap-1">
                     <select
                       ref={yearSelectRef}
+                      data-testid="DateRangeModal__year"
                       value={currentMonth.getFullYear()}
                       onChange={handleYearChange}
                       className="absolute inset-0 w-full h-full appearance-none bg-transparent text-lg font-normal text-(--color-baseline-80) cursor-pointer outline-none opacity-0">
