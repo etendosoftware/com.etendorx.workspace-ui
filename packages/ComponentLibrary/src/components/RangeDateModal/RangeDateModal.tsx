@@ -371,7 +371,9 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
               <div className="rounded-full bg-gray-100 p-2">
                 <CalendarIcon height={20} width={20} className="fill-(--color-baseline-80)" />
               </div>
-              <h2 id={titleId} className="text-lg font-semibold">{translate("dateModal.selectDates", "Select dates")}</h2>
+              <h2 id={titleId} className="text-lg font-semibold">
+                {translate("dateModal.selectDates", "Select dates")}
+              </h2>
             </div>
             <button
               type="button"

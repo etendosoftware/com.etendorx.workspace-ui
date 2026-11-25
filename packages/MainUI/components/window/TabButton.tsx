@@ -173,7 +173,14 @@ export const TabButton = ({
       aria-label={title}
       className={baseClass}>
       {title}
-      {tab.tabLevel > 0 && <TabCountBadge tabId={tab.id} count={recordCount} hasMoreRecords={hasMoreRecords} />}
+      {tab.tabLevel > 0 && (
+        <TabCountBadge
+          tabId={tab.id}
+          count={recordCount}
+          hasMoreRecords={hasMoreRecords}
+          data-testid="TabCountBadge__48772b"
+        />
+      )}
     </button>
   );
 };

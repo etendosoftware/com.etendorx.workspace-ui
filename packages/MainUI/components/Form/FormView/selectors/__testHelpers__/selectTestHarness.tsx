@@ -42,8 +42,15 @@ export const selectField = {
 export function SelectHarness(props: Partial<SelectProps>) {
   const methods = useForm({ defaultValues: { [SELECT_FIELD_NAME]: "" } });
   return (
-    <FormProvider {...methods}>
-      <Select name={SELECT_FIELD_NAME} options={SELECT_OPTIONS} isReadOnly={false} field={selectField} {...props} />
+    <FormProvider {...methods} data-testid="FormProvider__3961d5">
+      <Select
+        name={SELECT_FIELD_NAME}
+        options={SELECT_OPTIONS}
+        isReadOnly={false}
+        field={selectField}
+        {...props}
+        data-testid="Select__3961d5"
+      />
     </FormProvider>
   );
 }
