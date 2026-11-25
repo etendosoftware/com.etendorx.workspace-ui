@@ -112,7 +112,7 @@ export const TabButton = ({
     // Child tabs follow the Design Kit "Solapa": 36px tall, 12px top radius, 2px bottom border when active. The strip stretches them to its full height, so the
     // active underline sits on the strip's bottom edge and cannot be clipped.
     const childClass =
-      "group flex h-9 self-end items-center gap-1 px-1 rounded-t-xl w-auto min-w-max flex-shrink-0 border-b-2 text-sm transition-colors appearance-none whitespace-nowrap";
+      "flex h-9 self-end items-center gap-1 px-1 rounded-t-xl w-auto min-w-max flex-shrink-0 border-b-2 text-sm transition-colors appearance-none whitespace-nowrap";
     if (active) {
       return `${childClass} border-(--ui-tab-active-line) font-semibold text-(--ui-text)`;
     }
@@ -178,7 +178,6 @@ export const TabButton = ({
           title={title}
           count={recordCount}
           hasMoreRecords={hasMoreRecords}
-          active={active}
           data-testid="ChildTabLabel__48772b"
         />
       ) : (
@@ -189,18 +188,23 @@ export const TabButton = ({
 };
 
 /**
- * Label of a child tab: its title and its record count. The tab always keeps room for the count, so the tab strip
- * never moves. While the count is hidden the title is centered in the tab; on hover, on keyboard focus and on the
- * active tab it slides to the side and the count appears (ETP-6431).
+ * Label of a child tab: its title and its record count (ETP-6431). The tab always keeps room for a count of two
+ * digits, so the tab strip does not move when the count arrives. Until the count is known the title is centered in
+ * the tab; once it is known the title slides aside and the count stays shown right after it.
  */
-export const CHILD_TAB_LABEL_CLASSES = "relative inline-flex items-center pr-12";
-const TITLE_CENTERED_CLASSES = "translate-x-6";
-const TITLE_SLIDE_CLASSES =
-  "transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-0 group-focus-visible:translate-x-0";
+export const CHILD_TAB_LABEL_CLASSES = "inline-flex items-center pr-7";
+const TITLE_CLASSES = "relative transition-transform duration-150 motion-reduce:transition-none";
+const TITLE_CENTERED_CLASSES = "translate-x-3.5";
 export const TAB_COUNT_BADGE_CLASSES =
-  "absolute right-0 top-1/2 -translate-y-1/2 flex h-5 min-w-6 items-center justify-center rounded-full bg-(--ui-hover) px-2 text-[11px] font-medium leading-4 tabular-nums text-(--ui-text-soft)";
-const BADGE_REVEAL_CLASSES =
-  "opacity-0 transition-opacity duration-150 motion-reduce:transition-none group-hover:opacity-100 group-focus-visible:opacity-100";
+  "absolute left-full top-1/2 ml-1 -translate-y-1/2 flex h-5 min-w-5 items-center justify-center rounded-full bg-(--ui-hover) px-1.5 text-[11px] font-medium leading-4 tabular-nums text-(--ui-text-soft)";
+
+/** Classes of the title: centered in the tab until its count is known. */
+export function getChildTabTitleClasses(hasCount: boolean): string {
+  if (hasCount) {
+    return TITLE_CLASSES;
+  }
+  return `${TITLE_CLASSES} ${TITLE_CENTERED_CLASSES}`;
+}
 
 interface ChildTabLabelProps {
   tabId: string;
@@ -208,36 +212,19 @@ interface ChildTabLabelProps {
   /** Records of the tab; undefined while it is unknown (tab not loaded yet, loading, or several parents selected). */
   count?: number;
   hasMoreRecords: boolean;
-  active: boolean;
 }
 
-/** Classes of the title and the count: shown on the active tab, revealed on hover and focus otherwise. */
-export function getChildTabLabelClasses(hasCount: boolean, active: boolean): { title: string; badge: string } {
-  if (!hasCount) {
-    return { title: TITLE_CENTERED_CLASSES, badge: "" };
-  }
-  if (active) {
-    return { title: "", badge: TAB_COUNT_BADGE_CLASSES };
-  }
-  return {
-    title: `${TITLE_CENTERED_CLASSES} ${TITLE_SLIDE_CLASSES}`,
-    badge: `${TAB_COUNT_BADGE_CLASSES} ${BADGE_REVEAL_CLASSES}`,
-  };
-}
-
-const ChildTabLabel = ({ tabId, title, count, hasMoreRecords, active }: ChildTabLabelProps) => {
-  const classes = getChildTabLabelClasses(count !== undefined, active);
-
-  return (
-    <span className={CHILD_TAB_LABEL_CLASSES}>
-      <span className={classes.title}>{title}</span>
+const ChildTabLabel = ({ tabId, title, count, hasMoreRecords }: ChildTabLabelProps) => (
+  <span className={CHILD_TAB_LABEL_CLASSES}>
+    <span className={getChildTabTitleClasses(count !== undefined)}>
+      {title}
       {count !== undefined && (
-        <span className={classes.badge} data-testid={`TabButton__count_${tabId}`}>
+        <span className={TAB_COUNT_BADGE_CLASSES} data-testid={`TabButton__count_${tabId}`}>
           {formatRecordCount(count, hasMoreRecords)}
         </span>
       )}
     </span>
-  );
-};
+  </span>
+);
 
 export default TabButton;

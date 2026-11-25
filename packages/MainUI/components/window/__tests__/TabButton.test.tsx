@@ -73,17 +73,17 @@ describe("TabButton", () => {
       expect(renderWithCount(101, true)).toHaveTextContent(/^101\+$/);
     });
 
-    // ETP-6431: the tab keeps room for the count; the title is centered and slides to reveal the count.
-    const renderTab = ({ tab = mockTab, active = false } = {}) => {
+    // ETP-6431: the tab keeps room for the count; the title is centered until the count is known.
+    const renderTab = () => {
       render(
         <TabButton
-          tab={tab as unknown as Tab}
+          tab={mockTab as unknown as Tab}
           onClick={mockOnClick}
           onDoubleClick={mockOnDoubleClick}
-          active={active}
+          active={false}
         />
       );
-      return { badge: screen.queryByTestId(`TabButton__count_${tab.id}`), title: screen.getByText(tab.name) };
+      return { badge: screen.queryByTestId(`TabButton__count_${mockTab.id}`), title: screen.getByText(mockTab.name) };
     };
     const setCount = (count: number) =>
       act(() => useTabCountsStore.getState().setCount(getTabCountKey(WINDOW_IDENTIFIER, mockTab.id), count, false));
@@ -93,36 +93,28 @@ describe("TabButton", () => {
 
       expect(badge).toBeNull();
       expect(title.parentElement).toHaveClass(...CHILD_TAB_LABEL_CLASSES.split(" "));
-      expect(title).toHaveClass("translate-x-6");
+      expect(title).toHaveClass("translate-x-3.5");
     });
 
-    it("reveals the count of an inactive tab on hover and keyboard focus", () => {
+    it("keeps the count shown right after the title once it is known", () => {
       setCount(7);
       const { badge, title } = renderTab();
 
       expect(badge).toHaveTextContent(/^7$/);
-      expect(badge).toHaveClass("opacity-0", "group-hover:opacity-100", "group-focus-visible:opacity-100");
-      expect(title).toHaveClass("translate-x-6", "group-hover:translate-x-0");
-      expect(screen.getByRole("button")).toHaveClass("group");
+      expect(badge).toBeVisible();
+      expect(badge?.parentElement).toBe(title);
+      expect(title).not.toHaveClass("translate-x-3.5");
     });
 
-    it("always shows the count of the active tab, with the title moved aside", () => {
-      setCount(3);
-      const { badge, title } = renderTab({ active: true });
-
-      expect(badge).not.toHaveClass("opacity-0");
-      expect(title).not.toHaveClass("translate-x-6");
-    });
-
-    it("centers the title again when the count is cleared", () => {
-      setCount(3);
+    it("slides the title aside when the count arrives and centers it again when it is cleared", () => {
       const { title } = renderTab();
+      setCount(3);
+      expect(title).not.toHaveClass("translate-x-3.5");
 
       act(() => useTabCountsStore.getState().clearCount(getTabCountKey(WINDOW_IDENTIFIER, mockTab.id)));
 
       expect(screen.queryByTestId(`TabButton__count_${mockTab.id}`)).toBeNull();
-      expect(title).toHaveClass("translate-x-6");
-      expect(title).not.toHaveClass("group-hover:translate-x-0");
+      expect(title).toHaveClass("translate-x-3.5");
     });
 
     it("shows no count on the header tab", () => {
