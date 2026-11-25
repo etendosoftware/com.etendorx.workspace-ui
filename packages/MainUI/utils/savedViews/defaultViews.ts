@@ -22,6 +22,7 @@
  */
 
 import { useUserStore } from "@/stores/userStore";
+import { useWindowStore } from "@/stores/windowStore";
 import { logger } from "@/utils/logger";
 import { loadWindowGridConfiguration, preloadWindowGridConfiguration } from "@/utils/savedViews/gridConfiguration";
 import { createPreloadCache } from "@/utils/savedViews/preload";
@@ -139,13 +140,20 @@ export const prefetchWindowViewSettings = (windowIdentifier: string): void => {
 };
 
 /**
+ * Whether the window is already open: its entry stays under the pointer after the click, and hovering it again
+ * must not ask for what the open window already read.
+ */
+const isWindowOpen = (windowId: string): boolean =>
+  Object.values(useWindowStore.getState().windows).some((window) => window.windowId === windowId);
+
+/**
  * Starts loading the default views and the stored column configuration of a window the user is about to open
  * (hovering it in the menu, the recent items or the favorites), so its opening does not wait for them. The next
  * opening takes them if they are recent (`PRELOAD_MAX_AGE_MS`); otherwise it asks again.
  */
 export const preloadWindowViewSettings = (windowId: string): void => {
   const token = useUserStore.getState().token;
-  if (!token || isExternalPageWindowId(windowId)) return;
+  if (!token || isExternalPageWindowId(windowId) || isWindowOpen(windowId)) return;
   preloadedDefaultViews.preload(windowId, () => fetchWindowDefaultViews(windowId, token));
   preloadWindowGridConfiguration(windowId);
 };

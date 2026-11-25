@@ -37,6 +37,8 @@ import {
 jest.mock("@/utils/logger");
 jest.mock("@/utils/session/resetSessionState");
 jest.mock("@/stores/userStore", () => ({ useUserStore: { getState: jest.fn() } }));
+const mockWindowStoreState: { windows: Record<string, { windowId: string }> } = { windows: {} };
+jest.mock("@/stores/windowStore", () => ({ useWindowStore: { getState: () => mockWindowStoreState } }));
 jest.mock("../gridConfiguration", () => ({
   loadWindowGridConfiguration: jest.fn(),
   preloadWindowGridConfiguration: jest.fn(),
@@ -247,6 +249,15 @@ describe("preloadWindowViewSettings", () => {
     await loadTabDefaultView(nextWindow(), DEFAULT_VIEW_TAB_ID);
 
     expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("loads nothing for a window that is already open", () => {
+    mockWindowStoreState.windows = { [`${WINDOW_ID}_1`]: { windowId: WINDOW_ID } };
+
+    preloadWindowViewSettings(WINDOW_ID);
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    mockWindowStoreState.windows = {};
   });
 
   it.each([
