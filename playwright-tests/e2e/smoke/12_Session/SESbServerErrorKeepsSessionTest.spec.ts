@@ -1,10 +1,16 @@
 import { expect, test } from "../../support/fixtures";
+import { selectSampleOrder } from "../../support/flows/sampleOrders";
 import { answerWithStatus } from "../../support/network";
+import { SAMPLE_DOCUMENT } from "../../support/registry/data";
 import { WINDOWS } from "../../support/registry/windows";
 
 /** Requests answered with a simulated status: the grid configuration of a window and the grid data. */
 const GRID_CONFIGURATION = /\/api\/erp\/meta\/grid-configuration/;
 const GRID_DATA = /\/api\/datasource(\?|$)/;
+/** The session of the user, read through the API client when the application loads. */
+const SESSION = /\/api\/erp\/meta\/session/;
+/** A request made outside the API clients (through `sessionAwareFetch`): the email configuration of a record. */
+const EMAIL_CONFIGURATION = /\/api\/erp\/meta\/email\/config/;
 const SERVER_ERROR = 500;
 const UNAUTHORIZED = 401;
 
@@ -24,20 +30,29 @@ test.describe("Session - server errors keep the session @smoke @session", () => 
   test("shows a server error in a toast and keeps the user on the same screen", async ({ app, page }) => {
     const failure = await answerWithStatus(page, GRID_CONFIGURATION, SERVER_ERROR);
 
-    await app.sidebar.navigateTo("businessPartner");
-
-    await app.toast.expectError(SERVER_ERROR_TOAST);
+    // The failure can already come from the preload on hover: wait for the toast while the window opens, it
+    // dismisses itself after a few seconds
+    await Promise.all([app.toast.expectError(SERVER_ERROR_TOAST), app.sidebar.navigateTo("businessPartner")]);
     expect(failure.sent).toBe(true);
     await app.auth.expectStillLoggedIn();
     await app.breadcrumb.waitFor(WINDOW.breadcrumb);
   });
 
   test("closes the session with its message on a 401", async ({ app, page }) => {
-    const rejection = await answerWithStatus(page, GRID_CONFIGURATION, UNAUTHORIZED);
+    const rejection = await answerWithStatus(page, SESSION, UNAUTHORIZED);
 
-    // Hovering a menu entry preloads the grid configuration of its window: the rejected request
-    await app.sidebar.search(WINDOW.search);
-    await app.sidebar.menuEntry(WINDOW.menuId).hover();
+    // The session is read again on every load, through the API client
+    await page.reload();
+
+    await app.auth.expectLoggedOutWith(GENERIC_LOGOUT);
+    expect(rejection.sent).toBe(true);
+  });
+
+  test("closes the session on a 401 from a request made outside the API clients", async ({ app, page }) => {
+    await selectSampleOrder(app, SAMPLE_DOCUMENT.SALES_ORDER_COMPLETED);
+    const rejection = await answerWithStatus(page, EMAIL_CONFIGURATION, UNAUTHORIZED);
+
+    await app.toolbar.button("send-mail").click();
 
     await app.auth.expectLoggedOutWith(GENERIC_LOGOUT);
     expect(rejection.sent).toBe(true);

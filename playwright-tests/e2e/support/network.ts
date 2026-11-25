@@ -36,3 +36,29 @@ export async function answerWithStatus(page: Page, url: RegExp, status: number):
   });
   return state;
 }
+
+/** A file a simulated answer downloads. */
+export interface SimulatedFile {
+  contentType: string;
+  fileName: string;
+  body: string;
+}
+
+/**
+ * Answers every request whose URL matches `url` with a file download, and records that it was attempted. For
+ * documents the local server cannot generate (a Jasper report on a server that cannot compile it): the spec still
+ * checks the request the UI sends and the download it makes.
+ */
+export async function answerWithFile(page: Page, url: RegExp, file: SimulatedFile): Promise<BlockedRequest> {
+  const state = { sent: false };
+  await page.route(url, (route) => {
+    state.sent = true;
+    return route.fulfill({
+      status: 200,
+      contentType: file.contentType,
+      headers: { "Content-Disposition": `attachment; filename="${file.fileName}"` },
+      body: file.body,
+    });
+  });
+  return state;
+}
