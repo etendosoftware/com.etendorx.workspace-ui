@@ -16,6 +16,7 @@
  *************************************************************************
  */
 
+import { useEffect } from "react";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useDatasource } from "../useDatasource";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
@@ -101,6 +102,52 @@ describe("useDatasource hook", () => {
     // The retried request carried the filter criteria (the whole point of the fix).
     const secondCallParams = (datasource.get as jest.Mock).mock.calls[1][1];
     expect(JSON.stringify(secondCallParams)).toContain("Order 1");
+  });
+
+  describe("first load after skipping", () => {
+    interface SkipProps {
+      skip: boolean;
+      pageSize: number;
+    }
+
+    /** Renders the hook skipped, recording the `loading` of every committed render (a discarded one never shows). */
+    const renderSkipped = (pageSize: number) => {
+      const loadingEveryRender: boolean[] = [];
+      const hook = renderHook(
+        ({ skip, pageSize: size }: SkipProps) => {
+          const value = useDatasource({ entity: mockEntity, skip, params: { pageSize: size } });
+          useEffect(() => {
+            loadingEveryRender.push(value.loading);
+          });
+          return value;
+        },
+        { initialProps: { skip: true, pageSize } }
+      );
+      return { ...hook, loadingEveryRender };
+    };
+
+    it("shows as loading from the render that stops skipping, before the fetch effect runs", async () => {
+      const { result, rerender, loadingEveryRender } = renderSkipped(100);
+      expect(result.current.loading).toBe(false);
+
+      loadingEveryRender.length = 0;
+      rerender({ skip: false, pageSize: 100 });
+
+      expect(loadingEveryRender[0]).toBe(true);
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      expect(datasource.get).toHaveBeenCalledTimes(1);
+    });
+
+    it("asks for the page size the params have when it stops skipping, in a single request", async () => {
+      const { result, rerender } = renderSkipped(100);
+
+      // e.g. the default view switched the tab to a tree, whose page size is the tree fetch limit
+      rerender({ skip: false, pageSize: 200 });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(datasource.get).toHaveBeenCalledTimes(1);
+      expect((datasource.get as jest.Mock).mock.calls[0][1]).toEqual(expect.objectContaining({ pageSize: 200 }));
+    });
   });
 
   it("exposes the params of the current query without paging", async () => {

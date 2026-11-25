@@ -226,6 +226,14 @@ export function useDatasource({
   }, [searchQuery, activeColumnFilters]);
 
   const [loading, setLoading] = useState(!skip);
+  // When the grid stops skipping (its parent got a record, or its initial view is applied) the first load is due:
+  // it shows as loading from that very render, not only once the fetch effect runs. In between, a render with
+  // no rows, `loading` false and `hasMoreRecords` true would ask for a next page before the first one.
+  const [wasSkipped, setWasSkipped] = useState(skip);
+  if (wasSkipped !== skip) {
+    setWasSkipped(skip);
+    if (!skip) setLoading(true);
+  }
   const [loaded, setLoaded] = useState(false);
   // Distinct from `loaded` — that one is also flipped true while `skip` is
   // active so consumers don't show a spinner during the skip phase. This flag
@@ -300,6 +308,10 @@ export function useDatasource({
       setPageSize(params.pageSize);
     }
   }, [params.pageSize, pageSize]);
+
+  // Each request uses the page size of the current params (e.g. the tree fetch limit once the tab shows a tree):
+  // the state above only catches up in an effect, after a request with the previous size was already sent.
+  const requestPageSize = params.pageSize || pageSize;
 
   const reinit = useCallback(() => {
     setRecords([]);
@@ -411,7 +423,7 @@ export function useDatasource({
       }
 
       fetchInProgressRef.current = true;
-      const safePageSize = pageSize ?? 1000;
+      const safePageSize = requestPageSize ?? 1000;
       const startRow = targetPage === 1 ? 0 : nextStartRowRef.current;
 
       try {
@@ -480,7 +492,7 @@ export function useDatasource({
     [
       entity,
       page,
-      pageSize,
+      requestPageSize,
       queryParams,
       memoizedTreeOptions,
       isImplicitFilterApplied,
@@ -514,7 +526,7 @@ export function useDatasource({
     // Compute a key that represents "what data" we want, independent of page.
     // activeColumnFilters and searchQuery are already baked into queryParams so
     // they don't need to be listed separately in the dependency array.
-    const queryKey = `${entity}|${pageSize}|${JSON.stringify(queryParams)}|${JSON.stringify(memoizedTreeOptions)}|${String(isImplicitFilterApplied)}`;
+    const queryKey = `${entity}|${requestPageSize}|${JSON.stringify(queryParams)}|${JSON.stringify(memoizedTreeOptions)}|${String(isImplicitFilterApplied)}`;
     const queryChanged = queryKey !== prevQueryKeyRef.current;
     prevQueryKeyRef.current = queryKey;
 
@@ -536,7 +548,7 @@ export function useDatasource({
       setLoading(true);
       fetchData();
     }
-  }, [entity, page, pageSize, queryParams, skip, memoizedTreeOptions, isImplicitFilterApplied]);
+  }, [entity, page, requestPageSize, queryParams, skip, memoizedTreeOptions, isImplicitFilterApplied]);
 
   const refetch = useCallback(
     async (options?: { silent?: boolean }) => {
