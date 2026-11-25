@@ -17,7 +17,8 @@ Jira: ETP-6019, ETP-6005.
 ### Behavior
 
 `logout()` in [`contexts/user.tsx`](../../../packages/MainUI/contexts/user.tsx) runs on every logout
-path: the user menu, an expired session (keep-alive), the 401/500 interceptor, a failed save and the
+path: the user menu, an expired session (keep-alive), a 401 from any request
+([Session and server errors](../session-error-handling/README.md)), a failed save and the
 expired-password screen. Besides clearing the user store and the client tokens, it now:
 
 - calls `resetSessionState()` ([`utils/session/resetSessionState.ts`](../../../packages/MainUI/utils/session/resetSessionState.ts));

@@ -47,7 +47,7 @@ sequenceDiagram
 |---|---|
 | `utils/PasswordExpirationUtils.java` | The expiration rule, in one place |
 | `builders/SessionBuilder.java` | Adds `passwordExpired` and `currentLanguage` to the `/meta/session` payload |
-| `http/BaseWebService.java` | Guard: every HTTP verb goes through `dispatch`, which rejects the request with `401` while the password is expired |
+| `http/BaseWebService.java` | Guard: every HTTP verb goes through `dispatch`, which rejects the request with a JSON `401` (`{"error":"PasswordExpired"}`) while the password is expired. It writes the response itself: a thrown exception became a `500` in the Secure Web Services servlet (fixed in ETP-6311, see [Session and server errors](../session-error-handling/README.md)) |
 | `utils/Constants.java` | `PASSWORD_EXPIRED_ALLOWED_PATHS` and `PASSWORD_EXPIRED_ERROR` |
 
 ### Guard allowlist
