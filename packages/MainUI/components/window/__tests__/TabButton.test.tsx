@@ -1,6 +1,6 @@
 import { act, render, screen, fireEvent } from "@testing-library/react";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
-import { TabButton } from "../TabButton";
+import { CHILD_TAB_LABEL_CLASSES, TabButton } from "../TabButton";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useWindowStore } from "@/stores/windowStore";
 import { getTabCountKey, useTabCountsStore } from "@/stores/tabCountsStore";
@@ -73,41 +73,68 @@ describe("TabButton", () => {
       expect(renderWithCount(101, true)).toHaveTextContent(/^101\+$/);
     });
 
-    // ETP-6431: the badge keeps its place while the count is unknown, so the tab strip does not move.
-    const renderBadge = (tab = mockTab) => {
+    // ETP-6431: the tab keeps room for the count; the title is centered and slides to reveal the count.
+    const renderTab = ({ tab = mockTab, active = false } = {}) => {
       render(
-        <TabButton tab={tab as unknown as Tab} onClick={mockOnClick} onDoubleClick={mockOnDoubleClick} active={false} />
+        <TabButton
+          tab={tab as unknown as Tab}
+          onClick={mockOnClick}
+          onDoubleClick={mockOnDoubleClick}
+          active={active}
+        />
       );
-      return screen.queryByTestId(`TabButton__count_${tab.id}`);
+      return { badge: screen.queryByTestId(`TabButton__count_${tab.id}`), title: screen.getByText(tab.name) };
     };
+    const setCount = (count: number) =>
+      act(() => useTabCountsStore.getState().setCount(getTabCountKey(WINDOW_IDENTIFIER, mockTab.id), count, false));
 
-    it("reserves an empty badge while the count of a child tab is unknown", () => {
-      const badge = renderBadge();
-      expect(badge).toBeEmptyDOMElement();
-      expect(badge).toHaveAttribute("data-loading", "true");
-      expect(badge).toHaveAttribute("aria-hidden", "true");
+    it("keeps the title centered in the room of the count while the count is unknown", () => {
+      const { badge, title } = renderTab();
+
+      expect(badge).toBeNull();
+      expect(title.parentElement).toHaveClass(...CHILD_TAB_LABEL_CLASSES.split(" "));
+      expect(title).toHaveClass("translate-x-6");
     });
 
-    it("gives the placeholder and the count the same reserved width", () => {
-      const placeholder = renderBadge();
-      const placeholderWidth = placeholder?.className.match(/min-w-\S+/)?.[0];
-      act(() => useTabCountsStore.getState().setCount(getTabCountKey(WINDOW_IDENTIFIER, mockTab.id), 7, false));
-      const counted = screen.getByTestId(`TabButton__count_${mockTab.id}`);
-      expect(counted).toHaveTextContent(/^7$/);
-      expect(counted).not.toHaveAttribute("data-loading");
-      expect(counted.className).toContain(placeholderWidth);
+    it("reveals the count of an inactive tab on hover and keyboard focus", () => {
+      setCount(7);
+      const { badge, title } = renderTab();
+
+      expect(badge).toHaveTextContent(/^7$/);
+      expect(badge).toHaveClass("opacity-0", "group-hover:opacity-100", "group-focus-visible:opacity-100");
+      expect(title).toHaveClass("translate-x-6", "group-hover:translate-x-0");
+      expect(screen.getByRole("button")).toHaveClass("group");
     });
 
-    it("goes back to the placeholder when the count is cleared", () => {
-      const key = getTabCountKey(WINDOW_IDENTIFIER, mockTab.id);
-      useTabCountsStore.getState().setCount(key, 3, false);
-      renderBadge();
-      act(() => useTabCountsStore.getState().clearCount(key));
-      expect(screen.getByTestId(`TabButton__count_${mockTab.id}`)).toHaveAttribute("data-loading", "true");
+    it("always shows the count of the active tab, with the title moved aside", () => {
+      setCount(3);
+      const { badge, title } = renderTab({ active: true });
+
+      expect(badge).not.toHaveClass("opacity-0");
+      expect(title).not.toHaveClass("translate-x-6");
     });
 
-    it("shows no badge on the header tab", () => {
-      expect(renderBadge({ ...mockTab, tabLevel: 0 })).toBeNull();
+    it("centers the title again when the count is cleared", () => {
+      setCount(3);
+      const { title } = renderTab();
+
+      act(() => useTabCountsStore.getState().clearCount(getTabCountKey(WINDOW_IDENTIFIER, mockTab.id)));
+
+      expect(screen.queryByTestId(`TabButton__count_${mockTab.id}`)).toBeNull();
+      expect(title).toHaveClass("translate-x-6");
+      expect(title).not.toHaveClass("group-hover:translate-x-0");
+    });
+
+    it("shows no count on the header tab", () => {
+      render(
+        <TabButton
+          tab={{ ...mockTab, tabLevel: 0 } as unknown as Tab}
+          onClick={mockOnClick}
+          onDoubleClick={mockOnDoubleClick}
+          active={false}
+        />
+      );
+      expect(screen.queryByTestId(`TabButton__count_${mockTab.id}`)).toBeNull();
     });
   });
 
