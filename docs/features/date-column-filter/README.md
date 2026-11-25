@@ -107,5 +107,14 @@ ambiguous `dd/mm` or `mm/dd` value.
 | `packages/MainUI/utils/table/filters/dateColumnFilter.ts` | Resolves typed text into a date, an expression or invalid |
 | `packages/api-client/src/utils/search-utils.ts` | Criteria builder (unchanged) |
 
+## End-to-end check
+
+`playwright-tests/e2e/regression/10_Grid/GRDmDateColumnFilterTest.spec.ts` (`@regression`) runs on the "Valid From
+Date" column of Conversion Rates, a maintenance window without implicit filter whose sample rates are dated in
+the past. It covers one date, a range with both ends included, typed "From"/"To", a date typed in the column, and
+an invalid date that is reported and never applied. The "Select dates" window is a `dialog` named by its title; the
+month and year lists and the days of the shown month have stable test ids (`DateRangeModal__month`,
+`DateRangeModal__year`, `DateRangeModal__day-YYYY-MM-DD`), used by `support/components/DateFilter.ts`.
+
 Related: [Column filters](../column-filters/README.md),
 [Grid paging and record count](../grid-paging-and-record-count/README.md).
