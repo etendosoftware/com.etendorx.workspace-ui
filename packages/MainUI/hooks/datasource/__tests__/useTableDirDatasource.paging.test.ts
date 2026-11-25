@@ -20,7 +20,7 @@ import { useFormContext } from "react-hook-form";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useTabContext } from "@/contexts/tab";
-import { useTableDirDatasource } from "../useTableDirDatasource";
+import { runPendingSearch, useTableDirDatasource } from "../useTableDirDatasource";
 
 jest.mock("@/contexts/tab");
 jest.mock("react-hook-form");
@@ -103,5 +103,64 @@ describe("useTableDirDatasource — paging (ETP-6303)", () => {
 
     expect(lastRange().startRow).toBe("0");
     expect(optionIds(result.current.records)).toEqual(["1", "2", "3"]);
+  });
+});
+
+describe("useTableDirDatasource — search typed during a load (ETP-6431)", () => {
+  const SEARCH_TERM = "alpha";
+  const postedBodies = () => (datasource.client.post as jest.Mock).mock.calls.map(([, body]) => JSON.stringify(body));
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useTabContext as jest.Mock).mockReturnValue({ tab: null, parentTab: null, parentRecord: null });
+    (useFormContext as jest.Mock).mockReturnValue({ watch: jest.fn(), getValues: jest.fn(() => ({})) });
+  });
+
+  it("runs the search once the running load ends, instead of dropping it", async () => {
+    let finishFirstLoad: (value: unknown) => void = () => undefined;
+    const firstLoad = new Promise((resolve) => {
+      finishFirstLoad = resolve;
+    });
+    (datasource.client.post as jest.Mock).mockReturnValueOnce(firstLoad).mockResolvedValueOnce(answer(["A"]));
+    const { result } = renderHook(() =>
+      useTableDirDatasource({ field: FIELD, pageSize: PAGE_SIZE, initialPageSize: PAGE_SIZE })
+    );
+
+    let refetching: Promise<void> = Promise.resolve();
+    act(() => {
+      refetching = result.current.refetch();
+    });
+    act(() => result.current.search(SEARCH_TERM));
+    expect(datasource.client.post).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      finishFirstLoad(answer(["1", "2", "3"]));
+      await refetching;
+    });
+
+    expect(datasource.client.post).toHaveBeenCalledTimes(2);
+    expect(postedBodies()[1]).toContain(SEARCH_TERM);
+    expect(optionIds(result.current.records)).toEqual(["A"]);
+    expect(result.current.loading).toBe(false);
+  });
+
+  it("runs a pending search only once and forgets it", () => {
+    const fetch = jest.fn(() => Promise.resolve());
+    const pendingSearchRef = { current: { value: "V", term: SEARCH_TERM } };
+
+    runPendingSearch(pendingSearchRef, fetch);
+    runPendingSearch(pendingSearchRef, fetch);
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith("V", true, SEARCH_TERM);
+    expect(pendingSearchRef.current).toBeNull();
+  });
+
+  it("does nothing without a pending search", () => {
+    const fetch = jest.fn(() => Promise.resolve());
+
+    runPendingSearch({ current: null }, fetch);
+
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

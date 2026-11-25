@@ -147,6 +147,31 @@ export const buildSelectorContextFormValues = (
   );
 };
 
+/** A search typed while another load was running, with the field value it was typed for. */
+interface PendingSearch<V> {
+  value: V;
+  term: string;
+}
+
+/** The fetch of the options: `reset` starts over from the first page, `search` filters them. */
+type FetchOptions<V> = (currentValue: V, reset?: boolean, search?: string) => Promise<void>;
+
+/**
+ * Runs the search left pending by a load that has just ended, once, and forgets it.
+ *
+ * @param pendingSearchRef - Holds the pending search, if any
+ * @param fetch - Fetch of the options
+ */
+export function runPendingSearch<V>(
+  pendingSearchRef: { current: PendingSearch<V> | null },
+  fetch: FetchOptions<V> | null
+): void {
+  const pending = pendingSearchRef.current;
+  if (!pending || !fetch) return;
+  pendingSearchRef.current = null;
+  fetch(pending.value, true, pending.term);
+}
+
 export const useTableDirDatasource = ({
   field,
   pageSize = 75,
@@ -172,6 +197,9 @@ export const useTableDirDatasource = ({
   const [searchTerm, setSearchTerm] = useState("");
   const value = useWatch({ name: field.hqlName });
   const fetchInProgressRef = useRef(false);
+  /** Latest search typed while another load was running; it runs as soon as that load ends (ETP-6431). */
+  const pendingSearchRef = useRef<PendingSearch<typeof value> | null>(null);
+  const fetchRef = useRef<FetchOptions<typeof value> | null>(null);
   // Server rows loaded so far: the next page starts right after them, as in Classic (its `_endRow` is inclusive,
   // so a page holds pageSize + 1 rows and a page number would point at the last row of the previous page).
   const nextStartRowRef = useRef(0);
@@ -714,6 +742,7 @@ export const useTableDirDatasource = ({
       } finally {
         setLoading(false);
         fetchInProgressRef.current = false;
+        runPendingSearch(pendingSearchRef, fetchRef.current);
       }
     },
     [
@@ -727,6 +756,7 @@ export const useTableDirDatasource = ({
       handleStaticOptionsSearch,
     ]
   );
+  fetchRef.current = fetch;
 
   const search = useCallback(
     (term: string) => {
@@ -736,6 +766,11 @@ export const useTableDirDatasource = ({
         return;
       }
       setSearchTerm(term);
+      if (fetchInProgressRef.current) {
+        // The running load would drop this search and leave "No options found": run it once the load ends.
+        pendingSearchRef.current = { value, term };
+        return;
+      }
       fetch(value, true, term);
     },
     [fetch, value, minSearchChars]
