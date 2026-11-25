@@ -39,6 +39,11 @@ export const DATASOURCE = {
   PRODUCT_CATEGORY: { entity: "ProductCategory", windowId: "144", tabId: "189" },
   SALES_ORDER: { entity: "Order", windowId: WINDOW_IDS.SALES_ORDER, tabId: TABS.SALES_ORDER_HEADER },
   PURCHASE_ORDER: { entity: "Order", windowId: "181", tabId: "294" },
+  CONVERSION_RATE: {
+    entity: "CurrencyConversionRate",
+    windowId: WINDOW_IDS.CONVERSION_RATES,
+    tabId: TABS.CONVERSION_RATE,
+  },
   SALES_INVOICE: { entity: "Invoice", windowId: WINDOW_IDS.SALES_INVOICE, tabId: TABS.SALES_INVOICE_HEADER },
   SALES_INVOICE_LINE: { entity: "InvoiceLine", windowId: WINDOW_IDS.SALES_INVOICE, tabId: TABS.SALES_INVOICE_LINES },
   PRODUCT: { entity: "Product", windowId: WINDOW_IDS.PRODUCT, tabId: TABS.PRODUCT_HEADER },

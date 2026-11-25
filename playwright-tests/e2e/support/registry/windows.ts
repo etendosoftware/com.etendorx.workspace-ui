@@ -75,6 +75,8 @@ export const WINDOWS = {
 
   // ── General setup ────────────────────────────────────────────────────────
   currency: { search: "currency", menuId: "102", breadcrumb: /Currency/i },
+  /** Conversion rates of every currency: a maintenance window (no implicit filter) with sample rates dated 2009–2015. */
+  conversionRates: { search: "conversion", menuId: "103", breadcrumb: /Conversion Rates/i },
   countryAndRegion: { search: "country", menuId: "109", breadcrumb: /Country and Region/i },
   /** Organizations of the client: the tab can show them as a tree. */
   organization: { search: "organization", menuId: "149", breadcrumb: /Organization/i },
@@ -106,6 +108,7 @@ export const WINDOW_IDS = {
   UNIT_OF_MEASURE: "120",
   ORGANIZATION: "110",
   CURRENCY: "115",
+  CONVERSION_RATES: "116",
 } as const;
 
 /**
@@ -150,6 +153,8 @@ export const TABS = {
   UNIT_OF_MEASURE: "133",
   /** Conversion rates of a currency, a child tab without display logic. */
   CURRENCY_CONVERSION_RATES: "127",
+  /** Root tab of Conversion Rates: its "Valid From Date" column is a date filter. */
+  CONVERSION_RATE: "198",
   /** Root tab of Organization, which can show the organizations as a tree. */
   ORGANIZATION: "143",
 } as const;
