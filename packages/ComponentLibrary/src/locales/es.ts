@@ -677,6 +677,12 @@ const es = {
     from: "Desde",
     to: "Hasta",
     clearFilters: "Borrar filtros",
+    oneDate: "Una fecha",
+    range: "Rango",
+    date: "Fecha",
+    invalidDate: "Fecha no válida",
+    summary: "Filtra",
+    noFilter: "Sin filtro de fecha",
     months: [
       "Enero",
       "Febrero",

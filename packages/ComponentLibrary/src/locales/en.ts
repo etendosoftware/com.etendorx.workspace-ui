@@ -667,6 +667,12 @@ const en = {
     from: "From",
     to: "To",
     clearFilters: "Clear filters",
+    oneDate: "One date",
+    range: "Range",
+    date: "Date",
+    invalidDate: "Invalid date",
+    summary: "Filters",
+    noFilter: "No date filter",
     months: [
       "January",
       "February",
