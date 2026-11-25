@@ -69,6 +69,8 @@ docs/
 │   ├── grid-default-sort/            # Feature: Grid default sort as classic (order-by clause or default field)
 │   ├── grid-paging-and-record-count/   # Feature: Grid paging without repeated records and the N+ record count
 │   │   └── README.md                # _orderBy as classic, defaultSortField, sort indicator, manual sort precedence
+│   ├── date-column-filter/           # Feature: Date column filter (one date, range, typed dates)
+│   │   └── README.md                # One date / Range switch, typed-date parsing, filter value, Classic differences
 │   ├── sr-tabs/                      # Feature: Single Record (SR) child tabs
 │   │   └── README.md                # 1:1, logical, no-link and same-table variants, criteria and auto-open
 │   ├── property-fields/              # Feature: Grid columns of property fields (related-record paths)
