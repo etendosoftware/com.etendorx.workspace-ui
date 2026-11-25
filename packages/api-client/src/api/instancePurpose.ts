@@ -33,7 +33,7 @@ export interface InstancePurposeState {
 
 /** Reads whether the instance purpose has to be configured by the current session, and its current value. */
 export async function fetchInstancePurpose(): Promise<InstancePurposeState> {
-  const response = await Metadata.client.request(INSTANCE_PURPOSE_PATH, { method: "GET" });
+  const response = await Metadata.client.request(INSTANCE_PURPOSE_PATH, { method: "GET", handlesOwnError: true });
   if (!response.ok) {
     throw new Error(`Failed to fetch the instance purpose: ${response.status}`);
   }
@@ -46,6 +46,7 @@ export async function saveInstancePurpose(purpose: InstancePurposeValue): Promis
     method: "POST",
     body: JSON.stringify({ purpose }),
     headers: { "Content-Type": "application/json" },
+    handlesOwnError: true,
   });
   if (!response.ok) {
     throw new Error(`Failed to save the instance purpose: ${response.status}`);

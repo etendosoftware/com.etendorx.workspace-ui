@@ -17,6 +17,7 @@
 
 import { Metadata } from "../metadata";
 import { API_ERP_PROXY, API_KERNEL_SERVLET } from "../constants";
+import { WindowAccessDeniedError } from "../errors";
 
 jest.mock("../cache", () => {
   return {
@@ -182,7 +183,7 @@ describe("Metadata", () => {
       } as any);
 
       const result = await Metadata.getWindow("win1");
-      expect(spyRequest).toHaveBeenCalledWith("meta/window/win1");
+      expect(spyRequest).toHaveBeenCalledWith("meta/window/win1", { handlesOwnError: true });
       expect(result).toEqual(mockWindow);
       // Expect default role suffix when no role is set
       expect(Metadata.getCachedWindow("win1")).toEqual(mockWindow);
@@ -195,6 +196,14 @@ describe("Metadata", () => {
     it("should throw error if window not found", async () => {
       jest.spyOn(Metadata.client, "request").mockResolvedValue({ ok: false } as any);
       await expect(Metadata.getWindow("invalid")).rejects.toThrow("Window not found");
+    });
+
+    it.each([
+      ["403 answered by the ERP when the role has no access", 403],
+      ["401 answered by older backends", 401],
+    ])("throws WindowAccessDeniedError on a %s", async (_label, status) => {
+      jest.spyOn(Metadata.client, "request").mockResolvedValue({ ok: false, status } as any);
+      await expect(Metadata.getWindow("denied")).rejects.toBeInstanceOf(WindowAccessDeniedError);
     });
   });
 

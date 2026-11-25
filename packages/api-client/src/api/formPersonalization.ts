@@ -89,6 +89,8 @@ export interface SaveFormPersonalizationParams {
 export async function fetchFormPersonalization(tabId: string): Promise<FormPersonalizationState> {
   const response = await Metadata.client.request(`${FORM_PERSONALIZATION_PATH}?tab=${encodeURIComponent(tabId)}`, {
     method: "GET",
+    // Without it the form simply keeps the layout defined in the dictionary.
+    handlesOwnError: true,
   });
   if (!response.ok) {
     throw new Error(`Failed to fetch the form personalization: ${response.status}`);
@@ -105,6 +107,7 @@ export async function saveFormPersonalization(
     method: "POST",
     body: JSON.stringify({ tab: tabId, form, scope, role, organization }),
     headers: { "Content-Type": "application/json" },
+    handlesOwnError: true,
   });
   if (!response.ok) {
     throw new Error(`Failed to save the form personalization: ${response.status}`);
@@ -116,6 +119,7 @@ export async function saveFormPersonalization(
 export async function deleteFormPersonalization(id: string): Promise<void> {
   const response = await Metadata.client.request(`${FORM_PERSONALIZATION_PATH}?id=${encodeURIComponent(id)}`, {
     method: "DELETE",
+    handlesOwnError: true,
   });
   if (!response.ok) {
     throw new Error(`Failed to discard the form personalization: ${response.status}`);

@@ -112,6 +112,45 @@ describe("Client", () => {
       expect((response as any).mocked).toBe(true);
     });
 
+    describe("handlesOwnError", () => {
+      /** Registers an interceptor that records the context of every response it sees. */
+      const recordContexts = (client: Client) => {
+        const interceptor = jest.fn((res: Response) => res);
+        client.registerInterceptor(interceptor);
+        return interceptor;
+      };
+
+      it("tells the interceptor the request does not handle its own error by default", async () => {
+        const client = new Client();
+        const interceptor = recordContexts(client);
+
+        await client.request("test");
+
+        expect(interceptor).toHaveBeenCalledWith(expect.anything(), { handlesOwnError: false });
+      });
+
+      it("passes the per-request flag to the interceptor and never sends it to the server", async () => {
+        const client = new Client();
+        const interceptor = recordContexts(client);
+
+        await client.request("test", { method: "GET", handlesOwnError: true });
+
+        expect(interceptor).toHaveBeenCalledWith(expect.anything(), { handlesOwnError: true });
+        expect((global as any).fetch.mock.calls[0][1]).not.toHaveProperty("handlesOwnError");
+      });
+
+      it("uses the client default, which a request can override", async () => {
+        const client = new Client(undefined, { handlesOwnError: true });
+        const interceptor = recordContexts(client);
+
+        await client.request("test");
+        await client.request("test", { handlesOwnError: false });
+
+        expect(interceptor).toHaveBeenNthCalledWith(1, expect.anything(), { handlesOwnError: true });
+        expect(interceptor).toHaveBeenNthCalledWith(2, expect.anything(), { handlesOwnError: false });
+      });
+    });
+
     it("should allow unregistering interceptor", async () => {
       const client = new Client();
       const unregister = client.registerInterceptor((res) => res);
