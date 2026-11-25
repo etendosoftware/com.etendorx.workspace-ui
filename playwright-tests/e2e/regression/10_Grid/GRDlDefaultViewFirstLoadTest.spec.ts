@@ -178,7 +178,7 @@ test.describe("Grid - default view on the first load @regression @grid", () => {
     await expect.poll(() => gridLoads(lines).length).toBeGreaterThan(0);
     expect(gridLoads(header), "the header loaded again when its record arrived").toHaveLength(1);
     expect(gridLoads(lines), "the lines loaded before and after the order arrived").toHaveLength(1);
-    expect(gridLoads(lines)[0], "the lines loaded without the order record").toHaveProperty(PARENT_RECORD_CONTEXT);
+    expect(gridLoads(lines)[0], "the lines loaded without the order record").toHaveProperty([PARENT_RECORD_CONTEXT]);
   });
 
   test("loads a child tab once, already sorted by its default view", async ({ app, data, page }) => {

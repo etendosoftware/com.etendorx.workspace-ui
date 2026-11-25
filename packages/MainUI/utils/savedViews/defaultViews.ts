@@ -23,7 +23,8 @@
 
 import { useUserStore } from "@/stores/userStore";
 import { logger } from "@/utils/logger";
-import { loadWindowGridConfiguration } from "@/utils/savedViews/gridConfiguration";
+import { loadWindowGridConfiguration, preloadWindowGridConfiguration } from "@/utils/savedViews/gridConfiguration";
+import { createPreloadCache } from "@/utils/savedViews/preload";
 import { parseGridConfiguration, rawRecordToSavedView } from "@/utils/savedViews/transform";
 import type { MRTViewConfig, RawSavedViewRecord } from "@/utils/savedViews/types";
 import { registerSessionReset } from "@/utils/session/resetSessionState";
@@ -41,9 +42,12 @@ const NO_DEFAULT_VIEWS: WindowDefaultViews = {};
 const windowDefaultViews = new Map<string, Promise<WindowDefaultViews>>();
 /** Answers already received, so a grid can know on its first render whether its tab has a default view. */
 const settledDefaultViews = new Map<string, WindowDefaultViews>();
+/** Requests started when the user hovers a window, taken by its next opening. */
+const preloadedDefaultViews = createPreloadCache<WindowDefaultViews>();
 registerSessionReset(() => {
   windowDefaultViews.clear();
   settledDefaultViews.clear();
+  preloadedDefaultViews.clear();
 });
 
 /** Default views of a saved-views response, by tab. A view whose configuration cannot be read is left out. */
@@ -91,7 +95,8 @@ const loadWindowDefaultViews = (windowIdentifier: string): Promise<WindowDefault
   // Without a session nothing can be read, and nothing is cached: the next call with a token fetches them
   if (!token) return Promise.resolve(NO_DEFAULT_VIEWS);
 
-  const request = fetchWindowDefaultViews(windowIdentifier, token);
+  const windowId = getWindowIdFromIdentifier(windowIdentifier);
+  const request = preloadedDefaultViews.take(windowId) ?? fetchWindowDefaultViews(windowIdentifier, token);
   windowDefaultViews.set(windowIdentifier, request);
   request.then((viewsByTab) => {
     // A logout in between discarded this request: its answer belongs to the previous session
@@ -132,3 +137,18 @@ export const prefetchWindowViewSettings = (windowIdentifier: string): void => {
   loadWindowDefaultViews(windowIdentifier);
   loadWindowGridConfiguration(windowIdentifier);
 };
+
+/**
+ * Starts loading the default views and the stored column configuration of a window the user is about to open
+ * (hovering it in the menu, the recent items or the favorites), so its opening does not wait for them. The next
+ * opening takes them if they are recent (`PRELOAD_MAX_AGE_MS`); otherwise it asks again.
+ */
+export const preloadWindowViewSettings = (windowId: string): void => {
+  const token = useUserStore.getState().token;
+  if (!token || isExternalPageWindowId(windowId)) return;
+  preloadedDefaultViews.preload(windowId, () => fetchWindowDefaultViews(windowId, token));
+  preloadWindowGridConfiguration(windowId);
+};
+
+/** Forgets the default views loaded ahead of an opening: the user has just changed a saved view. */
+export const forgetPreloadedDefaultViews = (): void => preloadedDefaultViews.clear();

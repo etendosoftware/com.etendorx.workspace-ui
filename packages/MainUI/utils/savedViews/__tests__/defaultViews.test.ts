@@ -16,12 +16,14 @@
  */
 
 import {
+  forgetPreloadedDefaultViews,
   getSettledTabDefaultView,
   loadTabDefaultView,
   prefetchWindowViewSettings,
+  preloadWindowViewSettings,
   toDefaultViewsByTab,
 } from "../defaultViews";
-import { loadWindowGridConfiguration } from "../gridConfiguration";
+import { loadWindowGridConfiguration, preloadWindowGridConfiguration } from "../gridConfiguration";
 import { useUserStore } from "@/stores/userStore";
 import { buildExternalPageWindowId } from "@/utils/menu/externalMenuEntry";
 import { resetSessionState } from "@/utils/session/resetSessionState";
@@ -35,7 +37,10 @@ import {
 jest.mock("@/utils/logger");
 jest.mock("@/utils/session/resetSessionState");
 jest.mock("@/stores/userStore", () => ({ useUserStore: { getState: jest.fn() } }));
-jest.mock("../gridConfiguration", () => ({ loadWindowGridConfiguration: jest.fn() }));
+jest.mock("../gridConfiguration", () => ({
+  loadWindowGridConfiguration: jest.fn(),
+  preloadWindowGridConfiguration: jest.fn(),
+}));
 
 const WINDOW_ID = "143";
 const OTHER_TAB_ID = "tab-child";
@@ -213,5 +218,46 @@ describe("prefetchWindowViewSettings", () => {
 
     expect(mockFetch).not.toHaveBeenCalled();
     expect(loadWindowGridConfiguration).not.toHaveBeenCalled();
+  });
+});
+
+describe("preloadWindowViewSettings", () => {
+  beforeEach(() => {
+    resetSessionState();
+    (preloadWindowGridConfiguration as jest.Mock).mockClear();
+  });
+
+  it("loads the settings of a hovered window, and its opening takes them without asking again", async () => {
+    mockFetch.mockReturnValue(makeSavedViewsResponse([makeDefaultViewRecord()]));
+
+    preloadWindowViewSettings(WINDOW_ID);
+    const view = await loadTabDefaultView(nextWindow(), DEFAULT_VIEW_TAB_ID);
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch.mock.calls[0][0]).toBe(`/api/meta/saved-views?window=${WINDOW_ID}&isdefault=true`);
+    expect(view?.filters).toEqual(FILTERS);
+    expect(preloadWindowGridConfiguration).toHaveBeenCalledWith(WINDOW_ID);
+  });
+
+  it("asks again when a saved view changed after the window was hovered", async () => {
+    mockFetch.mockImplementation(() => makeSavedViewsResponse([]));
+
+    preloadWindowViewSettings(WINDOW_ID);
+    forgetPreloadedDefaultViews();
+    await loadTabDefaultView(nextWindow(), DEFAULT_VIEW_TAB_ID);
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ["without a session", () => givenToken(null), WINDOW_ID],
+    ["for the in-app page of an external menu entry", () => undefined, buildExternalPageWindowId("MENU1")],
+  ])("loads nothing %s", (_case, given, windowId) => {
+    given();
+
+    preloadWindowViewSettings(windowId);
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(preloadWindowGridConfiguration).not.toHaveBeenCalled();
   });
 });

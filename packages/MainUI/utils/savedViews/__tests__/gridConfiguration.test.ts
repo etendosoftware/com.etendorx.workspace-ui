@@ -10,6 +10,7 @@ import {
   getSettledTabColumnConfiguration,
   loadTabColumnConfiguration,
   loadWindowGridConfiguration,
+  preloadWindowGridConfiguration,
   scheduleGridConfigurationSave,
   toColumnTableState,
 } from "../gridConfiguration";
@@ -178,6 +179,30 @@ describe("gridConfiguration", () => {
 
       expect(getSettledTabColumnConfiguration(answered, TAB_ID)).toBeUndefined();
       expect(getSettledTabColumnConfiguration(late, TAB_ID)).toBeUndefined();
+    });
+  });
+
+  describe("preloadWindowGridConfiguration", () => {
+    beforeEach(() => {
+      resetSessionState();
+      mockFetch.mockResolvedValue({ windowId: WINDOW_ID, configuration: {} });
+    });
+
+    it("loads the configuration of a hovered window, and its opening takes it without asking again", async () => {
+      preloadWindowGridConfiguration(WINDOW_ID);
+      await loadWindowGridConfiguration(nextWindowIdentifier());
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch).toHaveBeenCalledWith(WINDOW_ID);
+    });
+
+    it("asks again when the user changed the columns after the window was hovered", async () => {
+      preloadWindowGridConfiguration(WINDOW_ID);
+
+      scheduleGridConfigurationSave(nextWindowIdentifier(), TAB_ID);
+      await loadWindowGridConfiguration(nextWindowIdentifier());
+
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
   });
 
