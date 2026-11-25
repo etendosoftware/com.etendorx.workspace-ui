@@ -202,7 +202,8 @@ describe("Metadata", () => {
       ["403 answered by the ERP when the role has no access", 403],
       ["401 answered by older backends", 401],
     ])("throws WindowAccessDeniedError on a %s", async (_label, status) => {
-      jest.spyOn(Metadata.client, "request").mockResolvedValue({ ok: false, status } as any);
+      const denied = { ok: false, status } as unknown as Awaited<ReturnType<typeof Metadata.client.request>>;
+      jest.spyOn(Metadata.client, "request").mockResolvedValue(denied);
       await expect(Metadata.getWindow("denied")).rejects.toBeInstanceOf(WindowAccessDeniedError);
     });
   });

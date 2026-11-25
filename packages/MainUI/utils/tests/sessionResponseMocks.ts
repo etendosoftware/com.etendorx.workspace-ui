@@ -27,6 +27,7 @@ export const sessionResponse = (status: number, passwordExpired = false) =>
   ({
     status,
     headers: {
-      get: (name: string) => (passwordExpired && name === ERP_ERROR_CODE_HEADER ? DEFAULT_PASSWORD_EXPIRED_ERROR : null),
+      get: (name: string) =>
+        passwordExpired && name === ERP_ERROR_CODE_HEADER ? DEFAULT_PASSWORD_EXPIRED_ERROR : null,
     },
   }) as unknown as Response;

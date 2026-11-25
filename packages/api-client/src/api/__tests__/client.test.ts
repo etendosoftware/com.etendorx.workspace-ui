@@ -136,7 +136,7 @@ describe("Client", () => {
         await client.request("test", { method: "GET", handlesOwnError: true });
 
         expect(interceptor).toHaveBeenCalledWith(expect.anything(), { handlesOwnError: true });
-        expect((global as any).fetch.mock.calls[0][1]).not.toHaveProperty("handlesOwnError");
+        expect((global.fetch as jest.Mock).mock.calls[0][1]).not.toHaveProperty("handlesOwnError");
       });
 
       it("uses the client default, which a request can override", async () => {

@@ -48,7 +48,10 @@ function parseFileName(disposition: string | null): string | undefined {
  * non-OK response so the caller can surface the failure.
  */
 export async function fetchReportBlob(url: string, token: string): Promise<ReportBlob> {
-  const response = await sessionAwareFetch(url, { headers: { Authorization: `Bearer ${token}` }, handlesOwnError: true });
+  const response = await sessionAwareFetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    handlesOwnError: true,
+  });
   if (!response.ok) {
     throw new Error(`Report request failed with status ${response.status}`);
   }
