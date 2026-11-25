@@ -1,4 +1,5 @@
 import { act, render, screen, fireEvent } from "@testing-library/react";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { TabButton } from "../TabButton";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useWindowStore } from "@/stores/windowStore";
@@ -74,7 +75,9 @@ describe("TabButton", () => {
 
     // ETP-6431: the badge keeps its place while the count is unknown, so the tab strip does not move.
     const renderBadge = (tab = mockTab) => {
-      render(<TabButton tab={tab} onClick={mockOnClick} onDoubleClick={mockOnDoubleClick} active={false} />);
+      render(
+        <TabButton tab={tab as unknown as Tab} onClick={mockOnClick} onDoubleClick={mockOnDoubleClick} active={false} />
+      );
       return screen.queryByTestId(`TabButton__count_${tab.id}`);
     };
 

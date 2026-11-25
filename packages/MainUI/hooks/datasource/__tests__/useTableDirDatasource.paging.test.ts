@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { useFormContext } from "react-hook-form";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { Field } from "@workspaceui/api-client/src/api/types";
@@ -126,17 +126,16 @@ describe("useTableDirDatasource — search typed during a load (ETP-6431)", () =
       useTableDirDatasource({ field: FIELD, pageSize: PAGE_SIZE, initialPageSize: PAGE_SIZE })
     );
 
-    let refetching: Promise<void> = Promise.resolve();
     act(() => {
-      refetching = result.current.refetch();
+      result.current.refetch();
     });
     act(() => result.current.search(SEARCH_TERM));
     expect(datasource.client.post).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       finishFirstLoad(answer(["1", "2", "3"]));
-      await refetching;
     });
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
     expect(datasource.client.post).toHaveBeenCalledTimes(2);
     expect(postedBodies()[1]).toContain(SEARCH_TERM);
