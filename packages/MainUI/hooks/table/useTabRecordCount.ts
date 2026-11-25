@@ -49,7 +49,10 @@ export function useTabRecordCount({
       clearTabCount(tabCountKey);
       return;
     }
-    if (!isLoading) setTabCount(tabCountKey, loadedRecordsCount, hasMoreRecords);
+    if (isLoading) return;
+    // No rows yet but more to come is the state before the first load, not a count: it would read "0+" (ETP-6431)
+    if (loadedRecordsCount === 0 && hasMoreRecords) return;
+    setTabCount(tabCountKey, loadedRecordsCount, hasMoreRecords);
   }, [
     isChildTab,
     hasMultipleParents,

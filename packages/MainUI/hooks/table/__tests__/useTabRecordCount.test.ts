@@ -60,4 +60,16 @@ describe("useTabRecordCount", () => {
     expect(state().counts[KEY]).toBeUndefined();
     expect(state().partial[KEY]).toBeUndefined();
   });
+
+  it("publishes no count before the first load, when there are no rows but more to come (ETP-6431)", () => {
+    renderHook(() => useTabRecordCount({ ...BASE, loadedRecordsCount: 0, hasMoreRecords: true }));
+
+    expect(state().counts[KEY]).toBeUndefined();
+  });
+
+  it("publishes an empty tab as 0 once it is loaded", () => {
+    renderHook(() => useTabRecordCount({ ...BASE, loadedRecordsCount: 0, hasMoreRecords: false }));
+
+    expect(state().counts[KEY]).toBe(0);
+  });
 });
