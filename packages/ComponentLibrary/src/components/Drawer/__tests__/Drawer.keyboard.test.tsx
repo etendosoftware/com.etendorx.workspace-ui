@@ -17,7 +17,7 @@
 
 import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { fireEvent, render, screen } from "@testing-library/react";
-import Drawer from "../index";
+import Drawer, { DRAWER_NO_RESULTS_TEST_ID } from "../index";
 import { createSearchIndex, filterItems } from "../../../utils/searchUtils";
 import { findNavigableMenuItems, getMenuItemId, MENU_ITEM_ID_ATTRIBUTE } from "../../../utils/drawerUtils";
 
@@ -28,6 +28,9 @@ const SALES_INVOICE_ID = "win-sales-invoice";
 const PROCUREMENT_FOLDER_ID = "folder-procurement";
 const PURCHASE_ORDER_ID = "win-purchase-order";
 const SALES_TERM = "sales";
+/** Matches only the name of a folder: no entry that opens something. */
+const FOLDER_ONLY_TERM = "procurement";
+const NO_RESULTS_LABEL = "No items to show.";
 
 /**
  * Two folders, each with openable children, plus one leaf at the top level. Mirrors the
@@ -74,6 +77,7 @@ const renderDrawer = ({ searchValue = "", expandedItems = new Set<string>(), onI
       onReportClick={onClick}
       onProcessClick={onClick}
       onItemHover={onItemHover}
+      noResultsLabel={NO_RESULTS_LABEL}
       searchContext={{
         searchValue,
         setSearchValue,
@@ -276,5 +280,38 @@ describe("Drawer menu search — keys left untouched", () => {
 
     expect(setSearchValue).toHaveBeenCalledTimes(1);
     expect(setSearchValue.mock.calls[0][0]).toMatch(/^sales/i);
+  });
+});
+
+describe("Drawer menu search — no results", () => {
+  const noResultsMessage = () => screen.queryByTestId(DRAWER_NO_RESULTS_TEST_ID);
+
+  it("says so instead of showing a folder when only folder names match", () => {
+    renderDrawer({ searchValue: FOLDER_ONLY_TERM });
+
+    expect(noResultsMessage()).toHaveTextContent(NO_RESULTS_LABEL);
+    expect(screen.queryByText("Procurement Management")).not.toBeInTheDocument();
+    expect(navigableIds()).toEqual([]);
+  });
+
+  it("opens nothing with Enter", () => {
+    const { onClick } = renderDrawer({ searchValue: FOLDER_ONLY_TERM });
+
+    pressKey("ArrowDown");
+    pressKey("Enter");
+
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it("is not shown while the search has results", () => {
+    renderDrawer({ searchValue: SALES_TERM });
+
+    expect(noResultsMessage()).not.toBeInTheDocument();
+  });
+
+  it("is not shown without a search term", () => {
+    renderDrawer();
+
+    expect(noResultsMessage()).not.toBeInTheDocument();
   });
 });

@@ -51,6 +51,9 @@ interface RecentlyViewedHandler {
   handleWindowAccess?: (item: Menu) => void;
 }
 
+/** Stable test ID of the message shown when the search finds no entry. */
+export const DRAWER_NO_RESULTS_TEST_ID = "drawer-search-no-results";
+
 const DRAWER_OPEN_WIDTH = 16.25;
 const DRAWER_CLOSED_WIDTH = 3.5;
 const DRAWER_MAX_WIDTH = 50;
@@ -69,6 +72,7 @@ const Drawer: React.FC<DrawerProps> = ({
   VersionComponent,
   getTranslatedName,
   searchContext,
+  noResultsLabel,
 }) => {
   const [open, setOpen] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
@@ -215,6 +219,9 @@ const Drawer: React.FC<DrawerProps> = ({
 
   const highlightContextValue = useMemo(() => ({ highlightedItemId }), [highlightedItemId]);
 
+  // As the Quick Launch of Classic, a search that matches no entry says so instead of showing an empty list.
+  const hasNoResults = Boolean(searchValue) && filteredItems.length === 0;
+
   return (
     <ResizeHandle
       initialWidth={drawerWidth}
@@ -261,6 +268,13 @@ const Drawer: React.FC<DrawerProps> = ({
           />
         )}
         <div ref={menuListRef} className={`flex-grow overflow-y-auto hide-scrollbar ${!open && "flex flex-col gap-2"}`}>
+          {open && hasNoResults && (
+            <output
+              className="block px-5 py-2 text-[13px] text-(--ui-text-muted)"
+              data-testid={DRAWER_NO_RESULTS_TEST_ID}>
+              {noResultsLabel}
+            </output>
+          )}
           <DrawerHighlightContext.Provider value={highlightContextValue}>
             <DrawerItems
               items={searchValue ? filteredItems : items}

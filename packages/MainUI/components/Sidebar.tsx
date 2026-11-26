@@ -27,6 +27,10 @@ import { useMetadataZustandStore } from "@/stores/metadataStore";
 import { isExternalMenuEntry } from "@/utils/menu/externalMenuEntry";
 import { useOpenExternalMenuEntry } from "@/hooks/useOpenExternalMenuEntry";
 import { useOpenLegacyMenuEntry } from "@/hooks/useOpenLegacyMenuEntry";
+import { resolveCatalogLabel } from "@/utils/catalogLabel";
+
+/** Message of the Quick Launch of Classic when the menu search matches no entry. */
+export const MENU_SEARCH_EMPTY_MESSAGE = "OBUISC_ListGrid.emptyMessage";
 
 const isProcessDefinitionMenuItem = (item: Menu): boolean => {
   return item.type === "ProcessDefinition" && !!item.id;
@@ -105,7 +109,7 @@ export default function Sidebar() {
   const token = useUserStore((s) => s.token);
   const currentRole = useUserStore((s) => s.currentRole);
   const prevRole = useUserStore((s) => s.prevRole);
-  const { language, prevLanguage } = useLanguage();
+  const { language, prevLanguage, getLabel } = useLanguage();
   const { translateMenuItem } = useMenuTranslation();
   const menu = useMenu(token, currentRole || undefined, language);
   const windowsObj = useWindowStore((s) => s.windows);
@@ -149,6 +153,7 @@ export default function Sidebar() {
   const [processType, setProcessType] = useState<ProcessType>("");
 
   const searchIndex = useMemo(() => createSearchIndex(menu), [menu]);
+  const noResultsLabel = resolveCatalogLabel(MENU_SEARCH_EMPTY_MESSAGE, "drawer.noResults", { getLabel, t });
   const { filteredItems, searchExpandedItems } = useMemo(() => {
     const result = filterItems(menu, searchValue, searchIndex);
     return result;
@@ -354,6 +359,7 @@ export default function Sidebar() {
           getTranslatedName={getTranslatedName}
           RecentlyViewedComponent={RecentlyViewed}
           searchContext={searchContext}
+          noResultsLabel={noResultsLabel}
           data-testid="Drawer__6c6035"
         />
         <ProcessDefinitionModal

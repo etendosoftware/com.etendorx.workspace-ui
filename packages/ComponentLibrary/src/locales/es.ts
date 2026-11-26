@@ -469,6 +469,7 @@ const es = {
     openExternalLink: "Abrir enlace",
     legacyWindowPopupBlocked: "El navegador bloqueó la ventana que esta entrada del menú intentó abrir.",
     openLegacyWindow: "Abrir ventana",
+    noResults: "No hay elementos para mostrar.",
   },
   login: {
     title: "Iniciar sesión",

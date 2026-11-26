@@ -462,6 +462,7 @@ const en = {
     openExternalLink: "Open link",
     legacyWindowPopupBlocked: "Your browser blocked the window this menu entry tried to open.",
     openLegacyWindow: "Open window",
+    noResults: "No items to show.",
   },
   login: {
     title: "Log In",
