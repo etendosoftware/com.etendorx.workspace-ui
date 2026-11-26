@@ -76,8 +76,18 @@ looks inside them.
   entry inside it matches, and it is shown expanded with its matching entries. Before,
   a folder whose own name matched ("Transactions") was shown without children and without
   the expand arrow: it looked like an entry and clicking it did nothing.
-- **The autocomplete follows the same rule.** `getAllItemTitles` reads the same phrase
-  index, so Tab no longer completes a folder name that would find nothing.
+- **Every suggestion finds something.** The autocomplete (`getAllItemTitles`) reads the
+  same phrase index, and a result must contain the term in its name, so only the name and
+  its words are indexed — never a folder name, and never the menu path
+  ("master data management > product"), which no search matches. Accepting a suggestion
+  with Tab always finds at least the entry it came from.
+- **A readable suggestion.** The suggestion and its Tab hint use the sidebar tokens
+  (`--ui-text-muted`, as the placeholder) instead of the fixed light grays of the shared
+  `TextInputAutocomplete`, which were barely visible on the search background (about 1.1:1
+  in the light theme). They are 13px like the typed text and start exactly where it starts
+  (the search button no longer shrinks with the sidebar width). The `Drawer` restyles them
+  through the `SUGGESTION_ATTRIBUTES` markers of `SuggestionBox`, so the other users of the
+  component (the toolbar search) are unchanged.
 - **No results.** When a term matches no entry, the `Drawer` shows a message (test ID
   `drawer-search-no-results`) instead of an empty list. Its text is the Quick Launch one,
   `OBUISC_ListGrid.emptyMessage` ("No items to show."), read from the backend message
@@ -191,6 +201,7 @@ guarantees Tab keeps working.
 | `components/Drawer/DrawerSection/index.tsx` | Marks a collapsed subtree |
 | `hooks/useItemType.ts` | Dispatch per item type; shares the openable-types constant |
 | `utils/searchUtils.tsx` | Search index (only openable entries by name) and filtered tree |
+| `components/Input/TextInput/TextInputAutocomplete/SuggestionBox/index.tsx` | Marks the parts of the suggestion for the sidebar to restyle |
 | `MainUI/components/Sidebar.tsx` | Resolves the "no results" text from the message catalog |
 
 ## Tests
@@ -200,6 +211,7 @@ guarantees Tab keeps working.
 | `utils/__tests__/drawerUtils.test.tsx` | Navigability rule, DOM order, collapsed subtrees, edge stops |
 | `components/Drawer/__tests__/Drawer.keyboard.test.tsx` | The whole contract, with and without a search term |
 | `components/Drawer/DrawerSection/index.test.tsx` | The DOM markers and the highlight |
-| `utils/__tests__/searchUtils.test.ts` | Folders only as the path, no folder results, autocomplete without folders |
+| `utils/__tests__/searchUtils.test.ts` | Folders only as the path, no folder results, every suggestion finds an entry |
+| `components/Input/TextInput/TextInputAutocomplete/__tests__/SuggestionBox.test.tsx` | The suggestion text and its markers |
 | `MainUI/components/__tests__/Sidebar.external.test.tsx` | The "no results" text from the catalog and its fallback |
 | `playwright-tests/e2e/smoke/11_Navigation/NAVeSidebarSearchFoldersTest.spec.ts` | NAVe: the same rules against the real core menu |
