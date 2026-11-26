@@ -36,6 +36,18 @@ const MULTILINE_TITLE_CLASSES = `${TITLE_CLASSES} whitespace-pre-line`;
  */
 const getTitleClassName = (multiline: boolean): string => (multiline ? MULTILINE_TITLE_CLASSES : TITLE_CLASSES);
 
+/**
+ * Whether the content of the tooltip is cut by its own overflow (an ellipsis): its full text
+ * does not fit in the width it has.
+ *
+ * @param wrapper the element that wraps the content
+ * @returns true when the content is wider than the space it is shown in
+ */
+const isContentTruncated = (wrapper: HTMLElement | null): boolean => {
+  const content = wrapper?.firstElementChild;
+  return content ? content.scrollWidth > content.clientWidth : false;
+};
+
 export interface TooltipProps {
   title?: string;
   children: React.ReactNode;
@@ -44,6 +56,11 @@ export interface TooltipProps {
   disabled?: boolean;
   /** Honors the line breaks of `title`, for tooltips that list one item per line. */
   multiline?: boolean;
+  /**
+   * Shows the tooltip only while its content is truncated, for a title that repeats a text cut
+   * by an ellipsis. Checked on each hover, so it follows the width the content has at that time.
+   */
+  onlyWhenTruncated?: boolean;
 }
 
 const Tooltip: React.FC<TooltipProps> = ({
@@ -53,6 +70,7 @@ const Tooltip: React.FC<TooltipProps> = ({
   containerClassName,
   disabled,
   multiline = false,
+  onlyWhenTruncated = false,
 }) => {
   const [visible, setVisible] = useState(false);
   const [coords, setCoords] = useState<TooltipPlacement | null>(null);
@@ -86,6 +104,7 @@ const Tooltip: React.FC<TooltipProps> = ({
 
   const showTooltip = () => {
     if (disabled) return;
+    if (onlyWhenTruncated && !isContentTruncated(wrapperRef.current)) return;
     if (showTimer.current) clearTimeout(showTimer.current);
     showTimer.current = window.setTimeout(() => {
       setVisible(true);
