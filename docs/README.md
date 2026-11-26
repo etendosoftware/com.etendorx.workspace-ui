@@ -70,7 +70,7 @@ docs/
 │   │   └── README.md                # Request params, sort by every column, Classic differences
 │   ├── record-notes/                 # Feature: Notes section of the form (OBUIAPP_Note)
 │   │   └── README.md                # Inline list, own-note deletion, storage rules, Classic differences
-│   ├── profile-menu/                 # Feature: Profile menu feedback and current context
+│   ├── profile-menu/                 # Feature: Profile menu feedback, current context and role switch defaults
 │   │   └── README.md                # Password confirmation, context tooltip, accessible password panel
 │   ├── grid-default-sort/            # Feature: Grid default sort as classic (order-by clause or default field)
 │   ├── grid-paging-and-record-count/   # Feature: Grid paging without repeated records and the N+ record count
