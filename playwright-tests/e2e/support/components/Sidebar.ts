@@ -15,8 +15,6 @@ export const SIDEBAR_TEST_IDS = {
 const OPENABLE_ENTRY_SELECTOR = "[data-menu-item-id]";
 /** A menu title that is not openable: during a search, a folder shown as the path of its results. */
 const FOLDER_TITLE_SELECTOR = `[data-testid^="MenuTitle__"]:not(${OPENABLE_ENTRY_SELECTOR})`;
-/** The section of a menu title, which holds the title and its children. */
-const MENU_SECTION_SELECTOR = "[aria-expanded]";
 
 const MENU_ENTRY_TIMEOUT = 10_000;
 const TOGGLE_TIMEOUT = 2_000;
@@ -55,15 +53,14 @@ export class Sidebar {
 
   /** Folders of the menu list that hold no entry that opens something: a search must never show one. */
   async emptyFolderNames(): Promise<string[]> {
-    return this.menuList
-      .locator(FOLDER_TITLE_SELECTOR)
-      .evaluateAll(
-        (titles, [sectionSelector, entrySelector]) =>
-          titles
-            .filter((title) => !title.closest(sectionSelector)?.querySelector(entrySelector))
-            .map((title) => title.textContent?.trim() ?? ""),
-        [MENU_SECTION_SELECTOR, OPENABLE_ENTRY_SELECTOR]
-      );
+    return this.menuList.locator(FOLDER_TITLE_SELECTOR).evaluateAll(
+      (titles, entrySelector) =>
+        titles
+          // the section of a title is its parent: it holds the title and its children
+          .filter((title) => !title.parentElement?.querySelector(entrySelector))
+          .map((title) => title.textContent?.trim() ?? ""),
+      OPENABLE_ENTRY_SELECTOR
+    );
   }
 
   /** Clears the search term with Escape, as a user does. */
