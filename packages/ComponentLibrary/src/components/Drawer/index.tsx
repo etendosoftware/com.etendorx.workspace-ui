@@ -54,6 +54,9 @@ interface RecentlyViewedHandler {
 /** Stable test ID of the message shown when the search finds no entry. */
 export const DRAWER_NO_RESULTS_TEST_ID = "drawer-search-no-results";
 
+/** Stable test ID of the menu list, which leaves "Recently Viewed" out. */
+export const DRAWER_MENU_LIST_TEST_ID = "drawer-menu-list";
+
 const DRAWER_OPEN_WIDTH = 16.25;
 const DRAWER_CLOSED_WIDTH = 3.5;
 const DRAWER_MAX_WIDTH = 50;
@@ -267,7 +270,10 @@ const Drawer: React.FC<DrawerProps> = ({
             ref={setRecentlyViewedRef}
           />
         )}
-        <div ref={menuListRef} className={`flex-grow overflow-y-auto hide-scrollbar ${!open && "flex flex-col gap-2"}`}>
+        <div
+          ref={menuListRef}
+          data-testid={DRAWER_MENU_LIST_TEST_ID}
+          className={`flex-grow overflow-y-auto hide-scrollbar ${!open && "flex flex-col gap-2"}`}>
           {open && hasNoResults && (
             <output
               className="block px-5 py-2 text-[13px] text-(--ui-text-muted)"
