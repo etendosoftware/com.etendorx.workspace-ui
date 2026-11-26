@@ -1,5 +1,6 @@
 import { expect, type Frame, type Locator, type Page } from "@playwright/test";
 import { clickClosingFrame, isLegacySubmit, LegacyFrame } from "./LegacyFrame";
+import { Toast } from "./Toast";
 
 /** Stable test IDs of the process modals (React process definitions and the legacy wrapper). */
 export const PROCESS_MODAL_TEST_IDS = {
@@ -33,6 +34,8 @@ const SUBMIT_TIMEOUT = 60_000;
 const RESULT_TIMEOUT = 30_000;
 const LEGACY_FINISH_TIMEOUT = 35_000;
 const POLL_INTERVALS = [300];
+/** One attempt to close a process result: the button may be covered by a toast or close by itself. */
+const CLOSE_ATTEMPT_TIMEOUT = 5_000;
 
 /** An OK button that was clicked, and what completes its action (the submit of a legacy page). */
 interface ClickedOk {
@@ -183,7 +186,15 @@ export class ProcessModal {
   async closeResult(timeout = RESULT_TIMEOUT): Promise<void> {
     const close = this.page.getByTestId(PROCESS_MODAL_TEST_IDS.resultClose);
     await close.waitFor({ state: "visible", timeout });
-    await close.click();
+    // A success toast can cover the button, and a legacy modal closes by itself a few seconds after a success:
+    // a single click waited for a button that was already gone. Click while it is shown, until it is gone.
+    await new Toast(this.page).closeAll();
+    await expect(async () => {
+      if (await close.isVisible()) {
+        await close.click({ timeout: CLOSE_ATTEMPT_TIMEOUT });
+      }
+      await expect(close).toBeHidden({ timeout: CLOSE_ATTEMPT_TIMEOUT });
+    }).toPass({ intervals: POLL_INTERVALS, timeout });
   }
 
   /** Waits for "Process completed successfully", in the page or inside the legacy iframe. */
