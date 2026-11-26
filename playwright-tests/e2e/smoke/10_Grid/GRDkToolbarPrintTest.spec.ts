@@ -2,6 +2,7 @@ import { expect, test } from "../../support/fixtures";
 import { selectSampleOrder } from "../../support/flows/sampleOrders";
 import { answerWithFile, answerWithStatus } from "../../support/network";
 import { SAMPLE_DOCUMENT } from "../../support/registry/data";
+import { FILE_DOWNLOAD_TIMEOUT } from "../../support/wait";
 
 /** The document print service, reached through the ERP proxy of the new UI (Client → Next API → ERP). */
 const PRINT_REQUEST = /\/api\/erp\/sws\/com\.etendoerp\.etendorx\.print/;
@@ -25,7 +26,10 @@ test.describe("Grid - toolbar print of documents @smoke @grid", () => {
   test("downloads the PDF of the selected order through the ERP proxy", async ({ app, page }) => {
     const print = await answerWithFile(page, PRINT_REQUEST, PRINTED_PDF);
 
-    const [download] = await Promise.all([page.waitForEvent("download"), app.toolbar.button("print-record").click()]);
+    const [download] = await Promise.all([
+      page.waitForEvent("download", { timeout: FILE_DOWNLOAD_TIMEOUT }),
+      app.toolbar.button("print-record").click(),
+    ]);
 
     expect(print.sent).toBe(true);
     expect(download.suggestedFilename()).toBe(PRINTED_PDF.fileName);

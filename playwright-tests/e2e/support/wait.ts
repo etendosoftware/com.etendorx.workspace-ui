@@ -13,6 +13,11 @@ const FORM_INITIALIZATION_URL = /FormInitializationComponent/;
 const DATASOURCE_URL = /api\/datasource/;
 const DEFAULT_RESPONSE_TIMEOUT = 30_000;
 const OVERLAY_TIMEOUT = 20_000;
+/**
+ * A file the server renders (a Jasper PDF, a CSV) can take far longer than a click: up to 27 s in CI. Longer
+ * than the configured action timeout, so a slow report is not taken for a stuck step.
+ */
+export const FILE_DOWNLOAD_TIMEOUT = 120_000;
 
 /** Waits until the loading overlay is gone. Fails if it is still there after the timeout. */
 export async function waitForNoOverlay(page: Page, timeout = OVERLAY_TIMEOUT): Promise<void> {

@@ -13,6 +13,15 @@ const DEFAULT_USER = envOr(["PLAYWRIGHT_USER", "CYPRESS_USER"], "admin");
 const DEFAULT_PASSWORD = envOr(["PLAYWRIGHT_PASSWORD", "CYPRESS_PASSWORD"], "admin");
 
 const DESKTOP_CHROME = { ...devices["Desktop Chrome"] };
+const IS_CI = Boolean(process.env.CI);
+/**
+ * Longest a single action (click, fill, waitFor…) or navigation may take, unless the call gives its own timeout.
+ * Without it a stuck step (a click on an element that never becomes actionable) burned the whole test timeout,
+ * 360–720 s, before the retry recovered it in ~20 s. The slowest passing steps in CI were a 14 s click, a 22 s
+ * typed text and a 6 s navigation (Jenkins builds 2227–2242, ETP-6295): 60 s leaves a slow pod 3–10 times that.
+ */
+const ACTION_TIMEOUT_MS = 60_000;
+const NAVIGATION_TIMEOUT_MS = 60_000;
 /** Last project of the smoke chain: the regression and mocked projects run after it. */
 const LAST_SMOKE_PROJECT = "suite-04-financial";
 
@@ -34,7 +43,7 @@ export default defineConfig({
   // note below) on a random spec. A retry clears both; real regressions fail all
   // attempts. 0 locally so flakes surface during development. Tests that pass
   // only after a retry are listed by the flaky-summary reporter.
-  retries: process.env.CI ? 2 : 0,
+  retries: IS_CI ? 2 : 0,
 
   use: {
     baseURL: BASE_URL,
@@ -43,6 +52,8 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "retain-on-failure",
     trace: "retain-on-failure",
+    actionTimeout: ACTION_TIMEOUT_MS,
+    navigationTimeout: NAVIGATION_TIMEOUT_MS,
     ignoreHTTPSErrors: true,
     // --no-zygote prevents Chromium from using the zygote process model for
     // spawning renderers. In container/CI environments with restricted namespaces
