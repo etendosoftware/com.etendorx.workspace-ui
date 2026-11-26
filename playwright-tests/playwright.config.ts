@@ -22,6 +22,13 @@ const IS_CI = Boolean(process.env.CI);
  */
 const ACTION_TIMEOUT_MS = 60_000;
 const NAVIGATION_TIMEOUT_MS = 60_000;
+/**
+ * In CI the browsers share 4 CPUs with the UI, Tomcat and the database: recording the video and the trace of
+ * every test only to delete them when it passes costs CPU every test pays. There, record them on the first
+ * retry: a failure still leaves a video and a trace to read. Locally keep them for every failure.
+ */
+const FAILURE_EVIDENCE = IS_CI ? "on-first-retry" : "retain-on-failure";
+
 /** Last project of the smoke chain: the regression and mocked projects run after it. */
 const LAST_SMOKE_PROJECT = "suite-04-financial";
 
@@ -50,8 +57,8 @@ export default defineConfig({
     headless: true,
     viewport: { width: 1280, height: 720 },
     screenshot: "only-on-failure",
-    video: "retain-on-failure",
-    trace: "retain-on-failure",
+    video: FAILURE_EVIDENCE,
+    trace: FAILURE_EVIDENCE,
     actionTimeout: ACTION_TIMEOUT_MS,
     navigationTimeout: NAVIGATION_TIMEOUT_MS,
     ignoreHTTPSErrors: true,
