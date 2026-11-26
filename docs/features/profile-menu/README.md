@@ -146,6 +146,11 @@ None.
   `ProfileModal.ordering.test.tsx` (values filled in on a role or organization change) and
   `ToggleSection.profile.test.tsx` (warehouse fallback order). The fixtures with the ETP-6332 example
   live in `test-utils/profileModalProps.ts`.
+- End to end: the second test of `playwright-tests/e2e/smoke/12_Session/SESaProfileSwitchTest.spec.ts`
+  switches to *F&B International Group Admin* and back to *QA Testing Admin* for the session only, and
+  checks the values filled in, an organization-only change and both lists against the Classic order
+  written down in the spec. The server sends the organizations of *QA Testing Admin* as
+  `USA, Main, *, Spain`, so a list in the server order fails it.
 - Password panel and toggle: `components/ProfileModal/__tests__/ToggleSection.password.test.tsx`,
   `ComponentLibrary/.../InputPassword/InputPassword.test.tsx` (click and Tab + Enter / Space) and the
   adornment cases in `TextInputBase.test.tsx`.
