@@ -74,3 +74,32 @@ export async function removePreferences(api: ApiData, preferences: SavedRecord[]
     }
   }
 }
+
+/** The request that stores a preference the user chose in the UI ("Never show this message again"). */
+export const SAVED_PREFERENCE_REQUEST = /\/api\/erp\/meta\/preferences/;
+
+/**
+ * Creates `values` for `windowId` and logs in again so the session reads them. The records go to `created`,
+ * which the spec removes in `test.afterEach` with {@link removePreferences}.
+ */
+export async function setWindowPreferences(
+  app: App,
+  api: ApiData,
+  created: SavedRecord[],
+  windowId: string,
+  values: readonly WindowPreference[]
+): Promise<void> {
+  created.push(...(await addWindowPreferences(api, windowId, values)));
+  await reloginToReadPreferences(app);
+}
+
+/**
+ * Sets back to "Y" the preferences a test turned off through the UI. Classic stores them in the System client
+ * ("Never show this message again"), so they are set back instead of deleted. Empties `names`.
+ */
+export async function restoreShownPreferences(api: ApiData, names: Set<string>): Promise<void> {
+  for (const name of names) {
+    await api.savePreference(name, "Y");
+  }
+  names.clear();
+}
