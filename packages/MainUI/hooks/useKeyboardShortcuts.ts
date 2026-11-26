@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useEffect, useRef } from "react";
+import { type RefObject, useEffect, useRef } from "react";
 
 export interface ShortcutConfig {
   handler: (event: KeyboardEvent) => void | Promise<void>;
@@ -51,9 +51,46 @@ export function isInputTarget(target: EventTarget | null): boolean {
   return tag === "input" || tag === "textarea" || tag === "select" || target.getAttribute("contenteditable") === "true";
 }
 
-export function useKeyboardShortcuts(shortcuts: ShortcutMap, enabled = true): void {
+/** Elements that act on Enter and the arrow keys by themselves: buttons, links, menu items, tabs, etc. */
+const INTERACTIVE_TARGET_SELECTOR = [
+  "button",
+  "a[href]",
+  "summary",
+  "[role='button']",
+  "[role='link']",
+  "[role='menuitem']",
+  "[role='menuitemcheckbox']",
+  "[role='menuitemradio']",
+  "[role='tab']",
+  "[role='switch']",
+  "[role='checkbox']",
+  "[role='radio']",
+  "[role='option']",
+  "[role='combobox']",
+].join(",");
+
+/** Whether `target` is a control that handles Enter and the arrow keys by itself. */
+export function isInteractiveTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest(INTERACTIVE_TARGET_SELECTOR) !== null;
+}
+
+interface UseKeyboardShortcutsOptions {
+  /**
+   * Limits the shortcuts to a region of the screen: a key pressed on a control outside it (a toolbar button,
+   * the top bar, a menu) is left to that control, as the shortcuts of a grid must not take its Enter or its
+   * arrow keys. A key pressed anywhere else, such as the page body, still triggers them.
+   */
+  scopeRef?: RefObject<HTMLElement | null>;
+}
+
+export function useKeyboardShortcuts(
+  shortcuts: ShortcutMap,
+  enabled = true,
+  options?: UseKeyboardShortcutsOptions
+): void {
   const shortcutsRef = useRef(shortcuts);
   shortcutsRef.current = shortcuts;
+  const scopeRef = options?.scopeRef;
 
   useEffect(() => {
     if (!enabled) return;
@@ -64,6 +101,9 @@ export function useKeyboardShortcuts(shortcuts: ShortcutMap, enabled = true): vo
       if (!config) return;
 
       if (isInputTarget(event.target) && !config.allowInInputs) return;
+
+      const scope = scopeRef?.current;
+      if (scope && isInteractiveTarget(event.target) && !scope.contains(event.target as Node)) return;
 
       if (config.preventDefault !== false) {
         event.preventDefault();
@@ -76,5 +116,5 @@ export function useKeyboardShortcuts(shortcuts: ShortcutMap, enabled = true): vo
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [enabled]);
+  }, [enabled, scopeRef]);
 }

@@ -1,5 +1,5 @@
 import type React from "react";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import Modal from "../../Modal";
 import Button from "../../../../ComponentLibrary/src/components/Button/Button";
@@ -74,6 +74,7 @@ const EmailSendModal: React.FC<EmailSendModalProps> = ({
   initialData,
 }) => {
   const { t } = useTranslation();
+  const titleId = useId();
   const [showMoreFields, setShowMoreFields] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [addedRecordAttachmentIds, setAddedRecordAttachmentIds] = useState<string[]>([]);
@@ -151,12 +152,14 @@ const EmailSendModal: React.FC<EmailSendModalProps> = ({
   };
 
   return (
-    <Modal open={isOpen} onClose={onClose} data-testid="Modal__387282">
+    <Modal open={isOpen} onClose={onClose} ariaLabelledBy={titleId} data-testid="Modal__387282">
       <div className="flex items-center justify-center min-h-screen p-4">
         <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h3 className="text-lg font-bold">{t("email.title")}</h3>
+            <h3 id={titleId} className="text-lg font-bold">
+              {t("email.title")}
+            </h3>
             <button
               type="button"
               onClick={onClose}

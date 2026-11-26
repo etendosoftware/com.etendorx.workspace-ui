@@ -92,3 +92,31 @@ describe("ProcessMenu — read-only logic", () => {
     expect(onProcessClick).not.toHaveBeenCalled();
   });
 });
+
+describe("ProcessMenu — keyboard (ETP-6304)", () => {
+  it("offers each process as a menu item the keyboard can reach", () => {
+    renderMenu([createButton("a"), createButton("b")]);
+
+    const item = screen.getByRole("menuitem", { name: "Process a" });
+    expect(item).toHaveAttribute("tabindex", "0");
+    expect(screen.getByRole("menuitem", { name: "Process b" })).toBeInTheDocument();
+  });
+
+  it("runs the process with Enter", () => {
+    const onProcessClick = renderMenu([createButton("a")]);
+
+    fireEvent.keyDown(screen.getByRole("menuitem", { name: "Process a" }), { key: "Enter" });
+
+    expect(onProcessClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a disabled process reachable, announced as disabled, and does not run it", () => {
+    const onProcessClick = renderMenu([createButton("denied", false)]);
+
+    const item = screen.getByRole("menuitem", { name: "Process denied" });
+    fireEvent.keyDown(item, { key: "Enter" });
+
+    expect(item).toHaveAttribute("aria-disabled", "true");
+    expect(onProcessClick).not.toHaveBeenCalled();
+  });
+});

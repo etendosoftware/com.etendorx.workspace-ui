@@ -55,8 +55,9 @@ const getProcessButtonName = (
   return matchingOption?.label ?? button.name;
 };
 
-const ENABLED_ITEM_CLASSES = "cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)";
-const DISABLED_ITEM_CLASSES = "cursor-not-allowed rounded-lg p-2 opacity-50";
+const ENABLED_ITEM_CLASSES =
+  "cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20) focus-visible:bg-(--color-baseline-20)";
+const DISABLED_ITEM_CLASSES = "cursor-not-allowed rounded-lg p-2 opacity-50 focus-visible:bg-(--color-baseline-20)";
 
 /**
  * Builds the class list of a process menu item. A disabled item (no selection, or a process the
@@ -117,6 +118,8 @@ const ProcessMenuItemBase = <T extends ProcessButton>({
   return (
     <div
       {...divProps}
+      role="menuitem"
+      tabIndex={0}
       onClick={disabled ? undefined : handleClick}
       aria-disabled={disabled}
       className={getMenuItemClassName(disabled, className)}

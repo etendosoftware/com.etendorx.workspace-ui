@@ -1090,7 +1090,8 @@ const GridShortcuts = ({
   const { activeFocusId } = useFocusContext(focusScope);
   const hasFocus = focusRegionId ? activeFocusId === focusRegionId : (isFocused ?? true);
 
-  useKeyboardShortcuts(shortcuts, !hasEditingRows && hasFocus);
+  // Enter and the arrow keys of a grid must not take those of a toolbar button or the top bar (ETP-6304)
+  useKeyboardShortcuts(shortcuts, !hasEditingRows && hasFocus, { scopeRef: gridShortcuts.containerRef });
   useGridShortcuts({ ...gridShortcuts, enabled: isGridVisible && !hasEditingRows && hasFocus });
   return null;
 };
