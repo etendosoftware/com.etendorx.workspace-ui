@@ -122,8 +122,10 @@ Access problems no longer answer 401, so a 401 always means "authentication":
   option (`client.test.ts`), the proxies (`sessionFailureStatus`, `route.helpers`, datasource session
   recovery) and, in the module, `BearerTokenGuardFilterTest` and `BaseWebServiceGuardTest`.
 - End to end: `playwright-tests/e2e/smoke/12_Session/SESbServerErrorKeepsSessionTest.spec.ts` (`@smoke`, about
-  20 s). It simulates a 500 and a 401 on one request (`answerWithStatus`), also on a request made outside the API
-  clients (the email configuration), forges an expired token, and checks the grid's own error replaces the toast.
+  25 s). It simulates a 500 and a 401 on one request (`answerWithStatus`), also on a request made outside the API
+  clients (the email configuration), reuses the token of a session closed with a logout (the server rejects it as
+  revoked: needs the metadata module of this task, see [Login and Logout](../login-logout/README.md)), forges an
+  expired token, and checks the grid's own error replaces the toast.
   Making a 500 close the session again makes it fail.
 - End to end: `playwright-tests/e2e/smoke/10_Grid/GRDkToolbarPrintTest.spec.ts` (`@smoke`, about 15 s). Print
   goes to the ERP proxy and downloads the PDF (simulated: generating it depends on the server compiling the

@@ -51,6 +51,12 @@ they live in the user store and are written right after `logout()`.
 - **Token revocation.** `logout()` clears the clients' token before calling the backend, so the token
   is captured first and passed to `logout(token)` in the api-client. Before this change the request
   carried an empty Bearer header and `/api/auth/logout` answered 401 without revoking anything.
+- **Closing the login session never undoes the revocation (ETP-6311).** `/meta/logout` revokes the token and
+  then closes the `AD_Session` recorded at login, in the same transaction. That session is written by Classic in the
+  System client, and it was read with the client and organization check: the close failed, the failed change was
+  flushed again on commit, and the whole transaction, revocation included, was rolled back. A logout from the UI
+  never revoked its token. The session is now read without that check, and a session that cannot be closed is taken
+  out of the transaction. SESb checks it end to end (a revoked token closes the session).
 
 ## Login: Classic default role
 
