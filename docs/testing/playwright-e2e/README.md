@@ -25,7 +25,9 @@ _Last updated: 2026-10-21 (ETP-5832: feature probes, regression tier, mocked-bac
   performance; 3 is also the global limit). Each spec selects only the documents it created. See
   [Grouping and parallelism](#grouping-and-parallelism).
 - **Every test starts logged out** and logs in through the UI with role "QA Testing Admin" / organization "Spain"
-  (the `app` fixture). No session is shared between tests.
+  (the `app` fixture). No session is shared between tests. The profile menu (role, organization, warehouse and
+  "Save as default") is only opened when the login did not already land there: the `meta/session` answer of the
+  login tells it (`support/sessionProfile.ts`).
 - **Specs combine support components** (`e2e/support`): sidebar navigation through a window registry, toolbar
   actions and process menu entries found by label, form fields by label or AD_Field_ID, process modals (React and
   legacy), Classic "Create Lines From", lookups.
@@ -45,6 +47,9 @@ _Last updated: 2026-10-21 (ETP-5832: feature probes, regression tier, mocked-bac
 | Legacy OK waits for the submit response | The wrapper modal's Close button is always on screen; closing it while the submit is in flight cancels the process request. |
 | After a successful legacy process, wait for the modal to close by itself | It auto-closes ~3 s after the success message; clicking Close meanwhile left the record without selection (toolbar buttons disabled). |
 | Stable `data-testid` only where no role/label exists | Codemod hash IDs change when a component file moves; Tailwind/MUI classes change with styling. |
+| The `app` fixture opens the profile menu only when the session is not already in the requested role and organization | In CI the menu cost ~7 s of the 14 s a login takes, on every test, to save as default what an earlier test had already saved. Any profile change or logout made through `Auth` forgets the session read at login, so a stale value never skips the menu. |
+| `actionTimeout` and `navigationTimeout` of 60 s | Without them a stuck step (6 of 9 timeouts in builds 2227–2242 were a click on the profile menu that never became actionable) burned the whole test timeout, 360–720 s, before the retry passed in ~20 s. The slowest passing steps in CI were a 14 s click, a 22 s typed text and a 6 s navigation; a call that legitimately needs longer passes its own timeout (`FILE_DOWNLOAD_TIMEOUT`, 120 s, for server-rendered files: up to 27 s in CI). |
+| Video and trace on the first retry in CI, kept for every failure locally | Recording every test only to delete it when it passes cost CPU on a pod where the browsers share 4 CPUs with the UI, Tomcat and the database. A failure in CI still leaves a video and a trace of its retry. |
 | `toolbar.save()` waits for the save and, for a new record, for its reload | The form reloads a new record right after saving it; a field changed in between (e.g. the payment method right after saving a header) was overwritten and the next save found nothing to save. |
 | Keyboard picks reach the option by its position | A search can match several options ("1 (Spain)" also matches "2.1 (Spain)"); pressing ArrowDown once picked the second match. |
 | Parallelism inside a project, projects still in sequence; 3 workers at most | See [Grouping and parallelism](#grouping-and-parallelism). |
@@ -52,7 +57,8 @@ _Last updated: 2026-10-21 (ETP-5832: feature probes, regression tier, mocked-bac
 | Tags in the `describe` title, not Playwright's `tag` option | Same mechanism the smoke specs already used; `--grep` matches them either way. |
 | `suite-05-regression` is a leaf project | Playwright runs dependency projects in full and ignores `--grep` there; only a project nothing depends on can be filtered out with `--grep-invert @regression`. |
 | Data a probe does not test is created through the datasource (`api` fixture) | Much faster than the UI and it keeps the probe on the behavior it checks. It needs a UI login first: the CSRF token of the server-side session is set by the app's own startup requests. |
-| Read-only probes and probes on their own records go to `suite-01-base` | That project waits for its longest spec (ADMb), so short probes fill idle workers almost for free. |
+| Read-only probes and probes on their own records go to `suite-01-base` | That project waits for its longest spec (ADMb), so short probes fill idle workers almost for free. In CI, though, `suite-01-base` is bound by its total work (68 min of tests over 3 workers), not by one spec. |
+| Files of independent tests run their tests in parallel (`mode: "parallel"`): GRDf, ADMe, SESb, NAVb, FRMh | They were the tail of `suite-01-base` in CI: up to 7 tests one after another in one worker. FRMk, GRDl and the PREFa files keep their order: their tests share preferences or a grid configuration. |
 | A probe never takes "the first row" and never changes the user's defaults | Projects run 3 specs in parallel on one database: probes filter by their own records or fixed sample documents, and SESa never ticks "Save as default". |
 | Client behavior the bare core has no data for is injected into the metadata (`support/processOverrides.ts`) | The core ships no migrated `em_etmeta_onprocess`; PRCb and PRCd set one in the window/process metadata the UI loads, and block the Java handler so nothing executes. The core has no process button that can be shown read-only either; PRCf sets a read-only logic on a field (`overrideField`). Nor a process with a file parameter a probe can run: PRCg gives Add Payment a single Upload File parameter. Nor a button that runs a multi-record `com.smf.jobs` process (Bulk Completion comes from a module CI does not install): PRCh wires the Sales Invoice "Process Invoices" button to the core "Process Invoices" definition, with the metadata the backend serves for it, and runs the real handler. |
 | Global configuration a probe needs is created for the user and the window only, and removed in `afterEach` | GRDd enables `OBUIAPP_GroupingEnabled` (only the F&B sample client has it); `afterEach` still runs with the page open when a test times out, a `finally` does not. Shared helpers: `support/flows/preferences.ts` (create for a window, log in again to read them, remove). |
@@ -69,9 +75,11 @@ inside a project, spec files run in parallel up to the project's `workers`.
 | `suite-00-performance` | `performance/` | 2 | Measures timings: runs first and alone so no smoke spec loads the server while it measures. Kept at the value it had. |
 | `suite-01-base` | login, master data, filters, linked items, display logic, `@smoke` feature probes | 3 | Read-only specs, or records with `uniqueValue()` names. |
 | `suite-02-sales` | SALa–SALd | 3 | Customer Barcelona and Customer A; each spec selects only its own orders, shipments and invoices. |
-| `suite-03-procurement` | PROa–PROe | 3 | Vendor A; each spec filters by its own document numbers. PROe runs the client-wide "Costing Background" process, which does not change the others' documents. |
-| `suite-04-financial` | FINb–FINf | 3 | Customer A, Vendor A/B, Spain Cashbook; each spec selects only its own invoices and payments. FINe (Match Statement) is the only spec on Spain Bank: the matching algorithm runs on every unmatched line of the account. Its tests run in order (`mode: "serial"`) on one statement. |
-| `suite-05-regression` | `regression/` | 3 | `@regression` probes, each on its own records or on a window no other spec uses (Currency for saved views, Country and Region for grouping). |
+| `suite-03-procurement-landed-cost` | PROe | default | Same dependency as `suite-03-procurement`, which is limited to 2 workers: the third one is free for PROe, the longest spec of the group, from the start instead of last (alphabetical order). It runs the client-wide "Costing Background" process, which does not change the others' documents. |
+| `suite-03-procurement` | PROa–PROd | 2 | Vendor A; each spec filters by its own document numbers. PurchaseOrderDisplayLogicTest runs in `suite-01-base` only. |
+| `suite-04-financial-match-statement` | FINe | default | Same dependencies as `suite-04-financial`, which is limited to 2 workers: the third one is free for FINe, the longest spec of the group, from the start. FINe (Match Statement) is the only spec on Spain Bank: the matching algorithm runs on every unmatched line of the account. Its tests run in order (`mode: "serial"`) on one statement. |
+| `suite-04-financial` | FINb–FINd, FINf | 2 | Customer A, Vendor A/B, Spain Cashbook; each spec selects only its own invoices and payments. |
+| `suite-05-regression` | `regression/` | 3 | `@regression` probes, each on its own records or on a window no other spec uses (Currency for saved views, Country and Region for grouping). PREFa is three files that run side by side, each on preferences only its own tests read (Product and tree, Goods Transaction, login and filter messages). |
 | `mocked` | `mocked/` | default | Recorded responses only: no ERP needed. Run it alone with `pnpm pw:mocked`. |
 
 **Why projects stay in sequence.** Different projects share business partners and their pending documents and
@@ -242,6 +250,29 @@ In the final runs `suite-01-base` takes ~151 s (was ~93 s); the leaf projects ru
 change. 142 tests passed in every run, none flaky. The budget for a PR is ~2 minutes more, so the CI job still runs
 everything; leaving the regression tier out of PRs would save ~36 s (see [Keeping the PR time](#keeping-the-pr-time)).
 
+### CI and the ETP-6295 changes
+
+Jenkins builds 2227–2242 (before ETP-6295), read from their archived reports: **Run Playwright Tests** took 56 min
+(median, 47–78). `suite-01-base` took 24 min of wall time for 68 min of tests (the 3 workers always busy, every test
+~9 times slower than locally: the pod is CPU-bound), `suite-05-regression` 12 min, the rest 3–7 min each. A login
+took 14.3 s per test, half of it in the profile menu; 9 attempts hung until the test timeout (6 of them on the
+profile menu click) and passed on the retry in ~20 s; PREFa, CHARa, FRMk, the mocked NAVa and GRDl failed their first
+attempt in most builds.
+
+ETP-6295 skips the profile menu when the login already landed there, bounds a stuck step to 60 s, records video and
+trace from the first retry in CI, starts PROe and FINe with their group, splits PREFa, runs the independent tests of
+the longest `suite-01-base` files in parallel and fixes the waits behind the CHARa, FRMk and SALa failures. Measured
+locally on a database installed from scratch, with `CI=1` (2 retries), same machine and database for both:
+
+| Project | `main` | ETP-6295 |
+|---|---|---|
+| `suite-00-performance` | 0.96 min | 0.43 min |
+| `suite-01-base` (wall / tests) | 6.0 / 17.7 min | 3.7 / 11.1 min |
+| `suite-02-sales` | 37 min: SALa hung 12 min in each of its 3 attempts | 0.8 min |
+| Whole run | stopped after Sales (68 tests did not run) | 9.4 min, 285 passed, 1 flaky |
+
+The CI figures after the change are measured on the first Jenkins builds of the branch.
+
 ## Keeping the PR time
 
 Apply in order, and stop as soon as the budget is met. Every pipeline change must stay backward compatible
@@ -252,7 +283,9 @@ Apply in order, and stop as soon as the budget is met. Every pipeline change mus
 2. **Change-based selection**: a versioned map of path globs to area tags, diffed against the target branch
    (clones are shallow: fetch the base first); shared code (stores, contexts, api-client, `e2e/support`) runs
    everything.
-3. **Balance the projects**: split specs much longer than the rest of their project.
+3. **Balance the projects**: split specs much longer than the rest of their project. Done in ETP-6295: PROe and
+   FINe start with their group, PREFa is three files, independent tests of the longest `suite-01-base` files run in
+   parallel.
 4. **Cache the environment**: installing the ERP costs more than the whole test stage; a prebuilt database and
    compiled ERP per core version would save more than every new spec costs (infrastructure work).
 
