@@ -32,11 +32,12 @@ const FAILURE_EVIDENCE = IS_CI ? "on-first-retry" : "retain-on-failure";
 /**
  * Specs that take much longer than the rest of their group, each in a project of its own that starts with the
  * group: in one project the files start in alphabetical order, so they used to start last and run alone at the
- * end (PROe ~2 min, FINe ~4 min in CI, ETP-6295). A phase queues the files of its projects in the order the
- * projects are listed here, so these projects go before the rest of their group.
+ * end (PROe ~2 min, FINe ~4 min in CI, ETP-6295). The rest of the group is limited to GROUP_WORKERS so the third
+ * worker is always free for the long spec, whatever order Playwright queues the projects of a phase in.
  */
 const LANDED_COST_SPEC = "**/03_Procurement/PROeOrderToLandedCostTest*";
 const MATCH_STATEMENT_SPEC = "**/05_Financial/FINeMatchStatementTest*";
+const GROUP_WORKERS = 2;
 const PROCUREMENT_PROJECTS = ["suite-03-procurement-landed-cost", "suite-03-procurement"];
 /** Last projects of the smoke chain: the regression and mocked projects run after them. */
 const LAST_SMOKE_PROJECTS = ["suite-04-financial-match-statement", "suite-04-financial"];
@@ -138,7 +139,7 @@ export default defineConfig({
 
     // Group 4 — Procurement (starts only after Sales finishes). Each spec filters by its own
     // document numbers; PROe runs the client-wide costing process, harmless to the others. PROe, the longest,
-    // has a project of its own listed first so it starts with the group.
+    // has a project of its own that starts with the group (see LANDED_COST_SPEC).
     {
       name: PROCUREMENT_PROJECTS[0],
       testMatch: [LANDED_COST_SPEC],
@@ -153,12 +154,12 @@ export default defineConfig({
       testIgnore: ["**/PurchaseOrderDisplayLogicTest*", LANDED_COST_SPEC],
       dependencies: ["suite-02-sales"],
       timeout: 360_000,
-      workers: 3,
+      workers: GROUP_WORKERS,
       use: DESKTOP_CHROME,
     },
 
     // Group 5 — Financial (runs last). Each spec selects only its own invoices and payments. FINe, the
-    // longest, has a project of its own listed first so it starts with the group.
+    // longest, has a project of its own that starts with the group (see MATCH_STATEMENT_SPEC).
     {
       name: LAST_SMOKE_PROJECTS[0],
       testMatch: [MATCH_STATEMENT_SPEC],
@@ -172,7 +173,7 @@ export default defineConfig({
       testIgnore: [MATCH_STATEMENT_SPEC],
       dependencies: PROCUREMENT_PROJECTS,
       timeout: 360_000,
-      workers: 3,
+      workers: GROUP_WORKERS,
       use: DESKTOP_CHROME,
     },
 
