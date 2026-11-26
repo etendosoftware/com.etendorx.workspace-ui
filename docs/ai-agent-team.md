@@ -148,6 +148,7 @@ Key behaviors:
 
 Key behaviors:
 - Checks `packages/ComponentLibrary/` before creating any new component
+- Builds every screen, component and process usable with the keyboard and a screen reader, following `docs/patterns/accessibility.md`: translated accessible names, correct roles, `Modal`/`Menu`/`useFocusScope` for dialogs and popups, no hidden focus
 - TypeScript strict: no `any`, no unused variables or imports, explicit return types on all signatures
 - **Pre-PR cleanup is mandatory**, in this order:
   1. `pnpm apply:data-testid` — adds missing `data-testid` attributes; commit separately if changes
@@ -189,6 +190,7 @@ Key behaviors:
 - `dangerouslySetInnerHTML` without sanitization
 - Commit subject line > 80 characters
 - Missing `data-testid` on interactive elements (pre-PR cleanup not run)
+- Accessibility: an icon-only control without an accessible name, a `div` with `onClick` and no role or keyboard handling, a dialog/popup/menu that does not manage the focus, `outline-none` that hides the focus, or a `document` key handler with no `scopeRef` (see `docs/patterns/accessibility.md`)
 - Biome formatting violations visible in diff (pre-PR cleanup not run)
 - Wrong branch name format
 

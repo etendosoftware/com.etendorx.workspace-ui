@@ -41,6 +41,15 @@ packages/
 - **Non-null Assertions**: Use sparingly and only when necessary
 - **Unused Variables**: Must be prefixed with underscore if intentional
 
+### Accessibility
+- Everything interactive needs a translated accessible name (`aria-label`, or the `tooltip` of `IconButton`);
+  decorative images use `alt=""`. Add the key to `en.ts` and `es.ts` of the ComponentLibrary locales.
+- Use `button`/`a`, or give a `div` a `role`, `tabIndex` and Enter/Space handlers; keep `aria-expanded` and
+  `aria-pressed` on the element that has the role.
+- Dialogs, popups and menus use `Modal`, `Menu` or `useFocusScope` (focus in, Escape closes, focus back).
+- Never hide the keyboard focus (`outline-none` without the ring) and scope `document` key handlers with `scopeRef`.
+- See `docs/patterns/accessibility.md`.
+
 ### File Naming Conventions
 - **Components**: PascalCase (e.g., `UserProfile.tsx`)
 - **Hooks**: camelCase starting with `use` (e.g., `useAuthentication.ts`)
