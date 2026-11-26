@@ -18,6 +18,7 @@
 import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { createSearchIndex, getAllItemTitles, rebuildTree, filterItems } from "../searchUtils";
 
+/** A window entry: something the menu search can return. */
 const makeMenu = (id: string, name: string, children?: Menu[]): Menu =>
   ({
     _identifier: id,
@@ -26,8 +27,19 @@ const makeMenu = (id: string, name: string, children?: Menu[]): Menu =>
     recordTime: 0,
     id,
     name,
+    type: "Window",
+    windowId: `W_${id}`,
     children,
   }) as Menu;
+
+/** A folder (`Summary`): it only groups entries and is never a search result by itself. */
+const makeFolder = (id: string, name: string, children: Menu[]): Menu => ({ id, name, type: "Summary", children });
+
+/** Ids of every node of a filtered tree, depth first. */
+const collectIds = (items: Menu[]): string[] => items.flatMap((item) => [item.id, ...collectIds(item.children ?? [])]);
+
+/** Builds the index of `items` and filters them with `searchValue`. */
+const search = (items: Menu[], searchValue: string) => filterItems(items, searchValue, createSearchIndex(items));
 
 describe("searchUtils", () => {
   describe("createSearchIndex", () => {
@@ -143,6 +155,52 @@ describe("searchUtils", () => {
       const index = createSearchIndex(multiWordItems);
       const { filteredItems } = filterItems(multiWordItems, "sales invoice", index);
       expect(filteredItems.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("folders", () => {
+    const salesOrder = makeMenu("salesOrder", "Sales Order");
+    const salesSetup = makeMenu("salesSetup", "Sales Setup");
+    const salesTransactions = makeFolder("salesTransactions", "Transactions", [salesOrder]);
+    const salesSetupFolder = makeFolder("salesSetupFolder", "Setup", [salesSetup]);
+    const salesManagement = makeFolder("salesManagement", "Sales Management", [salesTransactions, salesSetupFolder]);
+    const purchaseInvoice = makeMenu("purchaseInvoice", "Purchase Invoice");
+    const purchaseTransactions = makeFolder("purchaseTransactions", "Transactions", [purchaseInvoice]);
+    const procurementSetup = makeFolder("procurementSetup", "Setup", [makeMenu("vendorTerms", "Vendor Terms")]);
+    const menu = [salesManagement, makeFolder("procurement", "Procurement", [purchaseTransactions, procurementSetup])];
+
+    it("keeps folders in the index but never by their name", () => {
+      const index = createSearchIndex(menu);
+      expect(index.byId.has("salesTransactions")).toBe(true);
+      expect(index.byPhrase.has("transactions")).toBe(false);
+      expect(getAllItemTitles(index)).not.toContain("sales management");
+      expect(getAllItemTitles(index)).toContain("sales order");
+    });
+
+    it("shows nothing when only folder names match", () => {
+      const { filteredItems, searchExpandedItems } = search(menu, "transactions");
+      expect(filteredItems).toHaveLength(0);
+      expect(searchExpandedItems.size).toBe(0);
+    });
+
+    it("shows nothing when the words of the term match only folder names", () => {
+      expect(search(menu, "procurement transactions").filteredItems).toHaveLength(0);
+    });
+
+    it("shows a matching entry with its folders as its expanded path", () => {
+      const { filteredItems, searchExpandedItems } = search(menu, "sales order");
+      expect(collectIds(filteredItems)).toEqual(["salesManagement", "salesTransactions", "salesOrder"]);
+      expect(Array.from(searchExpandedItems)).toEqual(["salesManagement", "salesTransactions"]);
+    });
+
+    it("hides a folder whose name matches but holds no matching entry", () => {
+      const { filteredItems } = search(menu, "setup");
+      expect(collectIds(filteredItems)).toEqual(["salesManagement", "salesSetupFolder", "salesSetup"]);
+    });
+
+    it("never returns an entry that cannot be opened", () => {
+      const brokenWindow = { id: "broken", name: "Sales Report", type: "Window" } as Menu;
+      expect(search([brokenWindow], "sales").filteredItems).toHaveLength(0);
     });
   });
 });
