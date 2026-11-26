@@ -23,15 +23,22 @@ import type { Menu } from "@workspaceui/api-client/src/api/types";
 import Sidebar from "../Sidebar";
 import { useWindowStore } from "@/stores/windowStore";
 import { notifyReportPopupBlocked, tryOpenReportPopup } from "@/utils/reportPopup";
+import { preloadWindowViewSettings } from "@/utils/savedViews/defaultViews";
 
 const mockOpenExternalMenuEntry = jest.fn();
 let capturedOnClick: (item: Menu) => void = () => {};
+let capturedOnItemHover: (item: Menu) => void = () => {};
 
 jest.mock("@workspaceui/componentlibrary/src/components/Drawer/index", () => ({
-  Drawer: ({ onClick }: { onClick: (item: Menu) => void }) => {
+  Drawer: ({ onClick, onItemHover }: { onClick: (item: Menu) => void; onItemHover: (item: Menu) => void }) => {
     capturedOnClick = onClick;
+    capturedOnItemHover = onItemHover;
     return null;
   },
+}));
+jest.mock("@/utils/savedViews/defaultViews", () => ({
+  preloadWindowViewSettings: jest.fn(),
+  prefetchWindowViewSettings: jest.fn(),
 }));
 
 jest.mock("../ProcessModal/ProcessDefinitionModal", () => ({ __esModule: true, default: () => null }));
@@ -208,5 +215,26 @@ describe("Sidebar menu click dispatch", () => {
     expect(mockOpenExternalMenuEntry).not.toHaveBeenCalled();
     const [opened] = Object.values(useWindowStore.getState().windows);
     expect(opened).toMatchObject({ windowId: "143", title: "Sales Order", isActive: true });
+  });
+});
+
+describe("Sidebar menu hover", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => jest.useRealTimers());
+
+  it("loads the saved views and stored columns of a window once the pointer rests on its entry", () => {
+    render(<Sidebar />);
+
+    act(() => capturedOnItemHover({ id: "MENU_SO", name: "Sales Order", type: "Window", windowId: "143" }));
+    expect(preloadWindowViewSettings).not.toHaveBeenCalled();
+    act(() => {
+      jest.advanceTimersByTime(150);
+    });
+
+    expect(preloadWindowViewSettings).toHaveBeenCalledWith("143");
   });
 });

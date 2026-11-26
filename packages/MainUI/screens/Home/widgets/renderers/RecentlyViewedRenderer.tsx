@@ -17,7 +17,7 @@
 
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import type { RecentItem } from "@workspaceui/componentlibrary/src/components/Drawer/types";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserStore } from "@/stores/userStore";
@@ -32,6 +32,9 @@ import { findLiveMenuEntry } from "@/utils/menu/legacyMenuEntry";
 import { MENU_CLICK_INTENT_KINDS, resolveMenuClickIntent } from "@/utils/menu/menuItemDispatch";
 import { MENU_ITEM_TYPES } from "@/utils/menu/menuItemTypes";
 import { usePrefetchWindowOnHover } from "@/hooks/usePrefetchWindowOnHover";
+import { useLiveMenu } from "@/hooks/useLiveMenu";
+import { useEntryUnavailableNotice } from "@/hooks/useEntryUnavailableNotice";
+import { isStoredMenuEntryAvailable } from "@/utils/menu/menuAvailability";
 import { WIDGET_CHIP_CLASSES, WIDGET_EMPTY_TEXT_CLASSES } from "./chipClasses";
 
 export default function RecentlyViewedRenderer() {
@@ -42,7 +45,15 @@ export default function RecentlyViewedRenderer() {
   const openLegacyMenuEntry = useOpenLegacyMenuEntry();
   const prefetchOnHover = usePrefetchWindowOnHover();
 
-  const items = currentRole?.id ? recentItems : [];
+  const removeRecentItem = useRecentItemsStore((s) => s.remove);
+  const notifyEntryUnavailable = useEntryUnavailableNotice();
+  const menu = useLiveMenu();
+
+  // Entries the role's menu no longer has are not offered (ETP-6431).
+  const items = useMemo(
+    () => (currentRole?.id ? recentItems.filter((item) => isStoredMenuEntryAvailable(menu, item)) : []),
+    [currentRole?.id, recentItems, menu]
+  );
 
   /**
    * Opens a recent entry served by Etendo Classic (Form, ProcessManual, Report, View) the same way
@@ -64,6 +75,12 @@ export default function RecentlyViewedRenderer() {
 
   const handleClick = useCallback(
     (item: RecentItem) => {
+      // The menu may have changed since the list was drawn: never open an entry the role can no longer open.
+      if (!isStoredMenuEntryAvailable(Metadata.getCachedMenu(), item)) {
+        notifyEntryUnavailable();
+        removeRecentItem(item.id);
+        return;
+      }
       if (isExternalMenuEntry(item)) {
         // Prefer the live menu entry, so a URL changed since the visit is honored.
         openExternalMenuEntry(findExternalMenuEntry(Metadata.getCachedMenu(), item.id) ?? item);
@@ -75,7 +92,7 @@ export default function RecentlyViewedRenderer() {
       const windowIdentifier = getNewWindowIdentifier(windowId);
       showWindow({ windowId, windowIdentifier, windowData: { title: item.name, initialized: true } });
     },
-    [openExternalMenuEntry, openClassicRecentItem]
+    [openExternalMenuEntry, openClassicRecentItem, notifyEntryUnavailable, removeRecentItem]
   );
 
   if (items.length === 0) {

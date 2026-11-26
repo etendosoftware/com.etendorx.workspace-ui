@@ -16,6 +16,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import type { WindowState } from "@/utils/window/constants";
 import { isExternalPageWindowId } from "@/utils/menu/externalMenuEntry";
 import { recoverExternalPageWindow } from "@/utils/window/externalPageRecovery";
+import { prefetchWindowViewSettings } from "@/utils/savedViews/defaultViews";
 
 /**
  * Global URL state recovery hook for Etendo WorkspaceUI.
@@ -114,6 +115,8 @@ export const useGlobalUrlStateRecovery = () => {
           }
 
           try {
+            // The grids wait for their default view or stored columns: request them with the metadata
+            prefetchWindowViewSettings(info.windowIdentifier);
             // Fetch window metadata (cached if previously loaded)
             const metadata = await loadWindowData(windowId);
 

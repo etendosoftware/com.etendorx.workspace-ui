@@ -50,6 +50,8 @@ function useKeepAliveStub({ token, onExpired }: KeepAliveParams) {
 // jest.setup.js mocks @/contexts/user globally; we need the real provider here.
 jest.unmock("@/contexts/user");
 
+// Opening a window also requests its saved views: not what these tests check
+jest.mock("@/utils/savedViews/defaultViews", () => ({ prefetchWindowViewSettings: jest.fn() }));
 jest.mock("@workspaceui/api-client/src/api/authentication", () => ({
   login: jest.fn(),
   logout: jest.fn(),

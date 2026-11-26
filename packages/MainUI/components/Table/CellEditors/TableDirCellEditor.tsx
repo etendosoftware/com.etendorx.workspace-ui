@@ -17,7 +17,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CellEditorProps } from "../types/inlineEditing";
-import type { RefListField } from "@workspaceui/api-client/src/api/types";
+import type { Field, RefListField } from "@workspaceui/api-client/src/api/types";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 import { useKeyboardNavigation } from "../utils/keyboardNavigation";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
@@ -33,6 +33,17 @@ import { SELECTED_CHECK_CLASSES } from "@/utils/iconClasses";
  * TABLEDIR cell editor that uses a dropdown similar to MultiSelect but for single selection
  * Handles option loading, display, and value mapping for TABLEDIR fields
  */
+/**
+ * Whether typing this term makes the editor ask the server for options: a TABLEDIR column without a static list,
+ * with a loader, and a term long enough to be searched.
+ */
+export const searchesOnServer = (field: Field, hasLoader: boolean, term: string, minSearchChars: number): boolean => {
+  if (!hasLoader || field.type !== FieldType.TABLEDIR || field.refList?.length) {
+    return false;
+  }
+  return term.trim() !== "" && !isBelowSearchThreshold(term, minSearchChars);
+};
+
 const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
   value,
   onChange,
@@ -68,6 +79,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const hasLoadedForCurrentValue = useRef<string | null>(null);
   const loadOptionsRef = useRef(loadOptions);
+  const latestOptionsRequestRef = useRef(0);
   const fieldNameRef = useRef(field.name);
 
   // Update refs when props change to avoid triggering effects
@@ -184,14 +196,17 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
       }
 
       setIsLoadingDynamicOptions(true);
+      // Only the latest search may show its options: an older answer arriving later is ignored (ETP-6431).
+      const requestId = ++latestOptionsRequestRef.current;
+      const isLatest = () => requestId === latestOptionsRequestRef.current;
       try {
         const loadedOptions = await loadOptionsFn(field, searchTerm);
-        setDynamicOptions(loadedOptions);
+        if (isLatest()) setDynamicOptions(loadedOptions);
       } catch (error) {
         console.error(`[TableDirCellEditor] Failed to load options for ${fieldNameRef.current}:`, error);
-        setDynamicOptions([]);
+        if (isLatest()) setDynamicOptions([]);
       } finally {
-        setIsLoadingDynamicOptions(false);
+        if (isLatest()) setIsLoadingDynamicOptions(false);
       }
     };
 
@@ -321,10 +336,18 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     setFocused();
   }, [anchorEl, disabled, setFocused]);
 
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-    setHighlightedIndex(-1);
-  }, []);
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const term = e.target.value;
+      setSearchTerm(term);
+      setHighlightedIndex(-1);
+      // Loading from this keystroke on, so the old options filtered by the new term never read "No options found".
+      if (searchesOnServer(field, Boolean(loadOptionsRef.current), term, minSearchChars)) {
+        setIsLoadingDynamicOptions(true);
+      }
+    },
+    [field, minSearchChars]
+  );
 
   /**
    * Handle Enter key press
@@ -569,7 +592,9 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     }
 
     return (
-      <div className="px-4 py-2 text-sm text-gray-500">{isLoading ? "Loading options..." : "No options found"}</div>
+      <div className="px-4 py-2 text-sm text-gray-500">
+        {isLoading ? t("common.loading") : t("multiselect.noOptionsFound")}
+      </div>
     );
   };
 

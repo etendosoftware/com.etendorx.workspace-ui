@@ -16,6 +16,7 @@ const DATASOURCE_PATH = "/api/datasource";
 const GRID_CONFIGURATION_PATH = "/api/erp/meta/grid-configuration";
 const PROCESS_METADATA_PATH = "/api/erp/meta/process";
 const PREFERENCES_PATH = "/api/erp/meta/preferences";
+const RECENT_DOCUMENTS_PATH = "/api/erp/sws/com.etendoerp.metadata.meta/recent-documents";
 const DATA_SOURCE = "isc_OBViewDataSource_0";
 const ADD: WriteOperation = "add";
 const REMOVE: WriteOperation = "remove";
@@ -69,6 +70,8 @@ export interface FetchQuery {
   criteria: FetchCriterion[];
   sortBy?: string;
   limit?: number;
+  /** Also read the inactive records, as a window grid does (`_noActiveFilter`). */
+  includeInactive?: boolean;
 }
 
 const DEFAULT_FETCH_LIMIT = 100;
@@ -89,6 +92,9 @@ export function datasourceFetchBody(target: DatasourceTarget, query: FetchQuery)
   if (query.sortBy) {
     params._sortBy = query.sortBy;
   }
+  if (query.includeInactive) {
+    params._noActiveFilter = "true";
+  }
   return { entity: target.entity, params };
 }
 
@@ -104,9 +110,18 @@ export function fetchedRecordsFrom(body: unknown, entity: string): RecordValues[
   return records as RecordValues[];
 }
 
+/** Body that stores the grid configuration of one tab, as the UI sends it; `null` removes it. */
+export function gridConfigurationBody(
+  windowId: string,
+  tabId: string,
+  configuration: RecordValues | null
+): RecordValues {
+  return { windowId, tabId, configuration };
+}
+
 /** Body that removes the saved grid configuration of one tab, as the UI sends it (`configuration: null`). */
 export function gridConfigurationResetBody(windowId: string, tabId: string): RecordValues {
-  return { windowId, tabId, configuration: null };
+  return gridConfigurationBody(windowId, tabId, null);
 }
 
 /**
@@ -187,6 +202,21 @@ export function assertRemoved(body: unknown, entity: string): void {
  * For data a spec needs to exist but does not test the creation of: it is much faster than the
  * UI. Needs a logged-in page (the request reuses its token and server-side session).
  */
+/** A record the user viewed in form view, as the Home "Recent documents" widget lists it. */
+export interface RecentDocument {
+  windowId: string;
+  windowTitle: string;
+  tabId: string;
+  tabLevel: number;
+  recordId: string;
+  identifier: string;
+}
+
+/** URL that removes a recent document of the current user and role. */
+export function recentDocumentRemoveUrl({ tabId, recordId }: Pick<RecentDocument, "tabId" | "recordId">): string {
+  return `${RECENT_DOCUMENTS_PATH}?${new URLSearchParams({ tabId, recordId }).toString()}`;
+}
+
 export class ApiData {
   constructor(private readonly page: Page) {}
 
@@ -234,12 +264,20 @@ export class ApiData {
    * so the grid shows its defaults. The grid saves it by itself when it is sorted or rearranged.
    */
   async resetGridConfiguration(windowId: string, tabId: string): Promise<void> {
+    await this.setGridConfiguration(windowId, tabId, null);
+  }
+
+  /**
+   * Stores a grid configuration (column order, visibility, sort) for the user and a tab, as the grid does
+   * when the user rearranges or sorts it; `null` removes it.
+   */
+  async setGridConfiguration(windowId: string, tabId: string, configuration: RecordValues | null): Promise<void> {
     const response = await this.page.request.put(GRID_CONFIGURATION_PATH, {
       headers: await this.authHeaders(),
-      data: gridConfigurationResetBody(windowId, tabId),
+      data: gridConfigurationBody(windowId, tabId, configuration),
     });
     if (!response.ok()) {
-      throw new Error(`Resetting the grid configuration of tab ${tabId} failed: ${response.status()}`);
+      throw new Error(`Storing the grid configuration of tab ${tabId} failed: ${response.status()}`);
     }
   }
 
@@ -276,6 +314,30 @@ export class ApiData {
     });
     if (!response.ok()) {
       throw new Error(`Storing the preference ${property} failed: ${response.status()}`);
+    }
+  }
+
+  /**
+   * Adds a record to the recent documents of the user and role, as the form does after the user stays on it.
+   * @throws when the backend rejected it.
+   */
+  async trackRecentDocument(document: RecentDocument): Promise<void> {
+    const response = await this.page.request.post(RECENT_DOCUMENTS_PATH, {
+      headers: await this.authHeaders(),
+      data: document,
+    });
+    if (!response.ok()) {
+      throw new Error(`Tracking the recent document ${document.recordId} failed: ${response.status()}`);
+    }
+  }
+
+  /** Removes a record from the recent documents of the user and role; nothing happens when it is not there. */
+  async removeRecentDocument(document: Pick<RecentDocument, "tabId" | "recordId">): Promise<void> {
+    const response = await this.page.request.delete(recentDocumentRemoveUrl(document), {
+      headers: await this.authHeaders(),
+    });
+    if (!response.ok()) {
+      throw new Error(`Removing the recent document ${document.recordId} failed: ${response.status()}`);
     }
   }
 

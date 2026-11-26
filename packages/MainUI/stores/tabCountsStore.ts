@@ -20,21 +20,34 @@ import { create } from "zustand";
 /** Record count of each child tab's grid, shown as a badge on the tab strip. Key: `${windowIdentifier}:${tabId}`. */
 interface TabCountsStore {
   counts: Record<string, number>;
-  setCount: (key: string, count: number) => void;
+  /** Keys whose tab has more records than the loaded ones: the badge shows "N+". */
+  partial: Record<string, true>;
+  setCount: (key: string, count: number, hasMore?: boolean) => void;
   /** Removes the badge, e.g. while several parent records are selected and no children are shown. */
   clearCount: (key: string) => void;
+}
+
+/** The partial keys with `key` added or removed. */
+function withPartialKey(partial: Record<string, true>, key: string, hasMore: boolean): Record<string, true> {
+  if (hasMore) return { ...partial, [key]: true };
+  const { [key]: _removed, ...rest } = partial;
+  return rest;
 }
 
 export const getTabCountKey = (windowIdentifier: string, tabId: string) => `${windowIdentifier}:${tabId}`;
 
 export const useTabCountsStore = create<TabCountsStore>((set) => ({
   counts: {},
-  setCount: (key, count) =>
-    set((state) => (state.counts[key] === count ? state : { counts: { ...state.counts, [key]: count } })),
+  partial: {},
+  setCount: (key, count, hasMore = false) =>
+    set((state) => {
+      if (state.counts[key] === count && Boolean(state.partial[key]) === hasMore) return state;
+      return { counts: { ...state.counts, [key]: count }, partial: withPartialKey(state.partial, key, hasMore) };
+    }),
   clearCount: (key) =>
     set((state) => {
       if (!(key in state.counts)) return state;
       const { [key]: _removed, ...rest } = state.counts;
-      return { counts: rest };
+      return { counts: rest, partial: withPartialKey(state.partial, key, false) };
     }),
 }));

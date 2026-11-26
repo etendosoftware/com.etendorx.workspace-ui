@@ -27,6 +27,8 @@ export interface RecordCounterBarProps {
   loadedRecords: number;
   /** Number of currently selected records */
   selectedCount: number;
+  /** Whether more records than the loaded ones exist: the count then shows "N+" */
+  hasMoreRecords?: boolean;
   /** Whether the data is currently loading */
   isLoading?: boolean;
   /** Optional actions to render on the right side of the bar */
@@ -56,6 +58,8 @@ export interface RecordCounterProps {
   totalRecords: number;
   /** Number of records currently loaded/displayed */
   loadedRecords: number;
+  /** Whether more records than the loaded ones exist: the count then shows "N+" */
+  hasMoreRecords?: boolean;
   /** Whether the data is currently loading */
   isLoading?: boolean;
   /** Text labels for internationalization */

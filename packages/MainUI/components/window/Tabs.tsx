@@ -199,7 +199,8 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
         isExpanded={isExpanded}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
-        onPrewarm={collapsed ? undefined : handlePrewarm}
+        // Also while the child level is collapsed, so hovering a child tab always loads its record count (ETP-6431)
+        onPrewarm={handlePrewarm}
         onClose={handleClose}
         data-testid={`SubTabsSwitch__${current?.id ?? activeTabId ?? "6fa401"}`}
       />

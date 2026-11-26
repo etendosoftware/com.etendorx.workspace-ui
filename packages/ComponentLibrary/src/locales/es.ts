@@ -677,6 +677,12 @@ const es = {
     from: "Desde",
     to: "Hasta",
     clearFilters: "Borrar filtros",
+    oneDate: "Una fecha",
+    range: "Rango",
+    date: "Fecha",
+    invalidDate: "Fecha no válida",
+    summary: "Filtra",
+    noFilter: "Sin filtro de fecha",
     months: [
       "Enero",
       "Febrero",
@@ -904,6 +910,7 @@ const es = {
   },
   dashboard: {
     title: "Panel",
+    entryUnavailable: "Su rol actual no le da acceso a esta funcionalidad.",
     ctaBanner: {
       badge: "Novedades",
       title: "Noticias y actualizaciones de Etendo",
@@ -917,6 +924,7 @@ const es = {
     recentDocuments: {
       title: "Documentos recientes",
       empty: "No hay documentos recientes",
+      recordNoLongerExists: "El registro ya no existe. Se ha quitado de los documentos recientes.",
     },
     widget: {
       unavailable: "Módulo no instalado",

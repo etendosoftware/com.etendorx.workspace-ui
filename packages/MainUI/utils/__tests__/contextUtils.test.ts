@@ -1,4 +1,10 @@
-import { buildContextString, buildEtendoContext, buildParentSessionContext } from "../contextUtils";
+import {
+  buildAncestorContext,
+  buildContextString,
+  buildEtendoContext,
+  buildParentSessionContext,
+  buildRecordContext,
+} from "../contextUtils";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type Graph from "../../data/graph";
 
@@ -194,6 +200,51 @@ describe("contextUtils", () => {
 
       const result = buildEtendoContext(tab, mockGraph);
       expect(result).toEqual({});
+    });
+  });
+
+  describe("buildAncestorContext / buildRecordContext", () => {
+    const ID_FIELD = { id: { hqlName: "id", column: {} } };
+    /** A tab whose context is its record id, `@<entity>.id@`. */
+    const idTab = (id: string, entityName: string) => ({ id, entityName, fields: ID_FIELD }) as unknown as Tab;
+    const GRANDPARENT = idTab("grandparent", "Grandparent");
+    const PARENT = idTab("parent", "Parent");
+    const CHILD = idTab("child", "Child");
+    const PARENTS: Record<string, Tab | undefined> = { child: PARENT, parent: GRANDPARENT };
+    const SELECTED: Record<string, { id: string }> = {
+      grandparent: { id: "g1" },
+      parent: { id: "p1" },
+      child: { id: "c1" },
+    };
+
+    const graphWith = (selected: Record<string, { id: string } | undefined>) =>
+      ({
+        getParent: (tab: Tab) => PARENTS[tab.id],
+        getSelected: (tab: Tab) => selected[tab.id],
+      }) as unknown as Graph<Tab>;
+
+    it("gives the context of every ancestor without the record of the tab itself", () => {
+      expect(buildAncestorContext(CHILD, graphWith(SELECTED))).toEqual({
+        "@Grandparent.id@": "g1",
+        "@Parent.id@": "p1",
+      });
+    });
+
+    it("uses the given parent record for the direct parent, also when the graph has none", () => {
+      const context = buildAncestorContext(CHILD, graphWith({ ...SELECTED, parent: undefined }), { id: "p2" });
+
+      expect(context).toEqual({ "@Grandparent.id@": "g1", "@Parent.id@": "p2" });
+    });
+
+    it("gives no context for a tab without parent or a missing record", () => {
+      expect(buildAncestorContext(GRANDPARENT, graphWith(SELECTED))).toEqual({});
+      expect(buildRecordContext(CHILD, null)).toEqual({});
+    });
+
+    it("lets the record of the tab override an ancestor of the same entity in the whole context", () => {
+      const sameEntityChild = idTab("child", "Parent");
+
+      expect(buildEtendoContext(sameEntityChild, graphWith(SELECTED))["@Parent.id@"]).toBe("c1");
     });
   });
 

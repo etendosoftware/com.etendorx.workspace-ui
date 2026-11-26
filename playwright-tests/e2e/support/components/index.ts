@@ -4,6 +4,7 @@ import { Auth } from "./Auth";
 import { Breadcrumb } from "./Breadcrumb";
 import { CharacteristicsFilter } from "./CharacteristicsFilter";
 import { CreateLinesFrom } from "./CreateLinesFrom";
+import { DateFilter } from "./DateFilter";
 import { FormField } from "./FormField";
 import { FormSections } from "./FormSections";
 import { InstancePurpose } from "./InstancePurpose";
@@ -21,6 +22,7 @@ import { WindowTabs } from "./WindowTabs";
 
 export { ATTRIBUTE, type AttributeKey } from "./AttributeSelector";
 export { AUTH_TEST_IDS, type RoleSelection } from "./Auth";
+export type { DateFilterField, DateFilterMode } from "./DateFilter";
 export { MATCH_ROW_ACTION, type MatchRowAction, SECOND_NESTED_LEVEL } from "./MatchStatement";
 export { PROCESS_MODAL_TEST_IDS } from "./ProcessModal";
 export { SIDEBAR_TEST_IDS } from "./Sidebar";
@@ -49,6 +51,7 @@ export class App {
   readonly savedViews: SavedViews;
   readonly matchStatement: MatchStatement;
   readonly characteristicsFilter: CharacteristicsFilter;
+  readonly dateFilter: DateFilter;
 
   constructor(readonly page: Page) {
     this.auth = new Auth(page);
@@ -69,6 +72,7 @@ export class App {
     this.savedViews = new SavedViews(page);
     this.matchStatement = new MatchStatement(page);
     this.characteristicsFilter = new CharacteristicsFilter(page);
+    this.dateFilter = new DateFilter(page);
   }
 
   /** Lookup (magnifying glass) of the field with the given AD_Field_ID. */

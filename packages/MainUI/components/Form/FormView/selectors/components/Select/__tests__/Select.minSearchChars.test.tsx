@@ -15,10 +15,13 @@
  *************************************************************************
  */
 
-import { act, fireEvent, render, screen } from "@testing-library/react";
-import { FormProvider, useForm } from "react-hook-form";
-import type { Field } from "@workspaceui/api-client/src/api/types";
-import Select from "../Select";
+import { render, screen } from "@testing-library/react";
+import {
+  getSelectSearchInput as getSearchInput,
+  openSelectDropdown as openDropdown,
+  SelectHarness,
+  typeInSelectSearch as type,
+} from "../../../__testHelpers__/selectTestHarness";
 
 jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({
@@ -30,20 +33,6 @@ if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = jest.fn();
 }
 
-const FIELD_NAME = "businessPartner";
-const OPTIONS = [
-  { id: "1", label: "Alpha Corp" },
-  { id: "2", label: "Alpine SA" },
-];
-
-const field = {
-  id: "field-1",
-  hqlName: FIELD_NAME,
-  name: "Business Partner",
-  isMandatory: false,
-  helpComment: "",
-} as unknown as Field;
-
 const COLUMNS = [
   { accessorKey: "name", header: "Name" },
   { accessorKey: "city", header: "City" },
@@ -54,37 +43,12 @@ const ROWS = [
 ];
 
 function Harness({ minSearchChars, withColumns = false }: { minSearchChars?: number; withColumns?: boolean }) {
-  const methods = useForm({ defaultValues: { [FIELD_NAME]: "" } });
-  return (
-    <FormProvider {...methods}>
-      <Select
-        name={FIELD_NAME}
-        options={withColumns ? ROWS : OPTIONS}
-        columns={withColumns ? COLUMNS : undefined}
-        isReadOnly={false}
-        field={field}
-        minSearchChars={minSearchChars}
-      />
-    </FormProvider>
+  return withColumns ? (
+    <SelectHarness options={ROWS} columns={COLUMNS} minSearchChars={minSearchChars} />
+  ) : (
+    <SelectHarness minSearchChars={minSearchChars} />
   );
 }
-
-const getSearchInput = () => document.querySelector("[data-dropdown-portal] input") as HTMLInputElement;
-
-const openDropdown = () => {
-  act(() => {
-    fireEvent.click(screen.getByLabelText("Business Partner").querySelector("[tabindex='0']") as HTMLElement);
-  });
-  act(() => {
-    jest.advanceTimersByTime(10);
-  });
-};
-
-const type = (value: string) => {
-  act(() => {
-    fireEvent.change(getSearchInput(), { target: { value } });
-  });
-};
 
 describe("Select — minimum search characters", () => {
   beforeEach(() => jest.useFakeTimers());

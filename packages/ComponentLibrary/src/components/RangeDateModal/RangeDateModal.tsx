@@ -1,5 +1,5 @@
 import type React from "react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import CalendarIcon from "../../assets/icons/calendar.svg";
 import ChevronLeftIcon from "../../assets/icons/chevron-left.svg";
@@ -8,22 +8,46 @@ import ChevronDownIcon from "../../assets/icons/chevron-down.svg";
 import EraserIcon from "../../assets/icons/eraser.svg";
 import XIcon from "../../assets/icons/x.svg";
 import Button from "../Button/Button";
-import { formatBrowserDate, getLocaleDatePlaceholder } from "../../utils/dateFormatter";
+import { formatBrowserDate, getLocaleDatePlaceholder, toISODate } from "../../utils/dateFormatter";
+import { DATE_FILTER_MODE, type DateFilterMode, formatDateFilterLabel } from "./dateFilterSelection";
+import { type DateSelectionEdge, useDateFilterSelection } from "./useDateFilterSelection";
 
-// Simple TextInput-like component for the modal
+const ENTER_KEY = "Enter";
+
+// Text field of one date: it can be typed (applied on blur or Enter) and shows when the typed text is not a date
 const DateInput = ({
   label,
-  value,
+  date,
   placeholder,
-  onChange,
-  onClear,
+  hasError,
+  errorMessage,
+  onCommit,
 }: {
   label: string;
-  value: string;
+  date: Date | null;
   placeholder: string;
-  onChange?: (value: string) => void;
-  onClear?: () => void;
+  hasError: boolean;
+  errorMessage: string;
+  onCommit: (text: string) => void;
 }) => {
+  const [text, setText] = useState(formatBrowserDate(date));
+
+  // A date chosen in the calendar, or a typed one once applied, is shown in the locale format
+  useEffect(() => {
+    setText(formatBrowserDate(date));
+  }, [date]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === ENTER_KEY) onCommit(text);
+  };
+
+  const handleClear = () => {
+    setText("");
+    onCommit("");
+  };
+
+  const borderClass = hasError ? "border-red-500" : "border-gray-300 hover:border-gray-400 focus:border-blue-500";
+
   return (
     <div>
       <label className="flex flex-col text-xs font-semibold text-(--color-baseline-80) uppercase tracking-wider mb-1.5">
@@ -31,22 +55,29 @@ const DateInput = ({
         <div className="relative">
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange?.(e.target.value)}
+            value={text}
+            aria-invalid={hasError}
+            onChange={(e) => setText(e.target.value)}
+            onBlur={() => onCommit(text)}
+            onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="w-full px-3 py-2.5 pr-10 bg-white border-b-2 border-gray-300 rounded-t text-gray-700 text-sm
-              focus:outline-none focus:ring-0 focus:border-blue-500 transition-colors shadow-sm
-              hover:border-gray-400"
+            className={`w-full px-3 py-2.5 pr-10 bg-white border-b-2 rounded-t text-gray-700 text-sm
+              focus:outline-none focus:ring-0 transition-colors shadow-sm ${borderClass}`}
           />
-          {value && (
+          {text && (
             <button
               type="button"
-              onClick={onClear}
+              onClick={handleClear}
               className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:text-gray-600 transition-colors z-10 flex items-center justify-center">
               <XIcon height={20} width={20} className="fill-(--color-baseline-80)" />
             </button>
           )}
         </div>
+        {hasError && (
+          <span role="alert" className="mt-1 text-xs font-normal normal-case tracking-normal text-red-600">
+            {errorMessage}
+          </span>
+        )}
       </label>
     </div>
   );
@@ -54,12 +85,20 @@ const DateInput = ({
 
 type TranslateFn = (key: string) => string;
 
+const MODE_OPTIONS: { mode: DateFilterMode; labelKey: string }[] = [
+  { mode: DATE_FILTER_MODE.SINGLE, labelKey: "dateModal.oneDate" },
+  { mode: DATE_FILTER_MODE.RANGE, labelKey: "dateModal.range" },
+];
+
 interface DateRangeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (startDate: Date | null, endDate: Date | null) => void;
+  /** Receives the chosen dates and the mode they were chosen in; in single mode `endDate` is always null. */
+  onConfirm: (startDate: Date | null, endDate: Date | null, mode: DateFilterMode) => void;
   initialStartDate?: Date;
   initialEndDate?: Date;
+  /** Mode the window opens in. Defaults to one date. */
+  initialMode?: DateFilterMode;
   t?: TranslateFn;
 }
 
@@ -69,18 +108,30 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
   onConfirm,
   initialStartDate,
   initialEndDate,
+  initialMode,
   t,
 }) => {
-  const [startDate, setStartDate] = useState<Date | null>(initialStartDate || null);
-  const [endDate, setEndDate] = useState<Date | null>(initialEndDate || null);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const {
+    selection,
+    visibleMonth: currentMonth,
+    setVisibleMonth: setCurrentMonth,
+    invalidEdges,
+    hasInvalidDate,
+    selectDay,
+    setMode,
+    commitTypedDate,
+    clearSelection,
+  } = useDateFilterSelection({ isOpen, initialMode, initialStartDate, initialEndDate });
+  const { mode, start: startDate, end: endDate } = selection;
+  const isSingleMode = mode === DATE_FILTER_MODE.SINGLE;
+  const titleId = useId();
 
   // Refs for month and year selects
   const monthSelectRef = useRef<HTMLSelectElement>(null);
   const yearSelectRef = useRef<HTMLSelectElement>(null);
 
   // Translation helper with fallback to English defaults
-  const translate = (key: string, defaultValue: string): string => {
+  const translate = (key: string, defaultValue = key): string => {
     if (t) {
       return t(key);
     }
@@ -89,6 +140,12 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
       "dateModal.from": "From",
       "dateModal.to": "To",
       "dateModal.clearFilters": "Clear filters",
+      "dateModal.oneDate": "One date",
+      "dateModal.range": "Range",
+      "dateModal.date": "Date",
+      "dateModal.invalidDate": "Invalid date",
+      "dateModal.summary": "Filters",
+      "dateModal.noFilter": "No date filter",
       "common.cancel": "Cancel",
       "common.confirm": "Confirm",
     };
@@ -123,27 +180,12 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
   const weekDays = getWeekDays();
   const datePlaceholder = getLocaleDatePlaceholder();
 
-  const handleClearStart = () => {
-    setStartDate(null);
-  };
-
-  const handleClearEnd = () => {
-    setEndDate(null);
-  };
-
   useEffect(() => {
-    if (isOpen) {
-      setStartDate(initialStartDate || null);
-      setEndDate(initialEndDate || null);
-      setCurrentMonth(initialStartDate ? new Date(initialStartDate) : new Date());
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
+    document.body.style.overflow = isOpen ? "hidden" : "unset";
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [isOpen, initialStartDate, initialEndDate]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -156,33 +198,24 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
     return firstDay === 0 ? 6 : firstDay - 1;
   };
 
-  const formatDate = (date: Date | null) => {
-    return formatBrowserDate(date);
+  const handleDateClick = selectDay;
+
+  const getSummaryText = () => {
+    const label = formatDateFilterLabel(selection, translate);
+    if (!label) return translate("dateModal.noFilter");
+    return `${translate("dateModal.summary")}: ${label}`;
   };
 
-  // Handle date selection with proper range logic
-  const handleDateClick = (selectedDate: Date) => {
-    // If no start date or we have a complete range, start a new range
-    if (!startDate || endDate) {
-      setStartDate(selectedDate);
-      setEndDate(null);
-    }
-    // If we have start date but no end date, set end date
-    else {
-      // If selected date is before start date, swap them
-      if (selectedDate < startDate) {
-        setEndDate(startDate);
-        setStartDate(selectedDate);
-      } else {
-        setEndDate(selectedDate);
-      }
-    }
-
-    // Move calendar to the selected month if needed
-    if (selectedDate.getMonth() !== currentMonth.getMonth()) {
-      setCurrentMonth(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
-    }
-  };
+  const renderDateInput = (edge: DateSelectionEdge, labelKey: string, date: Date | null) => (
+    <DateInput
+      label={translate(labelKey)}
+      date={date}
+      placeholder={datePlaceholder.toUpperCase()}
+      hasError={invalidEdges[edge]}
+      errorMessage={translate("dateModal.invalidDate")}
+      onCommit={(text) => commitTypedDate(edge, text)}
+    />
+  );
 
   // Helper to determine visual state
   const getDateSelection = (dateToCheck: Date) => {
@@ -220,19 +253,12 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
   };
 
   const handleConfirm = () => {
-    // Allow confirmation with any combination of dates:
-    // - Both dates (range)
-    // - Only start date (desde - greaterOrEqual)
-    // - Only end date (hasta - lessOrEqual)
-    // - No dates (clear filter)
-    onConfirm(startDate, endDate);
+    // Any combination is valid: one date, a range, an open range ("from" or "to" only) or nothing (clear)
+    onConfirm(startDate, endDate, mode);
     onClose();
   };
 
-  const clearFilters = () => {
-    setStartDate(null);
-    setEndDate(null);
-  };
+  const clearFilters = clearSelection;
 
   const renderCalendar = () => {
     const daysInMonth = getDaysInMonth(currentMonth);
@@ -281,6 +307,7 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
 
           <button
             type="button"
+            data-testid={`DateRangeModal__day-${toISODate(currentDate)}`}
             onClick={() => handleDateClick(currentDate)}
             className={`
               relative h-8 w-8 flex items-center justify-center text-sm font-medium transition-all rounded-full
@@ -333,14 +360,20 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
         onKeyUp={(e) => (e.key === "Enter" ? onClose() : null)}
       />
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="bg-white rounded-xl shadow-2xl w-[650px] pointer-events-auto overflow-hidden">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          className="bg-white rounded-xl shadow-2xl w-[650px] pointer-events-auto overflow-hidden">
           {/* Header Modal */}
           <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 bg-white">
             <div className="flex items-center gap-2 text-gray-800">
               <div className="rounded-full bg-gray-100 p-2">
                 <CalendarIcon height={20} width={20} className="fill-(--color-baseline-80)" />
               </div>
-              <h2 className="text-lg font-semibold">{translate("dateModal.selectDates", "Select dates")}</h2>
+              <h2 id={titleId} className="text-lg font-semibold">
+                {translate("dateModal.selectDates", "Select dates")}
+              </h2>
             </div>
             <button
               type="button"
@@ -354,19 +387,27 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
             {/* Sidebar Izquierdo (Inputs) */}
             <div className="w-full md:w-64 bg-gray-50/50 p-6 border-r border-gray-100 flex flex-col justify-between">
               <div className="space-y-5">
-                <DateInput
-                  label={translate("dateModal.from", "From")}
-                  value={formatDate(startDate)}
-                  placeholder={datePlaceholder.toUpperCase()}
-                  onClear={handleClearStart}
-                />
-                <DateInput
-                  label={translate("dateModal.to", "To")}
-                  value={formatDate(endDate)}
-                  placeholder={datePlaceholder.toUpperCase()}
-                  onClear={handleClearEnd}
-                />
+                <fieldset className="m-0 flex min-w-0 gap-1 rounded-lg border-0 bg-gray-100 p-1">
+                  {MODE_OPTIONS.map((option) => (
+                    <button
+                      key={option.mode}
+                      type="button"
+                      aria-pressed={option.mode === mode}
+                      onClick={() => setMode(option.mode)}
+                      className={`flex-1 rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
+                        option.mode === mode ? "bg-white text-blue-700 shadow-sm" : "text-gray-600 hover:text-gray-800"
+                      }`}>
+                      {translate(option.labelKey)}
+                    </button>
+                  ))}
+                </fieldset>
+                {isSingleMode && renderDateInput("start", "dateModal.date", startDate)}
+                {!isSingleMode && renderDateInput("start", "dateModal.from", startDate)}
+                {!isSingleMode && renderDateInput("end", "dateModal.to", endDate)}
               </div>
+              <p aria-live="polite" className="mt-5 text-sm text-gray-700">
+                {getSummaryText()}
+              </p>
             </div>
 
             {/* Calendario Derecho */}
@@ -377,6 +418,7 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
                   <div className="relative w-20 flex justify-center items-center group hover:cursor-pointer transition-colors gap-1">
                     <select
                       ref={monthSelectRef}
+                      data-testid="DateRangeModal__month"
                       value={currentMonth.getMonth()}
                       onChange={handleMonthChange}
                       className="absolute inset-0 w-full h-full appearance-none bg-transparent text-lg text-(--color-baseline-80) cursor-pointer outline-none opacity-0">
@@ -402,6 +444,7 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
                   <div className="relative w-20 flex justify-center items-center group hover:cursor-pointer transition-colors gap-1">
                     <select
                       ref={yearSelectRef}
+                      data-testid="DateRangeModal__year"
                       value={currentMonth.getFullYear()}
                       onChange={handleYearChange}
                       className="absolute inset-0 w-full h-full appearance-none bg-transparent text-lg font-normal text-(--color-baseline-80) cursor-pointer outline-none opacity-0">
@@ -477,7 +520,7 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
               <Button variant="outlined" size="large" className="w-auto" onClick={onClose}>
                 {translate("common.cancel", "Cancel")}
               </Button>
-              <Button size="large" className="w-auto" onClick={handleConfirm}>
+              <Button size="large" className="w-auto" onClick={handleConfirm} disabled={hasInvalidDate}>
                 {translate("common.confirm", "Confirm")}
               </Button>
             </div>

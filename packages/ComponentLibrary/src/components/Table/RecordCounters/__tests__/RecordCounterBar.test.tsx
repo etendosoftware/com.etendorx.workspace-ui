@@ -13,6 +13,11 @@ describe("RecordCounterBar", () => {
     expect(screen.getByTestId("RecordCounter-simple")).toBeInTheDocument();
   });
 
+  it("forwards that more records exist to the record counter", () => {
+    render(<RecordCounterBar totalRecords={101} loadedRecords={101} selectedCount={0} hasMoreRecords />);
+    expect(screen.getByText("Showing 101+ records")).toBeInTheDocument();
+  });
+
   it("renders selection counter when records are selected", () => {
     render(<RecordCounterBar totalRecords={100} loadedRecords={50} selectedCount={3} />);
     expect(screen.getByTestId("SelectionCounter")).toBeInTheDocument();

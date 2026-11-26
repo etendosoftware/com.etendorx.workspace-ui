@@ -17,32 +17,17 @@
 
 "use client";
 
-import { useCallback } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useRecentDocuments } from "@/hooks/useRecentDocuments";
-import { useRedirect } from "@/hooks/navigation/useRedirect";
+import { useOpenRecentDocument } from "@/hooks/navigation/useOpenRecentDocument";
 import { usePrefetchWindowOnHover } from "@/hooks/usePrefetchWindowOnHover";
 import { WIDGET_CHIP_CLASSES, WIDGET_EMPTY_TEXT_CLASSES } from "./chipClasses";
 
 export default function RecentDocsRenderer() {
   const { t } = useTranslation();
   const { documents } = useRecentDocuments();
-  const { handleClickRedirect } = useRedirect();
+  const handleClick = useOpenRecentDocument();
   const prefetchOnHover = usePrefetchWindowOnHover();
-
-  const handleClick = useCallback(
-    (e: React.MouseEvent, doc: (typeof documents)[number]) => {
-      handleClickRedirect({
-        e,
-        windowId: doc.windowId,
-        windowTitle: doc.windowTitle,
-        referencedTabId: doc.tabId,
-        selectedRecordId: doc.recordId,
-        tabLevel: doc.tabLevel,
-      });
-    },
-    [handleClickRedirect]
-  );
 
   if (documents.length === 0) {
     return (

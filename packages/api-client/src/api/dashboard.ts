@@ -470,6 +470,31 @@ export async function trackRecentDocument(payload: TrackRecentDocumentRequest): 
   return response.data as { status: string };
 }
 
+/** Identifies a recent document of the current user and role. */
+export interface RemoveRecentDocumentRequest {
+  tabId: string;
+  recordId: string;
+}
+
+/**
+ * Removes a document from the recent documents of the current user and role, e.g. because its record was deleted.
+ *
+ * @param document - Tab and record of the document to remove
+ * @returns The server status, `{status: "removed"}`
+ * @throws Error when the server rejects the request
+ */
+export async function removeRecentDocument({
+  tabId,
+  recordId,
+}: RemoveRecentDocumentRequest): Promise<{ status: string }> {
+  const query = new URLSearchParams({ tabId, recordId });
+  const response = await Metadata.client.request(`${DASHBOARD_BASE}/recent-documents?${query}`, { method: "DELETE" });
+  if (!response.ok) {
+    throw new Error(`Failed to remove recent document: ${response.status}`);
+  }
+  return response.data as { status: string };
+}
+
 export async function updateWidgetParams(
   instanceId: string,
   parameters: Record<string, string>

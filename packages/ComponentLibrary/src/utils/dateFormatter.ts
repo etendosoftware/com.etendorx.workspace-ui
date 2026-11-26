@@ -251,3 +251,79 @@ export const getLocaleDatetimePlaceholder = (): string => {
     return "dd.mm.yyyy hh:mm:ss"; // Fallback
   }
 };
+
+/** Order of the day, month and year parts in a date typed or shown in the browser's locale. */
+export type DateOrder = "dmy" | "mdy" | "ymd";
+
+const DEFAULT_DATE_ORDER: DateOrder = "dmy";
+const DATE_PART_LETTERS: Partial<Record<Intl.DateTimeFormatPartTypes, string>> = { day: "d", month: "m", year: "y" };
+const ORDER_SAMPLE_DATE = new Date(2034, 1, 1);
+// Anchored and bounded: one to four digits per part, any of the separators "-", "." or "/".
+const TYPED_DATE_PATTERN = /^(\d{1,4})[-./](\d{1,4})[-./](\d{1,4})$/;
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const YEAR_DIGITS = 4;
+const MAX_DAY_MONTH_DIGITS = 2;
+
+/**
+ * Returns the order of the date parts in the browser's locale, the same one used by `formatBrowserDate`.
+ * Falls back to day-month-year when the locale cannot be read.
+ */
+export const getLocaleDateOrder = (): DateOrder => {
+  try {
+    const order = getBrowserFormatter(false)
+      .formatToParts(ORDER_SAMPLE_DATE)
+      .map((part) => DATE_PART_LETTERS[part.type] ?? "")
+      .join("");
+    if (order === "mdy" || order === "ymd") return order;
+  } catch {
+    // Use the default order below
+  }
+  return DEFAULT_DATE_ORDER;
+};
+
+interface TypedDateParts {
+  year: string;
+  month: string;
+  day: string;
+}
+
+const arrangeDateParts = ([first, second, third]: string[], order: DateOrder): TypedDateParts => {
+  if (order === "ymd") return { year: first, month: second, day: third };
+  if (order === "mdy") return { year: third, month: first, day: second };
+  return { year: third, month: second, day: first };
+};
+
+const hasValidPartLengths = ({ year, month, day }: TypedDateParts): boolean =>
+  year.length === YEAR_DIGITS && month.length <= MAX_DAY_MONTH_DIGITS && day.length <= MAX_DAY_MONTH_DIGITS;
+
+/** Builds a local date, or null when the parts do not form a real date (e.g. February 31st). */
+const buildExistingDate = (year: number, month: number, day: number): Date | null => {
+  const date = new Date(year, month - 1, day);
+  const isSameDate = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+  return isSameDate ? date : null;
+};
+
+/**
+ * Parses a date typed by the user in the browser's locale order (e.g. "13/10/2026" or "13-10-2026" in
+ * Spain, "10/13/2026" in the US), or in ISO format ("2026-10-13"). Day and month may have one or two
+ * digits and the year must have four. Returns null for text or for dates that do not exist.
+ */
+export const parseLocaleDate = (text: string): Date | null => {
+  const value = text.trim();
+  const match = TYPED_DATE_PATTERN.exec(value);
+  if (!match) return null;
+
+  const order = ISO_DATE_PATTERN.test(value) ? "ymd" : getLocaleDateOrder();
+  const parts = arrangeDateParts(match.slice(1), order);
+  if (!hasValidPartLengths(parts)) return null;
+
+  return buildExistingDate(Number(parts.year), Number(parts.month), Number(parts.day));
+};
+
+/** Formats a date as YYYY-MM-DD using its local day, the format the backend expects in date filters. */
+export const toISODate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};

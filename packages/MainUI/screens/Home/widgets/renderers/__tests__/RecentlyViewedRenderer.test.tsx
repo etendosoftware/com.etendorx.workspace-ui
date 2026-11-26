@@ -41,6 +41,18 @@ jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
   Metadata: { getCachedMenu: jest.fn() },
 }));
 
+// The list is drawn with the live menu; unless a test sets it, it is the cached menu the click checks.
+let mockLiveMenu: unknown[] | undefined;
+jest.mock("@/hooks/useLiveMenu", () => ({
+  useLiveMenu: () =>
+    mockLiveMenu ?? jest.requireMock("@workspaceui/api-client/src/api/metadata").Metadata.getCachedMenu(),
+}));
+
+const mockNotifyEntryUnavailable = jest.fn();
+jest.mock("@/hooks/useEntryUnavailableNotice", () => ({
+  useEntryUnavailableNotice: () => mockNotifyEntryUnavailable,
+}));
+
 const externalItem: RecentItem = {
   id: EXTERNAL_ID,
   name: "TEST External",
@@ -72,6 +84,7 @@ describe("RecentlyViewedRenderer", () => {
     useRecentItemsStore.setState({ items: [externalItem, windowItem, formItem, processItem] });
     setUserSession(ROLE_ID);
     jest.mocked(Metadata.getCachedMenu).mockReturnValue([]);
+    mockLiveMenu = undefined;
   });
 
   it("shows the empty message when there are no recent items", () => {
@@ -159,6 +172,36 @@ describe("RecentlyViewedRenderer", () => {
 
       expect(openSpy).not.toHaveBeenCalled();
       expect(getOpenedWindowId()).toBe(PROCESS_MENU_ID);
+    });
+  });
+
+  describe("entries the role can no longer open (ETP-6431)", () => {
+    const liveWindowEntry = { id: "MENU_WIN", name: "Sales Order", type: "Window", windowId: WINDOW_ID };
+    const remove = jest.fn();
+
+    beforeEach(() => {
+      useRecentItemsStore.setState({ remove });
+    });
+
+    it("offers only the entries of the role's menu", () => {
+      jest.mocked(Metadata.getCachedMenu).mockReturnValue([liveWindowEntry]);
+      render(<RecentlyViewedRenderer />);
+
+      expect(screen.getByTestId("RecentlyViewedRenderer__item_MENU_WIN")).toBeInTheDocument();
+      expect(screen.queryByTestId(`RecentlyViewedRenderer__item_${EXTERNAL_ID}`)).not.toBeInTheDocument();
+      expect(screen.queryByTestId(`RecentlyViewedRenderer__item_${FORM_MENU_ID}`)).not.toBeInTheDocument();
+    });
+
+    it("tells the user, opens nothing and drops an entry the current menu no longer has", () => {
+      mockLiveMenu = [liveWindowEntry];
+      jest.mocked(Metadata.getCachedMenu).mockReturnValue([liveFormEntry]);
+      render(<RecentlyViewedRenderer />);
+
+      clickItem("MENU_WIN");
+
+      expect(mockNotifyEntryUnavailable).toHaveBeenCalledTimes(1);
+      expect(remove).toHaveBeenCalledWith("MENU_WIN");
+      expect(useWindowStore.getState().windows).toEqual({});
     });
   });
 });

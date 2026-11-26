@@ -190,6 +190,8 @@ export const LOCATOR = {
  * where a label repeats on screen, e.g. a line quantity while the header is shown.
  */
 export const FIELD = {
+  /** Country of the Account tab of Financial Account: a TableDir dropdown over every country, several pages. */
+  FINANCIAL_ACCOUNT_COUNTRY: "7D67679A64CE40F382DB52C750B3031A",
   SALES_ORDER_LINE_QUANTITY: "1130",
   /** Characteristic Description of the Product header (one line per characteristic in the form). */
   PRODUCT_CHARACTERISTIC_DESCRIPTION: "DA77D45513848AC2E040007F010002E3",

@@ -667,6 +667,12 @@ const en = {
     from: "From",
     to: "To",
     clearFilters: "Clear filters",
+    oneDate: "One date",
+    range: "Range",
+    date: "Date",
+    invalidDate: "Invalid date",
+    summary: "Filters",
+    noFilter: "No date filter",
     months: [
       "January",
       "February",
@@ -898,6 +904,7 @@ const en = {
   },
   dashboard: {
     title: "Dashboard",
+    entryUnavailable: "Your current role does not give you access to this functionality.",
     ctaBanner: {
       badge: "What's New",
       title: "Etendo News & Updates",
@@ -911,6 +918,7 @@ const en = {
     recentDocuments: {
       title: "Recent Documents",
       empty: "No recent documents",
+      recordNoLongerExists: "The record no longer exists. It has been removed from the recent documents.",
     },
     widget: {
       unavailable: "Module not installed",

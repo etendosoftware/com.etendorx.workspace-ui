@@ -21,6 +21,11 @@ import { useRecentItems } from "@/hooks/useRecentItems";
 import { useRecentItemsStore } from "@/stores/recentItemsStore";
 import { buildRecentItem, ROLE_ID } from "@/test-utils/recentItems";
 
+const mockNotifyEntryUnavailable = jest.fn();
+jest.mock("@/hooks/useEntryUnavailableNotice", () => ({
+  useEntryUnavailableNotice: () => mockNotifyEntryUnavailable,
+}));
+
 const WINDOW_TYPE = "Window";
 const TRANSLATED_PREFIX = "Translated ";
 
@@ -33,6 +38,7 @@ const translate = (item: Menu) => `${TRANSLATED_PREFIX}${item.name}`;
 
 describe("useRecentItems", () => {
   const add = jest.fn();
+  const remove = jest.fn();
   const setItems = jest.fn();
   const onClick = jest.fn();
 
@@ -41,7 +47,7 @@ describe("useRecentItems", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    useRecentItemsStore.setState({ items: [storedItem], add, setItems });
+    useRecentItemsStore.setState({ items: [storedItem], add, remove, setItems });
   });
 
   it("exposes the store items and expands on first load", () => {
@@ -89,13 +95,39 @@ describe("useRecentItems", () => {
     expect(add).toHaveBeenCalledWith(expect.objectContaining({ id: menuItem.id, windowId: menuItem.windowId }));
   });
 
-  it("opens the stored item without re-adding it when the menu entry type does not match", () => {
+  it("does not open an item whose menu entry has another type, and drops it (ETP-6431)", () => {
     const { result } = renderRecentItems(ROLE_ID, [buildMenu("a", { type: "Process", id: "window-a" })]);
 
     act(() => result.current.handleRecentItemClick(storedItem as unknown as Menu));
 
-    expect(onClick).toHaveBeenCalledWith(storedItem);
+    expect(onClick).not.toHaveBeenCalled();
     expect(add).not.toHaveBeenCalled();
+    expect(mockNotifyEntryUnavailable).toHaveBeenCalledTimes(1);
+    expect(remove).toHaveBeenCalledWith(storedItem.id);
+  });
+
+  it("opens the stored item while the menu is not loaded yet", () => {
+    const { result } = renderRecentItems(ROLE_ID, []);
+
+    act(() => result.current.handleRecentItemClick(storedItem as unknown as Menu));
+
+    expect(onClick).toHaveBeenCalledWith(storedItem);
+    expect(mockNotifyEntryUnavailable).not.toHaveBeenCalled();
+  });
+
+  it("offers only the items of the role's menu (ETP-6431)", () => {
+    useRecentItemsStore.setState({ items: [storedItem, buildRecentItem("gone")] });
+    const { result } = renderRecentItems();
+
+    expect(result.current.localRecentItems).toEqual([storedItem]);
+    expect(result.current.hasItems).toBe(true);
+  });
+
+  it("reports no items when none of them is in the role's menu (ETP-6431)", () => {
+    const { result } = renderRecentItems(ROLE_ID, [buildMenu("other")]);
+
+    expect(result.current.localRecentItems).toEqual([]);
+    expect(result.current.hasItems).toBe(false);
   });
 
   it("refreshes the item names locally with the translated menu names", () => {

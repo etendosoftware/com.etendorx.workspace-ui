@@ -7,7 +7,10 @@ import {
   buildColumnConfiguration,
   clearGridConfiguration,
   GRID_CONFIGURATION_SAVE_DELAY_MS,
+  getSettledTabColumnConfiguration,
   loadTabColumnConfiguration,
+  loadWindowGridConfiguration,
+  preloadWindowGridConfiguration,
   scheduleGridConfigurationSave,
   toColumnTableState,
 } from "../gridConfiguration";
@@ -122,6 +125,84 @@ describe("gridConfiguration", () => {
       mockFetch.mockRejectedValue(new Error("boom"));
 
       await expect(loadTabColumnConfiguration(nextWindowIdentifier(), TAB_ID)).resolves.toBeNull();
+    });
+
+    it("shares the window request it started with the tabs that ask later", async () => {
+      const configuration = { version: 1, visibility: VISIBILITY, order: ORDER };
+      mockFetch.mockResolvedValue({ windowId: WINDOW_ID, configuration: { [TAB_ID]: configuration } });
+      const windowIdentifier = nextWindowIdentifier();
+
+      await expect(loadWindowGridConfiguration(windowIdentifier)).resolves.toEqual({ [TAB_ID]: configuration });
+      await expect(loadTabColumnConfiguration(windowIdentifier, TAB_ID)).resolves.toEqual(configuration);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("getSettledTabColumnConfiguration", () => {
+    const configuration = { version: 1, visibility: VISIBILITY, order: ORDER };
+
+    /** Window request that answers only when the test says so. */
+    const givenPendingRequest = () => {
+      let answer: (value: unknown) => void = () => undefined;
+      mockFetch.mockReturnValue(
+        new Promise((resolve) => {
+          answer = resolve;
+        })
+      );
+      return () => answer({ windowId: WINDOW_ID, configuration: { [TAB_ID]: configuration } });
+    };
+
+    it("is unknown until the window request answers, then gives the tab configuration or null", async () => {
+      const answer = givenPendingRequest();
+      const windowIdentifier = nextWindowIdentifier();
+      const request = loadWindowGridConfiguration(windowIdentifier);
+
+      expect(getSettledTabColumnConfiguration(windowIdentifier, TAB_ID)).toBeUndefined();
+      answer();
+      await request;
+
+      expect(getSettledTabColumnConfiguration(windowIdentifier, TAB_ID)).toEqual(configuration);
+      expect(getSettledTabColumnConfiguration(windowIdentifier, "other-tab")).toBeNull();
+    });
+
+    it("forgets the answers on logout, also one that arrives after it", async () => {
+      mockFetch.mockResolvedValue({ windowId: WINDOW_ID, configuration: {} });
+      const answered = nextWindowIdentifier();
+      await loadWindowGridConfiguration(answered);
+      const answer = givenPendingRequest();
+      const late = nextWindowIdentifier();
+      const request = loadWindowGridConfiguration(late);
+
+      resetSessionState();
+      answer();
+      await request;
+
+      expect(getSettledTabColumnConfiguration(answered, TAB_ID)).toBeUndefined();
+      expect(getSettledTabColumnConfiguration(late, TAB_ID)).toBeUndefined();
+    });
+  });
+
+  describe("preloadWindowGridConfiguration", () => {
+    beforeEach(() => {
+      resetSessionState();
+      mockFetch.mockResolvedValue({ windowId: WINDOW_ID, configuration: {} });
+    });
+
+    it("loads the configuration of a hovered window, and its opening takes it without asking again", async () => {
+      preloadWindowGridConfiguration(WINDOW_ID);
+      await loadWindowGridConfiguration(nextWindowIdentifier());
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch).toHaveBeenCalledWith(WINDOW_ID);
+    });
+
+    it("asks again when the user changed the columns after the window was hovered", async () => {
+      preloadWindowGridConfiguration(WINDOW_ID);
+
+      scheduleGridConfigurationSave(nextWindowIdentifier(), TAB_ID);
+      await loadWindowGridConfiguration(nextWindowIdentifier());
+
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
   });
 
