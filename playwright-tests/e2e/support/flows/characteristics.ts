@@ -130,33 +130,41 @@ export async function createProductsWithCharacteristics(
   dataSet: CharacteristicsDataSet,
   products: ProductSpec[]
 ): Promise<void> {
-  for (const product of products) {
-    const record = await addRecord(api, dataSet, DATASOURCE.PRODUCT, {
+  // Products do not depend on each other: created side by side, each one in order (ETP-6295)
+  await Promise.all(products.map((product) => createProductWithCharacteristics(api, dataSet, product)));
+}
+
+/** Creates one product, then its characteristics, then its values (the order the Product window follows). */
+async function createProductWithCharacteristics(
+  api: ApiData,
+  dataSet: CharacteristicsDataSet,
+  product: ProductSpec
+): Promise<void> {
+  const record = await addRecord(api, dataSet, DATASOURCE.PRODUCT, {
+    organization: ORGANIZATION_ID.ALL,
+    searchKey: product.name,
+    name: product.name,
+    ...PRODUCT_DEFAULTS,
+  });
+  dataSet.products.set(product.name, record.id);
+  const characteristics = characteristicsOf(dataSet, product.values);
+  for (const [index, characteristic] of characteristics.entries()) {
+    await addRecord(api, dataSet, DATASOURCE.PRODUCT_CHARACTERISTIC, {
       organization: ORGANIZATION_ID.ALL,
-      searchKey: product.name,
-      name: product.name,
-      ...PRODUCT_DEFAULTS,
+      product: record.id,
+      characteristic,
+      sequenceNumber: (index + 1) * SEQUENCE_STEP,
+      variant: false,
     });
-    dataSet.products.set(product.name, record.id);
-    const characteristics = characteristicsOf(dataSet, product.values);
-    for (const [index, characteristic] of characteristics.entries()) {
-      await addRecord(api, dataSet, DATASOURCE.PRODUCT_CHARACTERISTIC, {
-        organization: ORGANIZATION_ID.ALL,
-        product: record.id,
-        characteristic,
-        sequenceNumber: (index + 1) * SEQUENCE_STEP,
-        variant: false,
-      });
-    }
-    for (const valueName of product.values) {
-      const value = dataSet.values.get(valueName) as { id: string; characteristic: string };
-      await addRecord(api, dataSet, DATASOURCE.PRODUCT_CHARACTERISTIC_VALUE, {
-        organization: ORGANIZATION_ID.ALL,
-        product: record.id,
-        characteristic: value.characteristic,
-        characteristicValue: value.id,
-      });
-    }
+  }
+  for (const valueName of product.values) {
+    const value = dataSet.values.get(valueName) as { id: string; characteristic: string };
+    await addRecord(api, dataSet, DATASOURCE.PRODUCT_CHARACTERISTIC_VALUE, {
+      organization: ORGANIZATION_ID.ALL,
+      product: record.id,
+      characteristic: value.characteristic,
+      characteristicValue: value.id,
+    });
   }
 }
 
@@ -171,10 +179,38 @@ export async function characteristicDescriptionOf(api: ApiData, productId: strin
   return String(product?.characteristicDescription ?? "");
 }
 
-/** Removes what the data set created, the last created first (values and characteristics of products, products, values, characteristics). */
+/** Records of these targets never depend on one another: consecutive ones are removed side by side. */
+const INDEPENDENT_TARGETS: ReadonlySet<DatasourceTarget> = new Set([
+  DATASOURCE.PRODUCT_CHARACTERISTIC_VALUE,
+  DATASOURCE.PRODUCT_CHARACTERISTIC,
+  DATASOURCE.PRODUCT,
+]);
+
+/**
+ * Groups records to remove, in the given order, into batches removed one after another: consecutive records
+ * of an independent target go together, any other record alone (a characteristic value may be the parent of
+ * the next one in the tree).
+ */
+export function removalBatches<T extends { target: DatasourceTarget }>(records: T[]): T[][] {
+  const batches: T[][] = [];
+  for (const record of records) {
+    const last = batches.at(-1);
+    if (last && INDEPENDENT_TARGETS.has(record.target) && last[0].target === record.target) {
+      last.push(record);
+    } else {
+      batches.push([record]);
+    }
+  }
+  return batches;
+}
+
+/**
+ * Removes what the data set created, the last created first (values and characteristics of products, products,
+ * values, characteristics): each record goes after everything created after it, the records it depends on.
+ */
 export async function removeCharacteristicsDataSet(api: ApiData, dataSet: CharacteristicsDataSet): Promise<void> {
-  for (const record of [...dataSet.created].reverse()) {
-    await api.remove(record.target, record.id);
+  for (const batch of removalBatches([...dataSet.created].reverse())) {
+    await Promise.all(batch.map((record) => api.remove(record.target, record.id)));
   }
   dataSet.created = [];
 }
