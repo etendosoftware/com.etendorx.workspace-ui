@@ -7,7 +7,18 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { busyRounds, busyPct, cpuTimes, IDLE_MAX_BUSY_PCT, sampleBusyPct } from "./machine.mjs";
+import { baseLine, mergeBaseOrTip } from "./base.mjs";
+import { buildCiResult, errorReason, errorResult, runStep, writeResult } from "./ci.mjs";
+import {
+  busyPct,
+  cgroupThrottledMs,
+  cpuTimes,
+  IDLE_MAX_BUSY_PCT,
+  noiseWarnings,
+  sampleBusyPct,
+  throttledBetween,
+  throttleSummary,
+} from "./machine.mjs";
 import { startServer, stopServer } from "./servers.mjs";
 import { compareRuns, METRICS, windowsToRemeasure } from "./stats.mjs";
 
@@ -34,6 +45,9 @@ const BASE_PORT = Number(process.env.BASE_PORT || 3201);
 const HEAD_PORT = Number(process.env.HEAD_PORT || 3202);
 const SKIP_BUILD = process.env.SKIP_BUILD === "1";
 const STRICT = process.env.STRICT === "1";
+// Automatic PR check (ETP-6295): where the pipeline reads the outcome and the report
+const RESULT_FILE = process.env.RESULT_FILE || "";
+const REPORT_FILE = process.env.REPORT_FILE || "";
 const WORKTREES_DIR = process.env.PERF_WORKTREES_DIR || path.join(os.homedir(), ".cache", "workspace-ui-perf-compare");
 
 // The developer's shell may carry a NODE_OPTIONS preload that child processes cannot resolve
@@ -55,10 +69,16 @@ function resolveBase() {
   return {
     branch,
     target,
-    baseSha: git("merge-base", "HEAD", target),
+    ...baseOf(target),
     headSha: git("rev-parse", "HEAD"),
     dirty: git("status", "--porcelain", "--untracked-files=no") !== "",
   };
+}
+
+function baseOf(target) {
+  const base = mergeBaseOrTip(git, target);
+  if (base.baseIsTip) log(`No merge-base with ${target} in this clone: comparing against its tip`);
+  return base;
 }
 
 function prepareBaseWorktree(baseSha) {
@@ -94,6 +114,7 @@ function bench({ url, side, label, outDir, windows, load }) {
   const out = path.join(outDir, `${side}-${label}.json`);
   log(`Round ${label}: ${side}${windows ? ` (${windows})` : ""}`);
   const before = cpuTimes();
+  const throttledBefore = cgroupThrottledMs();
   const selected = windows || WINDOWS;
   run("node", [path.join(HERE, "bench.mjs")], {
     cwd: path.dirname(HERE),
@@ -106,7 +127,11 @@ function bench({ url, side, label, outDir, windows, load }) {
       ...(selected ? { WINDOWS: selected } : {}),
     }),
   });
-  load.push({ label: `${side} ${label}`, busyPct: busyPct(before, cpuTimes()) });
+  load.push({
+    label: `${side} ${label}`,
+    busyPct: busyPct(before, cpuTimes()),
+    throttledMs: throttledBetween(throttledBefore, cgroupThrottledMs()),
+  });
   return JSON.parse(fs.readFileSync(out, "utf8"));
 }
 
@@ -133,19 +158,8 @@ const fmt = (metric, value) =>
 const pct = (n) => `${n > 0 ? "+" : ""}${n.toFixed(1)}%`;
 const LABELS = { settledMs: "time", blockingMs: "blocking CPU", apiRequests: "requests", apiBytes: "API bytes" };
 
-function machineLines({ idleBusyPct, load }) {
-  const lines = [];
-  if (idleBusyPct > IDLE_MAX_BUSY_PCT) {
-    lines.push(
-      `> ⚠️ The machine was already ${idleBusyPct}% busy before starting: timings are less reliable. Close other programs and run it again.`
-    );
-  }
-  const busy = busyRounds(load);
-  if (busy.length) {
-    lines.push(
-      `> ⚠️ Other programs were using the CPU during round(s) ${busy.join(", ")}: their timings are less reliable.`
-    );
-  }
+function machineLines(machine) {
+  const lines = noiseWarnings(machine).map((warning) => `> ⚠️ ${warning}`);
   return lines.length ? [...lines, ""] : [];
 }
 
@@ -154,10 +168,10 @@ function report({ base, report: r, rounds, startedAt, machine, remeasured }) {
   const lines = [
     "## Performance comparison (`pnpm perf:compare`)",
     "",
-    `- **Base:** \`${base.target}\` merge-base \`${base.baseSha.slice(0, 9)}\``,
+    baseLine(base),
     `- **Head:** \`${base.branch}\` \`${base.headSha.slice(0, 9)}\`${base.dirty ? " + uncommitted changes" : ""}`,
     `- **Machine:** ${cpu}, ${os.cpus().length} cores, ${Math.round(os.totalmem() / 2 ** 30)} GB, ${os.platform()} · CPU throttle ${CPU_THROTTLE}x · ${rounds} rounds per side, alternated · ${startedAt}`,
-    `- **CPU in use:** ${machine.idleBusyPct}% before starting · per round ${machine.load.map((l) => `${l.label} ${l.busyPct}%`).join(", ")}`,
+    `- **CPU in use:** ${machine.idleBusyPct}% before starting · per round ${machine.load.map((l) => `${l.label} ${l.busyPct}%`).join(", ")}${throttleSummary(machine.load)}`,
   ];
   if (remeasured.length) {
     lines.push(`- **Re-measured** with ${EXTRA_ROUNDS} extra rounds per side: ${remeasured.join(", ")}`);
@@ -214,8 +228,33 @@ function report({ base, report: r, rounds, startedAt, machine, remeasured }) {
   return lines.join("\n");
 }
 
+/** Runs the rounds, and the extra rounds of the windows with a regression, and compares them. */
+function measure({ servers, outDir, idleBusyPct }) {
+  const runs = { base: [], head: [] };
+  const load = [];
+  runRounds({ servers, runs, outDir, load, count: ROUNDS });
+  let result = compareRuns(runs.base, runs.head);
+  // A regression on few rounds is often noise: measure only those windows again and compare all the rounds
+  const remeasured = EXTRA_ROUNDS > 0 ? windowsToRemeasure(result.regressions) : [];
+  if (remeasured.length) {
+    log(`Regressions in ${remeasured.join(", ")}: ${EXTRA_ROUNDS} extra rounds per side for those windows`);
+    runRounds({ servers, runs, outDir, load, count: EXTRA_ROUNDS, first: ROUNDS, windows: remeasured.join(",") });
+    result = compareRuns(runs.base, runs.head);
+  }
+  return { result, machine: { idleBusyPct, load }, remeasured };
+}
+
+/** Writes the report to REPORT_FILE, or to results/compare-<date>.md. */
+function writeReport(md, stamp) {
+  const file = REPORT_FILE || path.join(HERE, "results", `compare-${stamp}.md`);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, md);
+  return file;
+}
+
 async function main() {
   const startedAt = new Date().toISOString();
+  const stamp = startedAt.replace(/[:.]/g, "-");
   const idleBusyPct = await sampleBusyPct();
   if (idleBusyPct > IDLE_MAX_BUSY_PCT) {
     log(`Warning: ${idleBusyPct}% of the CPU is in use before starting; close other programs for reliable timings.`);
@@ -224,9 +263,12 @@ async function main() {
   log(
     `Base ${base.target} @ ${base.baseSha.slice(0, 9)} · head ${base.branch} @ ${base.headSha.slice(0, 9)}${base.dirty ? " (+ uncommitted changes)" : ""}`
   );
-  const baseDir = prepareBaseWorktree(base.baseSha);
-  build(baseDir, "base");
-  build(ROOT, "head");
+  const baseDir = await runStep("base build", () => {
+    const dir = prepareBaseWorktree(base.baseSha);
+    build(dir, "base");
+    return dir;
+  });
+  await runStep("head build", () => build(ROOT, "head"));
 
   const servers = [];
   const stop = () => {
@@ -243,24 +285,18 @@ async function main() {
     });
   }
   try {
-    servers.push(await serve(baseDir, BASE_PORT, "base"));
-    servers.push(await serve(ROOT, HEAD_PORT, "head"));
-    const outDir = path.join(HERE, "results", "compare-tmp", startedAt.replace(/[:.]/g, "-"));
-    const runs = { base: [], head: [] };
-    const load = [];
-    runRounds({ servers, runs, outDir, load, count: ROUNDS });
-    let result = compareRuns(runs.base, runs.head);
-    // A regression on few rounds is often noise: measure only those windows again and compare all the rounds
-    const remeasured = EXTRA_ROUNDS > 0 ? windowsToRemeasure(result.regressions) : [];
-    if (remeasured.length) {
-      log(`Regressions in ${remeasured.join(", ")}: ${EXTRA_ROUNDS} extra rounds per side for those windows`);
-      runRounds({ servers, runs, outDir, load, count: EXTRA_ROUNDS, first: ROUNDS, windows: remeasured.join(",") });
-      result = compareRuns(runs.base, runs.head);
-    }
-    const machine = { idleBusyPct, load };
+    servers.push(await runStep("base server", () => serve(baseDir, BASE_PORT, "base")));
+    servers.push(await runStep("head server", () => serve(ROOT, HEAD_PORT, "head")));
+    const outDir = path.join(HERE, "results", "compare-tmp", stamp);
+    const { result, machine, remeasured } = await runStep("measurement", () =>
+      measure({ servers, outDir, idleBusyPct })
+    );
     const md = report({ base, report: result, rounds: ROUNDS, startedAt, machine, remeasured });
-    const file = path.join(HERE, "results", `compare-${startedAt.replace(/[:.]/g, "-")}.md`);
-    fs.writeFileSync(file, md);
+    const file = writeReport(md, stamp);
+    writeResult(
+      RESULT_FILE,
+      buildCiResult({ regressions: result.regressions, noiseWarnings: noiseWarnings(machine), report: file })
+    );
     console.log(`\n${md}\n`);
     log(`Report written to ${path.relative(ROOT, file)} — paste it in the PR's Performance section.`);
     if (STRICT && result.regressions.length > 0) process.exitCode = 1;
@@ -271,5 +307,6 @@ async function main() {
 
 main().catch((error) => {
   console.error(`[perf:compare] ${error.message}`);
+  writeResult(RESULT_FILE, errorResult(errorReason(error)));
   process.exit(2);
 });
