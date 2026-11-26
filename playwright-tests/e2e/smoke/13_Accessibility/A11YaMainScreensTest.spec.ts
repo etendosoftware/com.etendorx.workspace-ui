@@ -21,7 +21,13 @@ const KNOWN: Record<"login" | "home" | "grid" | "form" | "process", Record<strin
   grid: {
     "aria-required-children": "ETP-6305: the grid container has role=grid but the table inside it is not its child",
   },
-  form: {},
+  form: {
+    "aria-allowed-attr":
+      "ETP-6306: the section headers and the field containers use ARIA attributes their element has no role for",
+    "aria-valid-attr-value":
+      "ETP-6306: the field containers carry aria-label, aria-readonly or aria-required values on elements without a role",
+    "button-name": "ETP-6306: the icon buttons of the section headers have no accessible name",
+  },
   process: {},
 };
 
@@ -71,6 +77,8 @@ test.describe("Accessibility - main screens @smoke @a11y", () => {
 
     await app.grid.openForm(order);
     await expect(page.getByRole("textbox").first()).toBeVisible();
+    // the section headers are part of what is known to fail: scan once they are on screen
+    await expect(page.locator('[aria-controls^="section-content-"]').first()).toBeVisible();
     await expectNoNewViolations(page, "form");
   });
 
