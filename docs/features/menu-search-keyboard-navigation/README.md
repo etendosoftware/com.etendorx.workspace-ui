@@ -98,6 +98,12 @@ looks inside them.
 Searching by folder name to list everything inside a folder is out of scope, as it is in
 Classic.
 
+**Long names.** An entry name that does not fit is cut by an ellipsis, in the sidebar and in
+the flyout of the collapsed sidebar. Its `MenuTitle` wraps the name in the shared `Tooltip`
+with `onlyWhenTruncated`: the whole name is shown on hover, only when it is actually cut. The
+check runs on each hover (content `scrollWidth` > `clientWidth`), so it follows the width the
+resizable sidebar has at that time, with no observer per entry.
+
 ---
 
 ## Why the visible order is read from the DOM
@@ -202,6 +208,7 @@ guarantees Tab keeps working.
 | `hooks/useItemType.ts` | Dispatch per item type; shares the openable-types constant |
 | `utils/searchUtils.tsx` | Search index (only openable entries by name) and filtered tree |
 | `components/Input/TextInput/TextInputAutocomplete/SuggestionBox/index.tsx` | Marks the parts of the suggestion for the sidebar to restyle |
+| `components/Tooltip/index.tsx` | `onlyWhenTruncated`: a tooltip shown only while its content is cut |
 | `MainUI/components/Sidebar.tsx` | Resolves the "no results" text from the message catalog |
 
 ## Tests
