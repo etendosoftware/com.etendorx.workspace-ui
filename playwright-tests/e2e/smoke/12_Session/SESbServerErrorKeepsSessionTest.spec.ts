@@ -3,12 +3,16 @@ import { selectSampleOrder } from "../../support/flows/sampleOrders";
 import { answerWithStatus } from "../../support/network";
 import { SAMPLE_DOCUMENT } from "../../support/registry/data";
 import { WINDOWS } from "../../support/registry/windows";
+import { runAndWaitForResponse } from "../../support/wait";
 
 /** Requests answered with a simulated status: the grid configuration of a window and the grid data. */
 const GRID_CONFIGURATION = /\/api\/erp\/meta\/grid-configuration/;
 const GRID_DATA = /\/api\/datasource(\?|$)/;
 /** The session of the user, read through the API client when the application loads. */
 const SESSION = /\/api\/erp\/meta\/session/;
+/** The logout, which asks the server to revoke the token of the session. */
+const LOGOUT = /\/api\/auth\/logout/;
+const TOKEN_KEY = "token";
 /** A request made outside the API clients (through `sessionAwareFetch`): the email configuration of a record. */
 const EMAIL_CONFIGURATION = /\/api\/erp\/meta\/email\/config/;
 const SERVER_ERROR = 500;
@@ -58,17 +62,32 @@ test.describe("Session - server errors keep the session @smoke @session", () => 
     expect(rejection.sent).toBe(true);
   });
 
+  test("closes the session when a token revoked by a logout is used again", async ({ app, page }) => {
+    const revokedToken = await page.evaluate((key) => localStorage.getItem(key) ?? "", TOKEN_KEY);
+    await runAndWaitForResponse(page, LOGOUT, () => app.auth.logout());
+
+    // The token of the closed session is put back, as if it had been copied before the logout
+    await page.evaluate(([key, token]) => localStorage.setItem(key, token), [TOKEN_KEY, revokedToken]);
+    const session = await runAndWaitForResponse(page, SESSION, () => page.reload());
+
+    expect(session.status()).toBe(UNAUTHORIZED);
+    await app.auth.expectLoggedOutWith(GENERIC_LOGOUT);
+  });
+
   test("closes the session with the session-expired message when the token expired", async ({ app, page }) => {
     // Same token with an expiration in the past: the server rejects it (its signature no longer
     // matches) and the client knows it expired.
-    await page.evaluate((secondsAgo) => {
-      const token = localStorage.getItem("token") ?? "";
-      const [header, payload, signature] = token.split(".");
-      const claims = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
-      claims.exp = Math.floor(Date.now() / 1000) - secondsAgo;
-      const expired = btoa(JSON.stringify(claims)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-      localStorage.setItem("token", `${header}.${expired}.${signature}`);
-    }, ONE_MINUTE_IN_SECONDS);
+    await page.evaluate(
+      ({ key, secondsAgo }) => {
+        const token = localStorage.getItem(key) ?? "";
+        const [header, payload, signature] = token.split(".");
+        const claims = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+        claims.exp = Math.floor(Date.now() / 1000) - secondsAgo;
+        const expired = btoa(JSON.stringify(claims)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        localStorage.setItem(key, `${header}.${expired}.${signature}`);
+      },
+      { key: TOKEN_KEY, secondsAgo: ONE_MINUTE_IN_SECONDS }
+    );
 
     await page.reload();
 
