@@ -103,3 +103,47 @@ describe("Menu keyboard and focus (ETP-6304)", () => {
     expect(opener).toHaveFocus();
   });
 });
+
+describe("Menu keyboard edge cases (ETP-6304)", () => {
+  const FieldHarness = ({ withItems }: { withItems: boolean }) => {
+    const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+    return (
+      <div>
+        <button type="button" onClick={(event) => setAnchor(event.currentTarget)}>
+          opener
+        </button>
+        <Menu anchorEl={anchor} onClose={() => setAnchor(null)}>
+          {withItems ? <input aria-label="search" /> : <span>nothing to reach</span>}
+        </Menu>
+      </div>
+    );
+  };
+
+  afterEach(() => {
+    jest.clearAllTimers();
+  });
+
+  it("leaves the arrow keys to a text field inside the menu", () => {
+    render(<FieldHarness withItems />);
+    fireEvent.click(screen.getByText("opener"));
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+
+    const notCancelled = fireEvent.keyDown(screen.getByLabelText("search"), { key: "ArrowDown" });
+
+    expect(notCancelled).toBe(true);
+  });
+
+  it("ignores the arrow keys when the menu has nothing to reach", () => {
+    render(<FieldHarness withItems={false} />);
+    fireEvent.click(screen.getByText("opener"));
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+
+    const notCancelled = fireEvent.keyDown(screen.getByText("nothing to reach"), { key: "ArrowDown" });
+
+    expect(notCancelled).toBe(true);
+  });
+});
