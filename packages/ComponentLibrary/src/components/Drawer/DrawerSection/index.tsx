@@ -221,7 +221,6 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     return (
       <div
         className={sectionClasses}
-        aria-expanded={expanded}
         onKeyDown={handleKeyDown}
         onMouseEnter={handleCombinedMouseEnter}
         onFocus={handleMouseEnterLeaf}

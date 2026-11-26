@@ -236,4 +236,52 @@ describe("Tooltip multiline", () => {
   it("does not change the default tooltips", () => {
     expect(showTitleBox()).not.toHaveClass("whitespace-pre-line");
   });
+
+  describe("keyboard (ETP-6304)", () => {
+    const SHOW_DELAY = 600;
+
+    it("shows the tooltip when the button gets the focus from the keyboard", () => {
+      render(
+        <Tooltip title="Keyboard tip">
+          <button type="button">Open</button>
+        </Tooltip>
+      );
+      act(() => screen.getByRole("button", { name: "Open" }).focus());
+      act(() => {
+        jest.advanceTimersByTime(SHOW_DELAY);
+      });
+      expect(screen.getByRole("tooltip")).toHaveTextContent("Keyboard tip");
+    });
+
+    it("hides the tooltip when the focus leaves", () => {
+      render(
+        <Tooltip title="Keyboard tip">
+          <button type="button">Open</button>
+        </Tooltip>
+      );
+      const button = screen.getByRole("button", { name: "Open" });
+      act(() => button.focus());
+      act(() => {
+        jest.advanceTimersByTime(SHOW_DELAY);
+      });
+      act(() => button.blur());
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    });
+
+    it("hides the tooltip with Escape without moving the focus", () => {
+      render(
+        <Tooltip title="Keyboard tip">
+          <button type="button">Open</button>
+        </Tooltip>
+      );
+      const button = screen.getByRole("button", { name: "Open" });
+      act(() => button.focus());
+      act(() => {
+        jest.advanceTimersByTime(SHOW_DELAY);
+      });
+      fireEvent.keyDown(button, { key: "Escape" });
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+      expect(button).toHaveFocus();
+    });
+  });
 });

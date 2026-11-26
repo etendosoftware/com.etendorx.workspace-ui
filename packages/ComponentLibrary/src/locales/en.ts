@@ -24,6 +24,11 @@ const en = {
     close: "Close",
     scrollTabsBack: "Show the previous tabs",
     scrollTabsForward: "Show the next tabs",
+    expandTabsPanel: "Expand the panel",
+    clearField: "Clear the field",
+    openDatePicker: "Open the date picker",
+    maximizeTabsPanel: "Maximize the panel",
+    restoreTabsPanel: "Restore the size of the panel",
     closing: "Closing...",
     unsavedChangesCloseMessage:
       "You have unsaved changes that will be lost. Are you sure you want to close this window?",
@@ -461,6 +466,9 @@ const en = {
     openExternalLink: "Open link",
     legacyWindowPopupBlocked: "Your browser blocked the window this menu entry tried to open.",
     openLegacyWindow: "Open window",
+    openMenu: "Open the menu",
+    closeMenu: "Close the menu",
+    search: "Search the menu",
   },
   login: {
     title: "Log In",

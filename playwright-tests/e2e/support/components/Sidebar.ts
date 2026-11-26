@@ -76,7 +76,7 @@ export class Sidebar {
     await entry.waitFor({ state: "visible", timeout: MENU_ENTRY_TIMEOUT });
     await entry.scrollIntoViewIfNeeded();
     // Click the entry icon: the center of a short entry is its favorite star, which has its own
-    // click handler and does not navigate.
-    await entry.getByRole("img").first().click();
+    // click handler and does not navigate. The icon is decorative (empty alt), so it has no `img` role.
+    await entry.locator("img").first().click();
   }
 }

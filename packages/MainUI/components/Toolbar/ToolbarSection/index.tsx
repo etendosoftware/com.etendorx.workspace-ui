@@ -93,6 +93,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
               <IconButton
                 key={key}
                 tooltip={innerTooltip}
+                ariaLabel={tooltip}
                 onClick={onClick}
                 disabled={disabled}
                 className={className ? `${TOOLBAR_ICON_BUTTON_CLASS} ${className}` : TOOLBAR_ICON_BUTTON_CLASS}

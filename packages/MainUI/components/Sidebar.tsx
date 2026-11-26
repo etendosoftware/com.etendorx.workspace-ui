@@ -343,6 +343,8 @@ export default function Sidebar() {
           pendingWindowId={pendingWindowId}
           logo={EtendoLogotype.src}
           title={t("common.etendo")}
+          menuToggleLabels={{ open: t("drawer.openMenu"), close: t("drawer.closeMenu") }}
+          searchLabel={t("drawer.search")}
           items={menu}
           onClick={handleClick}
           onReportClick={handleClick}

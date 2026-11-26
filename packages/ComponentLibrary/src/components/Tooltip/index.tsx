@@ -46,6 +46,19 @@ export interface TooltipProps {
   multiline?: boolean;
 }
 
+/**
+ * Whether the focus on `target` comes from the keyboard. A click focuses a button too, and it already shows the
+ * tooltip through the mouse, so only the focus a screen of keys can see is taken. Where `:focus-visible` is not
+ * supported, any focus counts.
+ */
+const isKeyboardFocus = (target: EventTarget): boolean => {
+  try {
+    return target instanceof Element && target.matches(":focus-visible");
+  } catch {
+    return true;
+  }
+};
+
 const Tooltip: React.FC<TooltipProps> = ({
   title,
   children,
@@ -128,7 +141,15 @@ const Tooltip: React.FC<TooltipProps> = ({
       className={`relative group ${containerClassName ?? ""}`}
       onMouseEnter={showTooltip}
       onMouseLeave={hideTooltip}
-      onMouseDown={hideTooltip}>
+      onMouseDown={hideTooltip}
+      onFocus={(event) => {
+        if (isKeyboardFocus(event.target)) showTooltip();
+      }}
+      onBlur={hideTooltip}
+      onKeyDown={(event) => {
+        // Dismissible without moving the focus (WCAG 1.4.13); the key still reaches whatever else listens to it
+        if (event.key === "Escape") hideTooltip();
+      }}>
       {children}
       {visible &&
         ReactDOM.createPortal(

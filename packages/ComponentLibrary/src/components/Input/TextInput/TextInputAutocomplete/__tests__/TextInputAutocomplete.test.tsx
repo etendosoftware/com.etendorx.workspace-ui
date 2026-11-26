@@ -56,4 +56,9 @@ describe("TextInputAutoComplete", () => {
     fireEvent.blur(input);
     expect(screen.queryByTestId("suggestion-box")).not.toBeInTheDocument();
   });
+
+  it("names its search icon button with leftIconAriaLabel (ETP-6304)", () => {
+    render(<TextInputAutoComplete value="" setValue={jest.fn()} leftIconAriaLabel="Search the menu" />);
+    expect(screen.getByRole("button", { name: "Search the menu" })).toBeInTheDocument();
+  });
 });

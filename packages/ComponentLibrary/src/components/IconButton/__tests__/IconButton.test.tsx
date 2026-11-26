@@ -59,4 +59,33 @@ describe("IconButton", () => {
     render(<IconButton>icon</IconButton>);
     expect(screen.getByRole("button")).toHaveAttribute("type", "button");
   });
+
+  describe("accessible name (ETP-6304)", () => {
+    it("is named by its tooltip when it has no label and no text", () => {
+      render(
+        <IconButton tooltip="Save">
+          <svg />
+        </IconButton>
+      );
+      expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
+    });
+
+    it("prefers an explicit ariaLabel to the tooltip", () => {
+      render(
+        <IconButton tooltip="Save" ariaLabel="Save the record">
+          <svg />
+        </IconButton>
+      );
+      expect(screen.getByRole("button", { name: "Save the record" })).toBeInTheDocument();
+    });
+
+    it("is named by its own text, not by the tooltip, when it shows text", () => {
+      render(
+        <IconButton tooltip="Hint" iconText="Export">
+          <svg />
+        </IconButton>
+      );
+      expect(screen.getByRole("button", { name: "Export" })).toBeInTheDocument();
+    });
+  });
 });

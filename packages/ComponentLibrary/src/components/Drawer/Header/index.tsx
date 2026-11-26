@@ -24,7 +24,7 @@ import Logo from "../../Logo";
 import type { DrawerHeaderProps } from "../types";
 import { SIDEBAR_GUTTER_PADDING_CLASS } from "../spacing";
 
-const DrawerHeader = ({ title, logo, open, onClick, tabIndex }: DrawerHeaderProps) => {
+const DrawerHeader = ({ title, logo, open, onClick, tabIndex, toggleLabel }: DrawerHeaderProps) => {
   return (
     <div
       className={`h-14 min-h-14 flex items-center justify-end py-2 ${SIDEBAR_GUTTER_PADDING_CLASS} border-b border-(--ui-line)`}>
@@ -39,6 +39,8 @@ const DrawerHeader = ({ title, logo, open, onClick, tabIndex }: DrawerHeaderProp
       <div>
         <IconButton
           onClick={onClick}
+          ariaLabel={toggleLabel}
+          aria-expanded={open}
           className="h-9 w-9 bg-transparent text-(--ui-text-muted) hover:bg-(--ui-hover) hover:text-(--ui-text)"
           tabIndex={tabIndex}
           data-testid="drawer-toggle-button">

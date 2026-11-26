@@ -1,4 +1,5 @@
 import { useState, type ComponentProps, type FC, type ComponentType, type SVGProps, useId } from "react";
+import { useTranslation } from "../../hooks/useTranslation";
 import Eye from "../../../ComponentLibrary/src/assets/icons/eye.svg";
 import EyeOff from "../../../ComponentLibrary/src/assets/icons/eye-off.svg";
 import Asterisk from "../../../ComponentLibrary/src/assets/icons/asterisk.svg";
@@ -24,6 +25,7 @@ const Input: FC<InputProps> = ({
   clearable = true,
   ...props
 }) => {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const isPassword = type === "password";
@@ -112,6 +114,7 @@ const Input: FC<InputProps> = ({
             type="button"
             onClick={handleClear}
             tabIndex={-1}
+            aria-label={t("common.clearField")}
             className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600 transition-colors">
             <X
               className={`h-4 w-4 transition-colors ${
@@ -125,7 +128,8 @@ const Input: FC<InputProps> = ({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            tabIndex={-1}
+            aria-label={showPassword ? t("navigation.profile.hidePassword") : t("navigation.profile.showPassword")}
+            aria-pressed={showPassword}
             className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600 transition-colors">
             {showPassword ? (
               <EyeOff

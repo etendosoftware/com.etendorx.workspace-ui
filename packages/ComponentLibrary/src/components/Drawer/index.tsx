@@ -69,6 +69,8 @@ const Drawer: React.FC<DrawerProps> = ({
   VersionComponent,
   getTranslatedName,
   searchContext,
+  menuToggleLabels,
+  searchLabel,
 }) => {
   const [open, setOpen] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
@@ -229,7 +231,14 @@ const Drawer: React.FC<DrawerProps> = ({
         className={`h-screen max-h-screen transition-all duration-500 ease-in-out
              bg-(--ui-sidebar-bg) text-(--ui-text) border-none
              flex flex-col overflow-hidden ${open ? "w-[16.25rem]" : "w-[3.5rem]"}`}>
-        <DrawerHeader logo={logo} title={title} open={open} onClick={handleHeaderClick} tabIndex={-1} />
+        <DrawerHeader
+          logo={logo}
+          title={title}
+          open={open}
+          onClick={handleHeaderClick}
+          tabIndex={-1}
+          toggleLabel={open ? menuToggleLabels?.close : menuToggleLabels?.open}
+        />
         {open && (
           // The navigation keys are handled here, on the container, and not on the input:
           // its key events bubble up to this point, so the Tab autocompletion of
@@ -242,6 +251,7 @@ const Drawer: React.FC<DrawerProps> = ({
                 value={searchValue}
                 setValue={setSearchValue}
                 placeholder="Search"
+                leftIconAriaLabel={searchLabel}
                 autoCompleteTexts={allItemTitles}
                 inputRef={searchInputRef}
                 inputProps={{ autoComplete: "off" }}
