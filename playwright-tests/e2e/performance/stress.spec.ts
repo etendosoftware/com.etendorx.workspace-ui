@@ -1,7 +1,11 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type Response } from "@playwright/test";
 import { Auth } from "../support/components/Auth";
 import { SIDEBAR_TEST_IDS } from "../support/components";
 import { Sidebar } from "../support/components/Sidebar";
+import { runAndWaitForResponse } from "../support/wait";
+
+/** The login form posts the credentials here. */
+const isLoginRequest = (response: Response) => new URL(response.url()).pathname === "/api/auth/login";
 
 /** `performance.memory` is a non-standard Chrome-only API. */
 type ChromePerformance = Performance & { memory?: { usedJSHeapSize: number } };
@@ -127,8 +131,8 @@ test.describe("Stress Tests", () => {
         await page.locator("#username").fill(`invalid_user_${i}`);
         await page.locator("#password").clear();
         await page.locator("#password").fill(`invalid_pass_${i}`);
-        await page.getByRole("button", { name: /Log In/i }).click();
-        await page.waitForTimeout(1_000);
+        // Wait for the server's answer to each attempt instead of a fixed second
+        await runAndWaitForResponse(page, isLoginRequest, () => page.getByRole("button", { name: /Log In/i }).click());
         console.log(`Failed login attempt ${i + 1}/${attempts}`);
       }
 
