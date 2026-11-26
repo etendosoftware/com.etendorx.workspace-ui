@@ -1,7 +1,7 @@
 # Menu search keyboard navigation
 
-How the drawer's menu list is driven from the keyboard, and the DOM contract that makes
-it work.
+How the drawer's menu list is driven from the keyboard, the DOM contract that makes
+it work, and what the search returns.
 
 Etendo Classic exposes the menu through **Quick Launch**, a *command palette*: type three
 letters, press Enter, the window opens. The drawer of the new UI filtered in real time but
@@ -59,6 +59,34 @@ search case falls out of the same expression with no extra condition.
 `isOpenableMenuItem` mirrors the dispatch of `useItemActions`: the type must be one of
 `OPENABLE_MENU_ITEM_TYPES`, a `Window` needs its `windowId`, everything else its `id`.
 Both read that list from the same constant so they cannot drift apart.
+
+---
+
+## What the search returns
+
+As in Classic, **only entries that open something are search results** ([ETP-6337](https://etendoproject.atlassian.net/browse/ETP-6337)).
+Classic builds the Quick Launch candidates from `MenuManager.selectableMenuOptions`: every
+menu option whose type is not `Summary`. Folders are never candidates; the search only
+looks inside them.
+
+- **Folders are the path, never a result.** `createSearchIndex` keeps every node in
+  `byId` (the path and full path of an entry need its folders), but indexes the name,
+  words and full path in `byPhrase` only for an entry that passes `isOpenableMenuItem` —
+  the same rule as the keyboard navigation above. A folder therefore appears only when an
+  entry inside it matches, and it is shown expanded with its matching entries. Before,
+  a folder whose own name matched ("Transactions") was shown without children and without
+  the expand arrow: it looked like an entry and clicking it did nothing.
+- **The autocomplete follows the same rule.** `getAllItemTitles` reads the same phrase
+  index, so Tab no longer completes a folder name that would find nothing.
+- **No results.** When a term matches no entry, the `Drawer` shows a message (test ID
+  `drawer-search-no-results`) instead of an empty list. Its text is the Quick Launch one,
+  `OBUISC_ListGrid.emptyMessage` ("No items to show."), read from the backend message
+  catalog (`/meta/labels`) by `Sidebar` through `resolveCatalogLabel`, with the local key
+  `drawer.noResults` as fallback. Nothing is highlighted then, so Enter opens nothing.
+- **Without a search term nothing changes**: `filterItems` returns the menu untouched.
+
+Searching by folder name to list everything inside a folder is out of scope, as it is in
+Classic.
 
 ---
 
@@ -162,6 +190,8 @@ guarantees Tab keeps working.
 | `components/Drawer/MenuTitle/index.tsx` | Marks a navigable entry, paints the highlight, scrolls it into view |
 | `components/Drawer/DrawerSection/index.tsx` | Marks a collapsed subtree |
 | `hooks/useItemType.ts` | Dispatch per item type; shares the openable-types constant |
+| `utils/searchUtils.tsx` | Search index (only openable entries by name) and filtered tree |
+| `MainUI/components/Sidebar.tsx` | Resolves the "no results" text from the message catalog |
 
 ## Tests
 
@@ -170,3 +200,6 @@ guarantees Tab keeps working.
 | `utils/__tests__/drawerUtils.test.tsx` | Navigability rule, DOM order, collapsed subtrees, edge stops |
 | `components/Drawer/__tests__/Drawer.keyboard.test.tsx` | The whole contract, with and without a search term |
 | `components/Drawer/DrawerSection/index.test.tsx` | The DOM markers and the highlight |
+| `utils/__tests__/searchUtils.test.ts` | Folders only as the path, no folder results, autocomplete without folders |
+| `MainUI/components/__tests__/Sidebar.external.test.tsx` | The "no results" text from the catalog and its fallback |
+| `playwright-tests/e2e/smoke/11_Navigation/NAVeSidebarSearchFoldersTest.spec.ts` | NAVe: the same rules against the real core menu |

@@ -42,8 +42,8 @@ docs/
 │   │   └── README.md                # Session rule, handlesOwnError, server answers per service, Classic parity
 │   ├── match-statement/              # Feature: Match Statement process (Classic parity)
 │   │   └── README.md                # Classic analysis, Confirm dialog, request params, context
-│   ├── menu-search-keyboard-navigation/ # Feature: Keyboard navigation of the drawer menu
-│   │   └── README.md                # Arrow/Enter/Escape contract, navigability rule
+│   ├── menu-search-keyboard-navigation/ # Feature: Search and keyboard navigation of the drawer menu
+│   │   └── README.md                # Arrow/Enter/Escape contract, navigability rule, folders only as the path
 │   ├── application-forms/            # Feature: Classic Application Forms opened from the menu
 │   │   └── README.md                # Form address from the default mapping, entry points
 │   ├── role-access-restrictions/     # Feature: Role Tab Access, Field Access and Process Access
