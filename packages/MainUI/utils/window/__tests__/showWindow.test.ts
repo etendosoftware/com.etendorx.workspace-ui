@@ -19,7 +19,10 @@ import { useWindowStore } from "@/stores/windowStore";
 import { useUnsavedChangesStore } from "@/stores/unsavedChangesStore";
 import { savePreferences } from "@/utils/propertyStore";
 import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
+import { prefetchWindowViewSettings } from "@/utils/savedViews/defaultViews";
 import { findWindowToReplace, runReplacingWindow, showWindow } from "../showWindow";
+
+jest.mock("@/utils/savedViews/defaultViews", () => ({ prefetchWindowViewSettings: jest.fn() }));
 
 const WINDOW_ID = "143";
 const OPEN_WINDOW = "143_1";
@@ -32,7 +35,14 @@ describe("showWindow", () => {
     savePreferences({});
     useWindowStore.getState().cleanState();
     useUnsavedChangesStore.setState({ request: null });
+    (prefetchWindowViewSettings as jest.Mock).mockClear();
   });
+
+  const openWithUnsavedChanges = () => {
+    useWindowStore.getState().setWindowActive({ windowIdentifier: OPEN_WINDOW, windowData: WINDOW_DATA });
+    useWindowStore.getState().setWindowDirtySource(OPEN_WINDOW, "form:186", true);
+    showWindow({ windowId: WINDOW_ID, windowIdentifier: NEW_WINDOW, windowData: WINDOW_DATA });
+  };
 
   it("opens a window that is not open yet", () => {
     showWindow({ windowId: WINDOW_ID, windowIdentifier: NEW_WINDOW, windowData: WINDOW_DATA });
@@ -58,16 +68,35 @@ describe("showWindow", () => {
   });
 
   it("asks about the unsaved changes of the instance it replaces before replacing it", () => {
-    useWindowStore.getState().setWindowActive({ windowIdentifier: OPEN_WINDOW, windowData: WINDOW_DATA });
-    useWindowStore.getState().setWindowDirtySource(OPEN_WINDOW, "form:186", true);
-
-    showWindow({ windowId: WINDOW_ID, windowIdentifier: NEW_WINDOW, windowData: WINDOW_DATA });
+    openWithUnsavedChanges();
 
     expect(Object.keys(useWindowStore.getState().windows)).toEqual([OPEN_WINDOW]);
     const request = useUnsavedChangesStore.getState().request;
     expect(request?.windowIdentifier).toBe(OPEN_WINDOW);
     request?.onProceed();
     expect(Object.keys(useWindowStore.getState().windows)).toEqual([NEW_WINDOW]);
+  });
+
+  it("requests the view settings of a new instance as it opens", () => {
+    showWindow({ windowId: WINDOW_ID, windowIdentifier: NEW_WINDOW, windowData: WINDOW_DATA });
+
+    expect(prefetchWindowViewSettings).toHaveBeenCalledWith(NEW_WINDOW);
+  });
+
+  it("requests the view settings of the instance that replaces another one", () => {
+    useWindowStore.getState().setWindowActive({ windowIdentifier: OPEN_WINDOW, windowData: WINDOW_DATA });
+
+    showWindow({ windowId: WINDOW_ID, windowIdentifier: NEW_WINDOW, windowData: WINDOW_DATA });
+
+    expect(prefetchWindowViewSettings).toHaveBeenCalledWith(NEW_WINDOW);
+  });
+
+  it("requests the view settings only once the unsaved changes are resolved", () => {
+    openWithUnsavedChanges();
+
+    expect(prefetchWindowViewSettings).not.toHaveBeenCalled();
+    useUnsavedChangesStore.getState().request?.onProceed();
+    expect(prefetchWindowViewSettings).toHaveBeenCalledWith(NEW_WINDOW);
   });
 });
 

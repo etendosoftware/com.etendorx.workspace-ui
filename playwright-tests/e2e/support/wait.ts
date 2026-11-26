@@ -97,6 +97,80 @@ export async function runAndCaptureGridFetch(
 }
 
 /**
+ * Records the ids of the rows every response to a grid fetch of `tabId` brings from now on, in the order they
+ * arrive: a record the grid asked for twice shows twice. Await `ids()` once the pages of interest loaded.
+ */
+export function collectGridFetchedIds(page: Page, tabId: string): { ids: () => Promise<string[]> } {
+  const pages = collectFetchedPages(page, (body) => gridFetchParams(body, tabId));
+  return { ids: async () => (await pages()).flatMap((fetched) => fetched.ids) };
+}
+
+/** A page a datasource answered: the params of its request and the ids of its rows. */
+export interface FetchedPage {
+  params: DatasourceRequestParams;
+  /** Rows of the answer, also those without id (the empty option a dropdown of an optional field gets). */
+  rows: number;
+  ids: string[];
+}
+
+/**
+ * Params of a datasource request body when it fetches the options of the dropdown of the field whose property
+ * is `hqlName` (`initiatorField`); other requests give `undefined`.
+ */
+export function optionsFetchParams(body: unknown, hqlName: string): DatasourceRequestParams | undefined {
+  const params = (body as { params?: DatasourceRequestParams } | null)?.params;
+  if (params?.initiatorField !== hqlName || params._operationType !== FETCH_OPERATION) {
+    return undefined;
+  }
+  return params;
+}
+
+/**
+ * Records every page of options the dropdown of the field `hqlName` fetches from now on, in the order they
+ * arrive. Await `pages()` once the pages of interest loaded.
+ */
+export function collectFieldOptionPages(page: Page, hqlName: string): { pages: () => Promise<FetchedPage[]> } {
+  return { pages: collectFetchedPages(page, (body) => optionsFetchParams(body, hqlName)) };
+}
+
+/** Runs `action` (e.g. scrolling a dropdown) and waits for the options the dropdown of `hqlName` fetches. */
+export function runAndWaitForFieldOptions(page: Page, hqlName: string, action: () => Promise<unknown>) {
+  const isOptionsFetch = (response: Response) =>
+    DATASOURCE_URL.test(response.url()) && optionsFetchParams(response.request().postDataJSON(), hqlName) !== undefined;
+  return runAndWaitForResponse(page, isOptionsFetch, action);
+}
+
+/** Pages of the datasource responses whose request `readParams` accepts, from now on. */
+function collectFetchedPages(
+  page: Page,
+  readParams: (body: unknown) => DatasourceRequestParams | undefined
+): () => Promise<FetchedPage[]> {
+  const pages: Promise<FetchedPage>[] = [];
+  page.on("response", (response) => {
+    if (!DATASOURCE_URL.test(response.url())) {
+      return;
+    }
+    const params = readParams(response.request().postDataJSON());
+    if (params) {
+      pages.push(response.json().then((body) => ({ params, rows: fetchedRows(body).length, ids: fetchedIds(body) })));
+    }
+  });
+  return () => Promise.all(pages);
+}
+
+/** Ids of the rows of a datasource response body, leaving out rows without id (a dropdown's empty option). */
+export function fetchedIds(body: unknown): string[] {
+  return fetchedRows(body)
+    .filter((row) => row.id !== undefined && row.id !== null)
+    .map((row) => String(row.id));
+}
+
+/** Rows of a datasource response body. */
+function fetchedRows(body: unknown): Array<{ id?: unknown }> {
+  return (body as { response?: { data?: Array<{ id?: unknown }> } } | null)?.response?.data ?? [];
+}
+
+/**
  * Records the params of every request that fetches the grid records of `tabId` from now on, as they are
  * sent: to check pages the UI asks for by itself (no response to wait for in between).
  */

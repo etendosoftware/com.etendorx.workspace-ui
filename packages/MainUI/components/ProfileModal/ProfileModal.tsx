@@ -45,6 +45,7 @@ import { computeProfileUpdates } from "./profileUpdates";
 import { PASSWORD_CHANGED_MESSAGE_CODE, resolvePasswordErrorMessage, submitPasswordChange } from "@/utils/password";
 import { resolveCatalogLabel } from "@/utils/catalogLabel";
 import { buildProfileContextTooltip } from "./profileContext";
+import { sortRoleTree, toOption } from "./profileOrdering";
 
 const DefaultOrg = { title: "*", value: "0", id: "0" };
 
@@ -100,6 +101,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const cleanWindowState = useWindowStore((s) => s.cleanState);
   const setBypassUnloadWarning = useUnsavedChangesStore((s) => s.setBypassUnloadWarning);
   const { guard } = useGlobalUnsavedChangesGuard();
+  // Organizations and warehouses in the Classic order: the first ones are the ones a change fills in.
+  const orderedRoles = useMemo(() => sortRoleTree(roles), [roles]);
 
   const [selectedRole, setSelectedRole] = useState<Option | null>(() => {
     if (currentRole) {
@@ -109,9 +112,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   });
 
   const selectedClient = useMemo(() => {
-    const client = selectedRole && roles.find((r) => r.id === selectedRole.value)?.client;
+    const client = selectedRole && orderedRoles.find((r) => r.id === selectedRole.value)?.client;
     return client ? { title: client, value: client, id: client } : null;
-  }, [selectedRole, roles]);
+  }, [selectedRole, orderedRoles]);
 
   const [selectedOrg, setSelectedOrg] = useState<Option>(() => {
     if (currentOrganization) {
@@ -178,33 +181,19 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       setSelectedRole(value);
 
       if (value) {
-        const selectedRoleData = roles.find((role) => role.id === value.value);
+        // Parity with Classic (ob-user-profile-widget.js itemChanged): a role change moves to the
+        // first organization of the sorted list and to the first warehouse of that organization.
+        const selectedRoleData = orderedRoles.find((role) => role.id === value.value);
         const defaultOrganization = selectedRoleData?.organizations?.[0];
         const defaultWarehouse = defaultOrganization?.warehouses?.[0];
-        if (defaultOrganization) {
-          setSelectedOrg({
-            title: defaultOrganization.name,
-            value: defaultOrganization.id,
-            id: defaultOrganization.id,
-          });
-        } else {
-          setSelectedOrg(DefaultOrg);
-        }
-        if (defaultWarehouse) {
-          setSelectedWarehouse({
-            title: defaultWarehouse.name,
-            value: defaultWarehouse.id,
-            id: defaultWarehouse.id,
-          });
-        } else {
-          setSelectedWarehouse(null);
-        }
+        setSelectedOrg(defaultOrganization ? toOption(defaultOrganization) : DefaultOrg);
+        setSelectedWarehouse(defaultWarehouse ? toOption(defaultWarehouse) : null);
       } else {
         setSelectedOrg(DefaultOrg);
         setSelectedWarehouse(null);
       }
     },
-    [roles]
+    [orderedRoles]
   );
 
   const handleOrgChange = useCallback(
@@ -213,13 +202,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       setSelectedOrg(org);
       // Parity with Classic (ob-user-profile-widget.js itemChanged): selecting an
       // organization moves the warehouse to that org's first warehouse.
-      const role = roles.find((r) => r.id === selectedRole?.value);
+      const role = orderedRoles.find((r) => r.id === selectedRole?.value);
       const firstWarehouse = role?.organizations.find((o) => o.id === org.value)?.warehouses?.[0];
-      setSelectedWarehouse(
-        firstWarehouse ? { title: firstWarehouse.name, value: firstWarehouse.id, id: firstWarehouse.id } : null
-      );
+      setSelectedWarehouse(firstWarehouse ? toOption(firstWarehouse) : null);
     },
-    [roles, selectedRole]
+    [orderedRoles, selectedRole]
   );
 
   const handleWarehouseChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
@@ -288,7 +275,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         if (selectedRole?.value === currentRole?.id) {
           clientId = currentRole?.client || currentClient?.id || "0";
         } else {
-          const role = roles.find((r) => r.id === selectedRole?.value);
+          const role = orderedRoles.find((r) => r.id === selectedRole?.value);
           clientId = role?.client || currentClient?.id || "0";
         }
 
@@ -332,7 +319,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       currentWarehouse,
       currentOrganization,
       currentClient,
-      roles,
+      orderedRoles,
     ]
   );
 
@@ -510,7 +497,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           onOrgChange={handleOrgChange}
           onWarehouseChange={handleWarehouseChange}
           onLanguageChange={handleLanguageChange}
-          roles={roles}
+          roles={orderedRoles}
           selectedRole={selectedRole}
           selectedClient={selectedClient}
           selectedOrg={selectedOrg}

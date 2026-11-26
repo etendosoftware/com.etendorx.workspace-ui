@@ -10,10 +10,10 @@ const EDIT_ROW_BUTTON = '[data-testid^="edit-button-"]';
 const SAVE_ROW_BUTTON = '[data-testid^="save-button-"]';
 /** The datasource request that saves an inline edit. */
 const ROW_SAVE_REQUEST = /\/api\/datasource\/.*_operationType=update/;
-/** Record count of a grid that keeps its own counter bar: "Showing 12 records". */
-const SHOWING_RECORDS = /Showing (\d+) records?/;
-/** Record count of the root grid, which docks it into the title bar: "(12 records)". */
-const TITLE_RECORD_COUNT = /\((\d+) \w+\)/;
+/** Record count of a grid that keeps its own counter bar: "Showing 12 records", "Showing 101+ records". */
+const SHOWING_RECORDS = /Showing (\d+)(\+?) records?/;
+/** Record count of the root grid, which docks it into the title bar: "(12 records)", "(101+ records)". */
+const TITLE_RECORD_COUNT = /\((\d+)(\+?) \w+\)/;
 /** Accessible name of the selection checkbox of a grid row. */
 const ROW_SELECTION_LABEL = "Toggle select row";
 /** Time a sort click has to show in the header before {@link Grid.sortDescending} clicks again. */
@@ -23,9 +23,24 @@ const CLEAR_FILTER = "Clear filter";
 /** Text the header of a filtered column carries: "Filtering by <column> - …". */
 const FILTERING_BY = "Filtering by";
 
+/** Mark of a record count while more records than the loaded ones exist: "101+". */
+const MORE_RECORDS = "+";
+
+/** Record count a grid shows. */
+export interface ShownCount {
+  count: number;
+  /** The count is followed by "+": more records than the loaded ones exist. */
+  hasMore: boolean;
+}
+
 /** Data grid of the active tab or of a process modal. */
 export class Grid {
   constructor(private readonly page: Page) {}
+
+  /** Asserts the grid shows its own load error, with the button that retries the fetch. */
+  async expectLoadError(): Promise<void> {
+    await expect(this.page.getByRole("button", { name: "Retry" }).first()).toBeVisible();
+  }
 
   /**
    * Column filter input, by column name (placeholder `Filter <column>...`). Pass `scope` (e.g. a
@@ -157,6 +172,14 @@ export class Grid {
 
   /** The record count of the visible grid: "(N records)" in the title bar, or "Showing N records" in its counter bar. */
   async shownRecords(): Promise<number> {
+    return (await this.shownCount()).count;
+  }
+
+  /**
+   * The record count of the visible grid and whether it says more records exist ("101+"): while the grid has
+   * not loaded every record, the count is the loaded rows and never passes for the total.
+   */
+  async shownCount(): Promise<ShownCount> {
     const title = this.page.getByTestId("TitleRecordCount__table").filter({ visible: true }).first();
     const bar = this.page.getByText(SHOWING_RECORDS).filter({ visible: true }).first();
     const counter = title.or(bar);
@@ -164,7 +187,32 @@ export class Grid {
       timeout: ROW_TIMEOUT,
     });
     const text = (await counter.textContent()) ?? "";
-    return Number((TITLE_RECORD_COUNT.exec(text) ?? SHOWING_RECORDS.exec(text))?.[1]);
+    const match = TITLE_RECORD_COUNT.exec(text) ?? SHOWING_RECORDS.exec(text);
+    return { count: Number(match?.[1]), hasMore: match?.[2] === MORE_RECORDS };
+  }
+
+  /**
+   * Scrolls the visible grid to its last loaded row and waits for the page the grid asks for there. Returns
+   * once the counter says every record is loaded, failing after `maxPages` pages.
+   */
+  async scrollToEndUntilLoaded(maxPages: number): Promise<void> {
+    for (let page = 0; page < maxPages; page++) {
+      if (!(await this.shownCount()).hasMore) return;
+      await runAndWaitForDatasource(this.page, () => this.scrollToBottom());
+    }
+    expect((await this.shownCount()).hasMore, `the grid still has records to load after ${maxPages} pages`).toBe(false);
+  }
+
+  /** Scrolls the visible grid to its last loaded row, where it loads the next page. */
+  private async scrollToBottom(): Promise<void> {
+    await this.page
+      .getByRole("table")
+      .filter({ visible: true })
+      .first()
+      .evaluate((table) => {
+        const container = table.parentElement as HTMLElement;
+        container.scrollTop = container.scrollHeight;
+      });
   }
 
   /** Visible data rows of the grid in `scope`, in display order. */

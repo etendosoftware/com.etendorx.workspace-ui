@@ -30,7 +30,6 @@ import { getSession } from "@workspaceui/api-client/src/api/getSession";
 import { getPreferences } from "@workspaceui/api-client/src/api/getPreferences";
 import { savePreferences, clearPreferences } from "@/utils/propertyStore";
 import { CopilotClient } from "@workspaceui/api-client/src/api/copilot/client";
-import { HTTP_CODES } from "@workspaceui/api-client/src/api/constants";
 import type { DefaultConfiguration, IUserContext, Language, LanguageOption, LogoutOptions } from "./types";
 import type { ISession, ProfileInfo, SessionResponse } from "@workspaceui/api-client/src/api/types";
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from "@workspaceui/api-client/src/api/defaultConfig";
@@ -44,10 +43,18 @@ import { useSessionKeepAlive } from "@/hooks/useSessionKeepAlive";
 import { isTokenExpired } from "@/utils/session/token";
 import { resetSessionState } from "@/utils/session/resetSessionState";
 import { useUserStore } from "@/stores/userStore";
-import { isPasswordExpiredResponse } from "@/utils/session/erpErrorCode";
+import {
+  SESSION_RESPONSE_ACTION,
+  type SessionResponseAction,
+  registerSessionResponseHandler,
+  sessionPolicyInterceptor,
+} from "@/utils/session/sessionResponsePolicy";
 import { toast } from "sonner";
 
 export const UserContext = createContext({} as IUserContext);
+
+/** Id of the server-error toast, so repeated failures replace each other. */
+export const SERVER_ERROR_TOAST_ID = "server-error";
 
 export default function UserProvider(props: React.PropsWithChildren) {
   const router = useRouter();
@@ -413,66 +420,65 @@ export default function UserProvider(props: React.PropsWithChildren) {
   }, [token]);
 
   useEffect(() => {
-    const interceptor = (response: Response) => {
+    /**
+     * Applies what a failed response means for the session (see sessionResponsePolicy): only an
+     * authentication failure closes it, any other server error is shown and the user keeps working.
+     */
+    const handleSessionAction = (action: SessionResponseAction) => {
+      const store = useUserStore.getState();
       // While the password is expired the backend rejects the whole data plane with 401 on purpose.
       // Treating those as session failures would log the user out and prevent the mandatory change.
-      if (useUserStore.getState().passwordExpired) {
-        return response;
+      if (store.passwordExpired) {
+        return;
       }
 
-      // The password expired while the session was open. The change cannot be applied from here (the
-      // ERP handler needs the current password, which is not held), so log out with a clear reason
-      // instead of the generic session-failure message. Checked before the ignorable-URL list so it
-      // wins over it: every endpoint is rejected in this state, ignorable ones included.
-      if (isPasswordExpiredResponse(response)) {
-        // logout() clears the store synchronously, so the message must be written afterwards.
+      if (action === SESSION_RESPONSE_ACTION.SERVER_ERROR) {
+        // Fixed id: a burst of failures replaces one notice instead of piling them up.
+        toast.error(t("errors.internalServerError.title"), {
+          id: SERVER_ERROR_TOAST_ID,
+          description: t("errors.internalServerError.description"),
+        });
+        return;
+      }
+
+      // logout() clears the token synchronously: the rest of a burst of rejected requests finds no
+      // session left to close.
+      if (!store.token) {
+        return;
+      }
+
+      if (action === SESSION_RESPONSE_ACTION.PASSWORD_EXPIRED) {
+        // The password expired while the session was open. The change cannot be applied from here (the
+        // ERP handler needs the current password, which is not held), so log out with a clear reason
+        // instead of the generic session-failure message. logout() clears the store synchronously, so
+        // the message must be written afterwards.
         logout();
         useUserStore.getState().setLoginErrorText(t("login.errors.passwordExpired.title"));
         useUserStore.getState().setLoginErrorDescription(t("login.errors.passwordExpired.description"));
-        return response;
+        return;
       }
 
-      const isIgnorableError =
-        (response.status === HTTP_CODES.INTERNAL_SERVER_ERROR || response.status === HTTP_CODES.UNAUTHORIZED) &&
-        (response.url.includes("meta/window") ||
-          response.url.includes("meta/tab") ||
-          response.url.includes("meta/toolbar") ||
-          response.url.includes("api/datasource") ||
-          response.url.includes("org.openbravo.client.kernel") ||
-          response.url.includes("meta/labels") ||
-          response.url.includes("utility/ReferencedLink") ||
-          response.url.includes("meta/widget") ||
-          response.url.includes("meta/process-monitor") ||
-          response.url.includes("meta/instance-purpose") ||
-          response.url.includes("meta/form-personalization") ||
-          response.url.includes("meta/dashboard"));
-
-      if (
-        (response.status === HTTP_CODES.UNAUTHORIZED || response.status === HTTP_CODES.INTERNAL_SERVER_ERROR) &&
-        !isIgnorableError
-      ) {
-        // Read before logout(), which nulls the token: an expired one means the eviction was a
-        // session timeout, not a system error, and deserves the message that says so.
-        const expired = isTokenExpired(useUserStore.getState().token);
-        logout();
-        applyLogoutMessage(expired);
-      }
-
-      return response;
+      // Read before logout(), which nulls the token: an expired one means the eviction was a
+      // session timeout, not a system error, and deserves the message that says so.
+      const expired = isTokenExpired(store.token);
+      logout();
+      applyLogoutMessage(expired);
     };
 
     if (token) {
-      const unregisterMetadataInterceptor = Metadata.registerInterceptor(interceptor);
-      const unregisterDatasourceInterceptor = datasource.registerInterceptor(interceptor);
-      const unregisterCopilotInterceptor = CopilotClient.registerInterceptor(interceptor);
+      const unregisterHandler = registerSessionResponseHandler(handleSessionAction);
+      const unregisterMetadataInterceptor = Metadata.registerInterceptor(sessionPolicyInterceptor);
+      const unregisterDatasourceInterceptor = datasource.registerInterceptor(sessionPolicyInterceptor);
+      const unregisterCopilotInterceptor = CopilotClient.registerInterceptor(sessionPolicyInterceptor);
 
       return () => {
+        unregisterHandler();
         unregisterMetadataInterceptor();
         unregisterDatasourceInterceptor();
         unregisterCopilotInterceptor();
       };
     }
-  }, [logout, applyLogoutMessage, token]);
+  }, [logout, applyLogoutMessage, token, t]);
 
   useEffect(() => {
     if (ready && prevRole && prevRole?.id !== currentRole?.id) {

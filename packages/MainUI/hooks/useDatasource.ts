@@ -26,10 +26,11 @@ import type {
 import { LegacyColumnFilterUtils, SearchUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isTooManyNodesResponse } from "@/utils/table/treeMode";
+import { getPageRange, mergeFetchedPage, readFetchedPage } from "@/utils/table/datasourcePaging";
 
 const loadData = async (
   entity: string,
-  page: number,
+  firstRow: number,
   pageSize: number,
   params: DatasourceOptions,
   treeOptions?: {
@@ -42,8 +43,7 @@ const loadData = async (
   _isFiltering = false
 ) => {
   const safePageSize = pageSize ?? 1000;
-  const startRow = (page - 1) * pageSize;
-  const endRow = startRow + pageSize;
+  const { startRow, endRow } = getPageRange(firstRow, pageSize);
 
   const processedParams = {
     ...params,
@@ -133,6 +133,12 @@ export type UseDatasourceOptions = {
    * so the retained `id` criterion filters to a single row. Defaults to `true`.
    */
   enableDirectNavigation?: boolean;
+  /**
+   * Adds to every request what it must carry but must not trigger a fetch, read when the request is sent (the
+   * context of the record selected in the grid's own tab, as classic `getContextInfo`). Also applied to
+   * `getRequestParams`, so other requests asking for the same records send it too.
+   */
+  withRequestContext?: (params: DatasourceOptions) => DatasourceOptions;
 };
 
 /** The `criteria` request param: omitted when empty, a single criterion unwrapped. */
@@ -219,6 +225,7 @@ export function useDatasource({
   setIsImplicitFilterApplied,
   refetchKey,
   enableDirectNavigation = true,
+  withRequestContext,
 }: UseDatasourceOptions) {
   // Detect if user is filtering (search or column filters)
   const isFiltering = useMemo(() => {
@@ -226,6 +233,14 @@ export function useDatasource({
   }, [searchQuery, activeColumnFilters]);
 
   const [loading, setLoading] = useState(!skip);
+  // When the grid stops skipping (its parent got a record, or its initial view is applied) the first load is due:
+  // it shows as loading from that very render, not only once the fetch effect runs. In between, a render with
+  // no rows, `loading` false and `hasMoreRecords` true would ask for a next page before the first one.
+  const [wasSkipped, setWasSkipped] = useState(skip);
+  if (wasSkipped !== skip) {
+    setWasSkipped(skip);
+    if (!skip) setLoading(true);
+  }
   const [loaded, setLoaded] = useState(false);
   // Distinct from `loaded` — that one is also flipped true while `skip` is
   // active so consumers don't show a spinner during the skip phase. This flag
@@ -261,7 +276,18 @@ export function useDatasource({
   // retry uses the current queryParams, not the stale in-flight one.
   const pendingFetchRef = useRef<number | null>(null);
   const fetchDataRef = useRef<((targetPage?: number) => Promise<void>) | null>(null);
+  // Server rows loaded so far: the next page starts right after them, as in the Classic grid. It is not derived
+  // from the page number because Classic answers pageSize + 1 rows (inclusive `_endRow`).
+  const nextStartRowRef = useRef(0);
+  // Latest rows, read by removeRecordLocally outside the state updater
+  const recordsRef = useRef(records);
+  recordsRef.current = records;
   const removeRecordLocally = useCallback((recordId: string) => {
+    // A record deleted from the loaded rows moves the next server rows up by one
+    const removed = recordsRef.current.find((record) => String(record.id) === recordId);
+    if (removed && !removed._locallyAdded && nextStartRowRef.current > 0) {
+      nextStartRowRef.current -= 1;
+    }
     setRecords((prevRecords) => prevRecords.filter((record) => String(record.id) !== recordId));
   }, []);
 
@@ -290,11 +316,16 @@ export function useDatasource({
     }
   }, [params.pageSize, pageSize]);
 
+  // Each request uses the page size of the current params (e.g. the tree fetch limit once the tab shows a tree):
+  // the state above only catches up in an effect, after a request with the previous size was already sent.
+  const requestPageSize = params.pageSize || pageSize;
+
   const reinit = useCallback(() => {
     setRecords([]);
     setPage(1);
     setHasMoreRecords(true);
     dataLoadedRef.current = false;
+    nextStartRowRef.current = 0;
   }, []);
 
   // The MRT filter id `"id"` does NOT always mean "the entity's raw primary key
@@ -384,6 +415,13 @@ export function useDatasource({
   // on every request too.
   const requestParamsRef = useRef(queryParams);
   requestParamsRef.current = stableParams === params ? queryParams : buildQueryParams(params, queryContext);
+  // Read when a request is sent, never part of what decides when to fetch
+  const withRequestContextRef = useRef(withRequestContext);
+  withRequestContextRef.current = withRequestContext;
+  const readRequestParams = useCallback((): DatasourceOptions => {
+    const addContext = withRequestContextRef.current;
+    return addContext ? addContext(requestParamsRef.current) : requestParamsRef.current;
+  }, []);
 
   // queryParams is kept as a dependency although the body reads requestParamsRef: it is what
   // makes fetchData (and the effect that calls it) change when a refetch is due.
@@ -399,19 +437,20 @@ export function useDatasource({
       }
 
       fetchInProgressRef.current = true;
-      const safePageSize = pageSize ?? 1000;
+      const safePageSize = requestPageSize ?? 1000;
+      const startRow = targetPage === 1 ? 0 : nextStartRowRef.current;
 
       try {
         const { ok, data } = (await loadData(
           entity,
-          targetPage,
+          startRow,
           safePageSize,
-          requestParamsRef.current,
+          readRequestParams(),
           memoizedTreeOptions,
           isFiltering
         )) as {
           ok: boolean;
-          data: { response: { data: EntityData[] } };
+          data: { response: { data: EntityData[]; startRow?: number } };
         };
 
         if (!(ok && data.response.data)) {
@@ -424,22 +463,16 @@ export function useDatasource({
           return;
         }
         setIsTreeLimitExceeded(isTooManyNodesResponse(data));
-        setHasMoreRecords(data.response.data.length >= safePageSize);
-        setRecords((prev) => {
-          const fetched = data.response.data;
-          if (targetPage !== 1 && !searchQuery) {
-            return prev.concat(fetched);
-          }
-          // Page-1 replace (default and search refetches). Preserve `_locallyAdded`
-          // rows so user-created rows in Pick & Execute input grids (e.g. GL Items
-          // in Add Payment) survive datasource refetches triggered by unrelated
-          // param changes (form values folded into datasourceOptions).
-          const locallyAdded = prev.filter((r) => r._locallyAdded);
-          if (locallyAdded.length === 0) return fetched;
-          const fetchedIds = new Set(fetched.map((r) => String(r.id)));
-          const survivors = locallyAdded.filter((r) => !fetchedIds.has(String(r.id)));
-          return survivors.length === 0 ? fetched : [...survivors, ...fetched];
-        });
+        // null when the page after the last record came out empty and Classic answered the first rows again
+        const fetchedPage = readFetchedPage(startRow, safePageSize, data.response);
+        setHasMoreRecords(fetchedPage?.hasMore ?? false);
+        if (fetchedPage) {
+          nextStartRowRef.current = fetchedPage.nextStartRow;
+          // Page-1 replace (default and search refetches) keeps the `_locallyAdded` rows of Pick & Execute
+          // input grids, which survive refetches triggered by unrelated param changes.
+          const appendsPage = targetPage !== 1 && !searchQuery;
+          setRecords((prev) => mergeFetchedPage(prev, fetchedPage.rows, appendsPage));
+        }
         setLoaded(true);
         setHasFirstFetchCompleted(true);
         dataLoadedRef.current = true;
@@ -473,12 +506,13 @@ export function useDatasource({
     [
       entity,
       page,
-      pageSize,
+      requestPageSize,
       queryParams,
       memoizedTreeOptions,
       isImplicitFilterApplied,
       searchQuery,
       setIsImplicitFilterApplied,
+      readRequestParams,
     ]
   );
 
@@ -507,9 +541,15 @@ export function useDatasource({
     // Compute a key that represents "what data" we want, independent of page.
     // activeColumnFilters and searchQuery are already baked into queryParams so
     // they don't need to be listed separately in the dependency array.
-    const queryKey = `${entity}|${pageSize}|${JSON.stringify(queryParams)}|${JSON.stringify(memoizedTreeOptions)}|${String(isImplicitFilterApplied)}`;
+    const queryKey = `${entity}|${requestPageSize}|${JSON.stringify(queryParams)}|${JSON.stringify(memoizedTreeOptions)}|${String(isImplicitFilterApplied)}`;
     const queryChanged = queryKey !== prevQueryKeyRef.current;
     prevQueryKeyRef.current = queryKey;
+
+    // The first load of this same query is already on its way: a re-run (a dependency rebuilt with the same
+    // content) must not queue it again, or the grid loads twice.
+    if (!queryChanged && page === 1 && !dataLoadedRef.current && fetchInProgressRef.current) {
+      return;
+    }
 
     setError(undefined);
 
@@ -529,7 +569,7 @@ export function useDatasource({
       setLoading(true);
       fetchData();
     }
-  }, [entity, page, pageSize, queryParams, skip, memoizedTreeOptions, isImplicitFilterApplied]);
+  }, [entity, page, requestPageSize, queryParams, skip, memoizedTreeOptions, isImplicitFilterApplied]);
 
   const refetch = useCallback(
     async (options?: { silent?: boolean }) => {
@@ -560,7 +600,7 @@ export function useDatasource({
    * context) but without paging. Lets other requests, such as the CSV export, ask for exactly
    * the records the grid shows.
    */
-  const getRequestParams = useCallback((): DatasourceOptions => requestParamsRef.current, []);
+  const getRequestParams = readRequestParams;
 
   return {
     loading,

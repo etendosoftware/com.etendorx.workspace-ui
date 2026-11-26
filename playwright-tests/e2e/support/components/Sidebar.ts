@@ -7,7 +7,16 @@ import { Breadcrumb } from "./Breadcrumb";
 export const SIDEBAR_TEST_IDS = {
   toggle: "drawer-toggle-button",
   search: "drawer-search-input",
+  menuList: "drawer-menu-list",
+  noResults: "drawer-search-no-results",
 } as const;
+
+/** Marks a menu entry the keyboard can reach; during a search only the entries that open something. */
+const OPENABLE_ENTRY_SELECTOR = "[data-menu-item-id]";
+/** A menu title that is not openable: during a search, a folder shown as the path of its results. */
+const FOLDER_TITLE_SELECTOR = `[data-testid^="MenuTitle__"]:not(${OPENABLE_ENTRY_SELECTOR})`;
+/** The section of a menu title, which holds the title and its children. */
+const MENU_SECTION_SELECTOR = "[aria-expanded]";
 
 const MENU_ENTRY_TIMEOUT = 10_000;
 const TOGGLE_TIMEOUT = 2_000;
@@ -27,6 +36,40 @@ export class Sidebar {
   /** The search input; only rendered while the sidebar is open. */
   get searchInput(): Locator {
     return this.page.getByTestId(SIDEBAR_TEST_IDS.search).locator("input");
+  }
+
+  /** The menu list, without "Recently Viewed". */
+  get menuList(): Locator {
+    return this.page.getByTestId(SIDEBAR_TEST_IDS.menuList);
+  }
+
+  /** Message shown when the search matches no entry. */
+  get noResults(): Locator {
+    return this.page.getByTestId(SIDEBAR_TEST_IDS.noResults);
+  }
+
+  /** Entries of the menu list that open something. */
+  get openableEntries(): Locator {
+    return this.menuList.locator(OPENABLE_ENTRY_SELECTOR);
+  }
+
+  /** Folders of the menu list that hold no entry that opens something: a search must never show one. */
+  async emptyFolderNames(): Promise<string[]> {
+    return this.menuList
+      .locator(FOLDER_TITLE_SELECTOR)
+      .evaluateAll(
+        (titles, [sectionSelector, entrySelector]) =>
+          titles
+            .filter((title) => !title.closest(sectionSelector)?.querySelector(entrySelector))
+            .map((title) => title.textContent?.trim() ?? ""),
+        [MENU_SECTION_SELECTOR, OPENABLE_ENTRY_SELECTOR]
+      );
+  }
+
+  /** Clears the search term with Escape, as a user does. */
+  async clearSearch(): Promise<void> {
+    await this.searchInput.press("Escape");
+    await expect(this.searchInput).toHaveValue("");
   }
 
   /** Menu entry by AD_Menu_ID. */

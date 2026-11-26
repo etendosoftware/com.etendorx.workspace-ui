@@ -353,7 +353,10 @@ export interface TrackRecentDocumentRequest {
 // ── API functions ─────────────────────────────────────────────────────────────
 
 export async function fetchWidgetClasses(): Promise<WidgetClassesResponse> {
-  const response = await Metadata.client.request(`${DASHBOARD_BASE}/widget/classes`, { method: "GET" });
+  const response = await Metadata.client.request(`${DASHBOARD_BASE}/widget/classes`, {
+    method: "GET",
+    handlesOwnError: true,
+  });
   if (!response.ok) {
     throw new Error(`Failed to fetch widget classes: ${response.status}`);
   }
@@ -361,7 +364,11 @@ export async function fetchWidgetClasses(): Promise<WidgetClassesResponse> {
 }
 
 export async function fetchDashboardLayout(): Promise<DashboardLayoutResponse> {
-  const response = await Metadata.client.request(`${DASHBOARD_BASE}/dashboard/layout`, { method: "GET" });
+  const response = await Metadata.client.request(`${DASHBOARD_BASE}/dashboard/layout`, {
+    method: "GET",
+    // The dashboard shows its own error, and the layout is also refreshed silently.
+    handlesOwnError: true,
+  });
   if (!response.ok) {
     throw new Error(`Failed to fetch dashboard layout: ${response.status}`);
   }
@@ -377,7 +384,8 @@ export async function fetchWidgetData(
     : "";
   const response = await Metadata.client.request(
     `${DASHBOARD_BASE}/widget/${encodeURIComponent(instanceId)}/data${query}`,
-    { method: "GET" }
+    // Each widget shows its own error.
+    { method: "GET", handlesOwnError: true }
   );
   if (!response.ok) {
     throw new Error(`Failed to fetch widget data for ${instanceId}: ${response.status}`);
@@ -466,6 +474,31 @@ export async function trackRecentDocument(payload: TrackRecentDocumentRequest): 
   });
   if (!response.ok) {
     throw new Error(`Failed to track recent document: ${response.status}`);
+  }
+  return response.data as { status: string };
+}
+
+/** Identifies a recent document of the current user and role. */
+export interface RemoveRecentDocumentRequest {
+  tabId: string;
+  recordId: string;
+}
+
+/**
+ * Removes a document from the recent documents of the current user and role, e.g. because its record was deleted.
+ *
+ * @param document - Tab and record of the document to remove
+ * @returns The server status, `{status: "removed"}`
+ * @throws Error when the server rejects the request
+ */
+export async function removeRecentDocument({
+  tabId,
+  recordId,
+}: RemoveRecentDocumentRequest): Promise<{ status: string }> {
+  const query = new URLSearchParams({ tabId, recordId });
+  const response = await Metadata.client.request(`${DASHBOARD_BASE}/recent-documents?${query}`, { method: "DELETE" });
+  if (!response.ok) {
+    throw new Error(`Failed to remove recent document: ${response.status}`);
   }
   return response.data as { status: string };
 }

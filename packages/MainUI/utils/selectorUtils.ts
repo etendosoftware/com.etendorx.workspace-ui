@@ -1,4 +1,4 @@
-import { useCallback, useEffect, type RefObject } from "react";
+import { useCallback, useEffect, useState, type RefObject } from "react";
 import useDebounce from "@/hooks/useDebounce";
 import { AD_LIST_DATASOURCE, COMBO_TABLE_DATASOURCE } from "@/hooks/datasource/constants";
 
@@ -124,6 +124,41 @@ export const useSearchHandler = (onSearch?: (term: string) => void) => {
     },
     [debouncedSetSearchTerm]
   );
+};
+
+/**
+ * Search handler of a selector that also tells whether a typed term still waits for its debounced search. While
+ * it waits the dropdown shows that it is loading, instead of "No options found" for the options of the previous
+ * term (ETP-6431).
+ *
+ * @param onSearch - Server search of the selector, run after the debounce
+ * @param minSearchChars - Shorter terms are not searched, so they never wait for a search
+ * @returns The change handler of the search input and whether a search is pending
+ */
+export const usePendingSearch = (onSearch?: (term: string) => void, minSearchChars = 0) => {
+  const [isSearchPending, setIsSearchPending] = useState(false);
+
+  const runSearch = useCallback(
+    (term: string) => {
+      setIsSearchPending(false);
+      onSearch?.(term);
+    },
+    [onSearch]
+  );
+  const handleSearch = useSearchHandler(onSearch ? runSearch : undefined);
+
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const term = handleSearch(e);
+      if (onSearch && !isBelowSearchThreshold(term, minSearchChars)) {
+        setIsSearchPending(true);
+      }
+      return term;
+    },
+    [handleSearch, onSearch, minSearchChars]
+  );
+
+  return { handleSearchChange, isSearchPending };
 };
 
 export const useInfiniteScroll = (

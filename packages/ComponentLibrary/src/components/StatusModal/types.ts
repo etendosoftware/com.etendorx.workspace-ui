@@ -55,6 +55,11 @@ export interface ConfirmModalProps {
   saveLabel?: string;
   secondaryButtonLabel?: string;
   hideSecondaryButton?: boolean;
+  /**
+   * Shows the trash icon on the confirm button. Kept by default, since most confirmations delete
+   * something; turned off for confirmations that do not (a resized image, a download, a notice).
+   */
+  showConfirmIcon?: boolean;
   onAfterClose?: () => void;
   open?: boolean;
 }

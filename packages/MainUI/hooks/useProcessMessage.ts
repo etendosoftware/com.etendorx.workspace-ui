@@ -21,6 +21,7 @@ import { useCallback } from "react";
 import { useUserStore } from "@/stores/userStore";
 import { useRuntimeConfig } from "../contexts/RuntimeConfigContext";
 import { useLanguage } from "../contexts/language";
+import { sessionAwareFetch } from "@/utils/session/sessionAwareFetch";
 
 const DEFAULT_LANGUAGE = "en_US";
 
@@ -136,8 +137,11 @@ export function useProcessMessage(tabId: string) {
     try {
       const lang = language || DEFAULT_LANGUAGE;
       const url = `${publicHost}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?_action=org.openbravo.client.application.window.GetTabMessageActionHandler&language=${encodeURIComponent(lang)}`;
+      // Direct to the ERP on purpose: the message lives in the HTTP session of the legacy iframe, which the
+      // proxy does not share. The modal shows its fallback message when this fails.
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      const response: Response & { data?: any } = await fetch(url, {
+      const response: Response & { data?: any } = await sessionAwareFetch(url, {
+        handlesOwnError: true,
         method: "POST",
         credentials: "include",
         headers: {

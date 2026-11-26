@@ -11,6 +11,7 @@ import { CurrentWindowProvider } from "@/contexts/CurrentWindowContext";
 import "@testing-library/jest-dom";
 import { AUDITED_TAB, MODIFIED_RECORD } from "@/utils/toolbar/test-utils/auditTrailFixtures";
 import { BPARTNER_PRINT_CONFIG, ORDER_PRINT_CONFIG } from "@/utils/toolbar/test-utils/printFixtures";
+import { expectSessionAwareFetchFor } from "@/utils/tests/sessionAwareFetchMock";
 
 // Mocks
 jest.mock("@/contexts/datasourceContext", () => ({
@@ -86,13 +87,31 @@ jest.mock(
   () => require("../__testUtils__/toolbarMocks").IconButtonWithTextMock
 );
 
+jest.mock(
+  "@/utils/session/sessionAwareFetch",
+  () => require("@/utils/tests/sessionAwareFetchMock").sessionAwareFetchModule
+);
+
 // Mock EmailSendModal
 jest.mock("../Modals/EmailSendModal", () => ({
   __esModule: true,
-  default: ({ isOpen, onSend, initialData }: any) =>
+  default: ({
+    isOpen,
+    onSend,
+    onFetchRecordAttachments,
+    initialData,
+  }: {
+    isOpen: boolean;
+    onSend: (...args: unknown[]) => void;
+    onFetchRecordAttachments: () => void;
+    initialData?: { to?: string };
+  }) =>
     isOpen ? (
       <div data-testid="email-modal">
         <button onClick={() => onSend({ to: "test@test.com" }, [], [])}>Send Action</button>
+        <button type="button" onClick={() => onFetchRecordAttachments()}>
+          Fetch Attachments
+        </button>
         {initialData?.to && <span>To: {initialData.to}</span>}
       </div>
     ) : null,
@@ -244,6 +263,22 @@ describe("Toolbar - Email Integration", () => {
       const { toast } = require("sonner");
       expect(toast.success).toHaveBeenCalledWith("email.successMessage");
       expect(screen.queryByTestId("email-modal")).not.toBeInTheDocument();
+    });
+  });
+
+  it("applies the session rule to the email requests, with a notice only for the silent attachments one", async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: () => Promise.resolve({ success: true }) });
+
+    render(<Toolbar windowId="win-id" isFormView={true} />);
+    fireEvent.click(screen.getByTestId("IconButton__send-email"));
+    await waitFor(() => screen.getByTestId("email-modal"));
+    fireEvent.click(screen.getByText("Fetch Attachments"));
+    fireEvent.click(screen.getByText("Send Action"));
+
+    await waitFor(() => {
+      expectSessionAwareFetchFor("/api/erp/meta/email/config", true);
+      expectSessionAwareFetchFor("/api/erp/meta/email/attachments", false);
+      expectSessionAwareFetchFor("/api/erp/meta/email/send", true);
     });
   });
 

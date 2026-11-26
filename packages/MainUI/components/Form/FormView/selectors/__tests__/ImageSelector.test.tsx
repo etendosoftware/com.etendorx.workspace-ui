@@ -3,7 +3,7 @@ import ImageSelector from "../ImageSelector";
 import { useFormContext, useWatch } from "react-hook-form";
 import { useTabContext } from "@/contexts/tab";
 import { useUserStore } from "@/stores/userStore";
-import { useAuthenticatedImage } from "@/hooks/useAuthenticatedImage";
+import { useAuthenticatedImageState } from "@/hooks/useAuthenticatedImage";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { useTranslation } from "@/hooks/useTranslation";
 import { toast } from "sonner";
@@ -26,16 +26,20 @@ jest.mock("@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal
     onConfirm,
     onCancel,
     hideSecondaryButton,
+    showConfirmIcon = true,
   }: {
     open: boolean;
     confirmText: string;
     onConfirm: () => void;
     onCancel: () => void;
     hideSecondaryButton?: boolean;
+    showConfirmIcon?: boolean;
   }) => {
     if (!open) return null;
     return (
-      <div data-testid={hideSecondaryButton ? "ErrorModal" : "ConfirmModal"}>
+      <div
+        data-testid={hideSecondaryButton ? "ErrorModal" : "ConfirmModal"}
+        data-confirm-icon={String(showConfirmIcon)}>
         <span data-testid={hideSecondaryButton ? "ErrorModal__message" : "ConfirmModal__message"}>{confirmText}</span>
         <button
           type="button"
@@ -109,6 +113,10 @@ const createUploadResult = (overrides = {}) => ({
   ...overrides,
 });
 
+/** Sets what the image loader returns: the object URL, and whether loading failed. */
+const mockImageState = (url: string | null, failed = false) =>
+  (useAuthenticatedImageState as jest.Mock).mockReturnValue({ url, failed });
+
 describe("ImageSelector", () => {
   let watchMock: jest.Mock;
   let setValueMock: jest.Mock;
@@ -149,7 +157,7 @@ describe("ImageSelector", () => {
       isUploading: false,
     });
 
-    (useAuthenticatedImage as jest.Mock).mockReturnValue(null);
+    mockImageState(null);
   });
 
   const renderSelector = (field = mockField, props = {}) => {
@@ -165,7 +173,7 @@ describe("ImageSelector", () => {
 
   const setupFilledState = (imageId = "existing-img-id", url?: string) => {
     watchMock.mockReturnValue(imageId);
-    (useAuthenticatedImage as jest.Mock).mockReturnValue(url || `blob:http://localhost/${imageId}`);
+    mockImageState(url || `blob:http://localhost/${imageId}`);
   };
 
   const setupConstraintTest = (action: string, resultOverrides = {}) => {
@@ -194,7 +202,7 @@ describe("ImageSelector", () => {
 
   it("does not render an <img> with an empty src while the image is still loading", () => {
     watchMock.mockReturnValue("existing-img-id");
-    (useAuthenticatedImage as jest.Mock).mockReturnValue(null);
+    mockImageState(null);
 
     const { container } = renderSelector();
 
@@ -202,6 +210,18 @@ describe("ImageSelector", () => {
     expect(screen.queryByTestId("ImageSelector__thumbnail__col-1")).not.toBeInTheDocument();
     expect(container.querySelector("svg.animate-spin")).toBeInTheDocument();
     expect(container.querySelector("img")).toBeNull();
+  });
+
+  it("shows the image as missing instead of loading forever when it could not be loaded", () => {
+    watchMock.mockReturnValue("existing-img-id");
+    mockImageState(null, true);
+
+    const { container } = renderSelector();
+
+    expect(screen.getByTestId("ImageSelector__missing__col-1")).toBeInTheDocument();
+    expect(container.querySelector("svg.animate-spin")).toBeNull();
+    expect(container.querySelector("img")).toBeNull();
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
   it("should call uploadImage and set value on valid file selection", async () => {
@@ -310,6 +330,7 @@ describe("ImageSelector", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("ErrorModal")).toBeInTheDocument();
+      expect(screen.getByTestId("ErrorModal")).toHaveAttribute("data-confirm-icon", "false");
     });
     expect(deleteUploadedImageMock).toHaveBeenCalledWith("bad-img");
     expect(setValueMock).not.toHaveBeenCalled();
@@ -359,6 +380,8 @@ describe("ImageSelector", () => {
     await waitFor(() => {
       expect(screen.getByTestId("ConfirmModal")).toBeInTheDocument();
     });
+    // Accepting a resized image deletes nothing: no trash icon on its confirm button
+    expect(screen.getByTestId("ConfirmModal")).toHaveAttribute("data-confirm-icon", "false");
     expect(setValueMock).not.toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
   });

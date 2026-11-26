@@ -132,6 +132,21 @@ describe("Datasource API Route - Session Recovery Integration", () => {
     expect(mockExecuteWithSessionAndCsrfRetry).toHaveBeenCalledWith(mockRequest, testToken, expect.any(Function));
   });
 
+  it("keeps the 401 of an unusable token so the client closes the session", async () => {
+    const mockRequest = createDatasourceRequest({
+      entity: "TestEntity",
+      token: testToken,
+    });
+
+    mockExecuteWithSessionAndCsrfRetry.mockResolvedValue(
+      createSessionRetryError("Session recovery failed: Recovery failed", 401)
+    );
+
+    const response = await POST(mockRequest);
+
+    await expectErrorResponse(response, 401, "Session recovery failed: Recovery failed");
+  });
+
   it("should bypass session retry for cached requests", async () => {
     const mockRequest = createDatasourceRequest({
       entity: "CachedEntity",

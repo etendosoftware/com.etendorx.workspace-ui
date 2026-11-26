@@ -24,6 +24,7 @@ import { DEFAULT_B64, EXTERNAL_LINK_B64, PROCESS_B64, REPORT_B64, SUMMARY_B64 } 
 import { useFavoritesDrawer } from "../FavoritesDrawerContext";
 import { useDrawerHighlight } from "../DrawerHighlightContext";
 import { isOpenableMenuItem, MENU_ITEM_ID_ATTRIBUTE } from "../../../utils/drawerUtils";
+import Tooltip from "../../Tooltip";
 
 /**
  * Entry the keyboard navigation is currently on. It looks like a hovered entry, so the open window keeps the
@@ -157,9 +158,12 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
           </div>
           {open && (
             <div className="relative group flex items-center py-1.5 flex-1 min-w-0">
-              <span className="ml-2 font-normal text-sm whitespace-nowrap overflow-hidden text-ellipsis flex-1 min-w-0">
-                {item.name}
-              </span>
+              {/* A long name is cut by an ellipsis: the tooltip shows it whole, only when it is cut */}
+              <Tooltip title={item.name} position="right" onlyWhenTruncated containerClassName="flex-1 min-w-0">
+                <span className="block ml-2 font-normal text-sm whitespace-nowrap overflow-hidden text-ellipsis">
+                  {item.name}
+                </span>
+              </Tooltip>
               {favoritesCtx && item.windowId && (
                 <span
                   onClick={handleFavoriteClick}

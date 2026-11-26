@@ -39,6 +39,10 @@ and type so its current data is used:
 
 See [Application Forms](../application-forms/README.md) for how a form's address is resolved.
 
+Entries the current role's menu no longer has are not offered, and an entry clicked after the menu changed is not
+opened: the user is told it cannot be opened and the entry leaves the list. See
+[entries that can no longer be opened](../unavailable-recent-entries/README.md) (ETP-6431).
+
 ## Storage
 
 The list is persisted server-side as an `AD_Preference`, the same way the classic UI persists its

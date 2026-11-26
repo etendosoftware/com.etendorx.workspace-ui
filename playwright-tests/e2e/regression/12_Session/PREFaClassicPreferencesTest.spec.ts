@@ -163,7 +163,12 @@ test.describe("Session - Classic interface preferences @regression @session", ()
     await expect.poll(() => fetches.length, { message: "the grid did not ask for a second page" }).toBeGreaterThan(1);
     // The datasource request sends the row range as text
     expect(fetches[0]).toMatchObject({ _startRow: "0", _endRow: String(PAGE_SIZE) });
-    expect(fetches[1]).toMatchObject({ _startRow: String(PAGE_SIZE), _endRow: String(2 * PAGE_SIZE) });
+    // Classic's _endRow is inclusive, so the first page holds PAGE_SIZE + 1 rows: the next one starts after them
+    const secondPageStart = PAGE_SIZE + 1;
+    expect(fetches[1]).toMatchObject({
+      _startRow: String(secondPageStart),
+      _endRow: String(secondPageStart + PAGE_SIZE),
+    });
     await expect.poll(() => app.grid.rows().count()).toBeGreaterThan(PAGE_SIZE);
   });
 

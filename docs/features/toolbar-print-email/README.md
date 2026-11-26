@@ -38,7 +38,7 @@ Print is also disabled when more than one record is selected in the Business Par
 
 `printConfig.legacy` decides the path:
 
-- **`legacy: false`** applies to PrintController documents, whose print URL is `.../print.html`. The PDF of the selected records is downloaded from `/sws/com.etendoerp.etendorx.print`. This path is unchanged.
+- **`legacy: false`** applies to PrintController documents, whose print URL is `.../print.html`. The PDF of the selected records is downloaded from `/sws/com.etendoerp.etendorx.print`, through the ERP proxy of the new UI (`/api/erp/sws/com.etendoerp.etendorx.print`, ETP-6311) instead of the ERP host, so a failed print follows the [session rule](../session-error-handling/README.md): a server error is shown in a toast.
 - **`legacy: true`** applies to any other print process (`RptC_Bpartner`, `RptC_Remittance`, `JR_ReportTaxPayment`, …). The classic `businessUtility/PrinterReports.html` page opens in its own browser window through the `/meta/legacy` forward, with the same parameters `OB.ToolbarUtils.print` sends:
   - `inppdfpath`
   - `inphiddenkey`

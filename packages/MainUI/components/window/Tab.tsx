@@ -70,7 +70,6 @@ import ResizeHandle from "@workspaceui/componentlibrary/src/components/ResizeHan
 import { useUserStore } from "@/stores/userStore";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
-import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
 import { useLegacyPrint } from "@/hooks/Toolbar/useLegacyPrint";
 import { TableFilter } from "@workspaceui/componentlibrary/src/components/AdvancedFiltersModal";
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
@@ -80,6 +79,7 @@ import { isGridRenderableColumn } from "@/utils/table/utils";
 import { ColumnFilterUtils, type FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import { useTranslation } from "@/hooks/useTranslation";
+import { sessionAwareFetch } from "@/utils/session/sessionAwareFetch";
 
 /**
  * Validates if a child tab can open FormView based on parent selection in context
@@ -140,11 +140,12 @@ const handleEditRecordFormState = (
   }
 };
 
+/** Document print service, reached through the ERP proxy like every other request (Client → Next API → ERP). */
+const PRINT_RECORD_ENDPOINT = "/api/erp/sws/com.etendoerp.etendorx.print";
 const ADVANCED_CRITERIA_DEFAULT_OPERATOR = "and";
 const ADVANCED_CRITERIA_CONSTRUCTOR = "AdvancedCriteria";
 
 export function Tab({ tab, collapsed }: TabLevelProps) {
-  const { config } = useRuntimeConfig();
   const { window } = useMetadataContext();
   const windowIdentifier = useCurrentWindowIdentifier();
 
@@ -571,18 +572,16 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         throw new Error("Authorization token not found. Please log in again.");
       }
 
-      const publicHost = config?.etendoClassicHost || "";
       const selectedIds = selectedRecords.map((r) => r.id);
-      const endpoint = `${publicHost}/sws/com.etendoerp.etendorx.print`;
 
       console.log("handlePrintRecord called", {
         selectedRecordsCount: selectedRecords.length,
         selectedIds,
-        publicHost: config?.etendoClassicHost,
       });
 
       // Always use POST with parameters array containing recordId objects
-      const response = await fetch(endpoint, {
+      // No handlesOwnError: nothing else on screen reports a failed print, the toast does.
+      const response = await sessionAwareFetch(PRINT_RECORD_ENDPOINT, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -623,7 +622,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       console.error("Print Record Error:", errorMessage, error);
       throw new Error(`Print failed: ${errorMessage}`);
     }
-  }, [selectedRecords, token, tab.id, tab.printConfig?.legacy, printLegacy, config?.etendoClassicHost]);
+  }, [selectedRecords, token, tab.id, tab.printConfig?.legacy, printLegacy]);
   const handleAdvancedFilters = useCallback((anchorEl?: HTMLElement): void => {
     if (anchorEl) {
       setAdvancedFiltersAnchor(anchorEl);

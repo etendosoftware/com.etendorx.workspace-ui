@@ -39,6 +39,7 @@ import { getUserPinnedColumns, hasUserPinnedColumns, withFixedPinnedColumns } fr
 import type { TableState } from "@/utils/window/constants";
 import { getWindowIdFromIdentifier } from "@/utils/window/utils";
 import { registerSessionReset } from "@/utils/session/resetSessionState";
+import { createPreloadCache } from "@/utils/savedViews/preload";
 
 /** Column configuration of one tab, as stored in the preference. */
 export interface ColumnConfiguration {
@@ -58,6 +59,10 @@ export const GRID_CONFIGURATION_SAVE_DELAY_MS = 1000;
 
 const pendingSaves = new Map<string, ReturnType<typeof setTimeout>>();
 const windowConfigurations = new Map<string, Promise<WindowGridConfiguration<ColumnConfiguration>>>();
+/** Answers already received, so a grid can know on its first render whether anything is stored for its tab. */
+const settledWindowConfigurations = new Map<string, WindowGridConfiguration<ColumnConfiguration>>();
+/** Requests started when the user hovers a window, taken by its next opening. */
+const preloadedConfigurations = createPreloadCache<WindowGridConfiguration<ColumnConfiguration>>();
 
 const getTabKey = (windowIdentifier: string, tabId: string) => `${windowIdentifier}_${tabId}`;
 
@@ -99,6 +104,49 @@ const fetchWindowConfiguration = async (windowIdentifier: string) => {
 };
 
 /**
+ * Loads the stored configuration of every tab of an open window, with a single request shared by all its
+ * tabs; a failure behaves as "nothing stored".
+ */
+export const loadWindowGridConfiguration = (
+  windowIdentifier: string
+): Promise<WindowGridConfiguration<ColumnConfiguration>> => {
+  let request = windowConfigurations.get(windowIdentifier);
+  if (!request) {
+    const windowId = getWindowIdFromIdentifier(windowIdentifier);
+    const pending = preloadedConfigurations.take(windowId) ?? fetchWindowConfiguration(windowIdentifier);
+    pending.then((configuration) => {
+      // A logout in between discarded this request: its answer belongs to the previous session
+      if (windowConfigurations.get(windowIdentifier) === pending) {
+        settledWindowConfigurations.set(windowIdentifier, configuration);
+      }
+    });
+    request = pending;
+    windowConfigurations.set(windowIdentifier, request);
+  }
+  return request;
+};
+
+/**
+ * Starts loading the stored configuration of a window the user is about to open (hovering it), so its opening
+ * does not wait for it. See `PRELOAD_MAX_AGE_MS`.
+ */
+export const preloadWindowGridConfiguration = (windowId: string): void =>
+  preloadedConfigurations.preload(windowId, () => fetchWindowConfiguration(windowId));
+
+/**
+ * Stored configuration of a tab when the request of its window has already answered: `null` when nothing is
+ * stored for the tab, `undefined` while the answer is not there yet.
+ */
+export const getSettledTabColumnConfiguration = (
+  windowIdentifier: string,
+  tabId: string
+): ColumnConfiguration | null | undefined => {
+  const configuration = settledWindowConfigurations.get(windowIdentifier);
+  if (!configuration) return undefined;
+  return configuration[tabId] ?? null;
+};
+
+/**
  * Loads the stored configuration of a tab. All the tabs of an open window share a single request;
  * a failure behaves as "nothing stored", so the grid keeps its metadata defaults.
  */
@@ -106,12 +154,7 @@ export const loadTabColumnConfiguration = async (
   windowIdentifier: string,
   tabId: string
 ): Promise<ColumnConfiguration | null> => {
-  let request = windowConfigurations.get(windowIdentifier);
-  if (!request) {
-    request = fetchWindowConfiguration(windowIdentifier);
-    windowConfigurations.set(windowIdentifier, request);
-  }
-  const configuration = await request;
+  const configuration = await loadWindowGridConfiguration(windowIdentifier);
   return configuration[tabId] ?? null;
 };
 
@@ -126,6 +169,8 @@ registerSessionReset(() => {
     cancelPendingSave(key);
   }
   windowConfigurations.clear();
+  settledWindowConfigurations.clear();
+  preloadedConfigurations.clear();
 });
 
 const storeTabConfiguration = async (
@@ -133,10 +178,14 @@ const storeTabConfiguration = async (
   tabId: string,
   configuration: ColumnConfiguration | null
 ) => {
+  // A request started before the configuration is stored would open the window with the previous one
+  preloadedConfigurations.clear();
   try {
     await saveGridConfiguration(getWindowIdFromIdentifier(windowIdentifier), tabId, configuration);
   } catch (error) {
     logger.error("[gridConfiguration] Failed to store the grid configuration:", error);
+  } finally {
+    preloadedConfigurations.clear();
   }
 };
 
@@ -152,6 +201,7 @@ const flushSave = (windowIdentifier: string, tabId: string) => {
  * the request reads the store when it runs, so it always sends the latest state.
  */
 export const scheduleGridConfigurationSave = (windowIdentifier: string, tabId: string): void => {
+  preloadedConfigurations.clear();
   const key = getTabKey(windowIdentifier, tabId);
   cancelPendingSave(key);
   pendingSaves.set(

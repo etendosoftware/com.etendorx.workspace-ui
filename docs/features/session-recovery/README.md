@@ -40,6 +40,11 @@ This implementation provides automatic session recovery for expired JSESSIONID c
 4. Response returned to client (transparent operation)
 ```
 
+When the recovery fails or the retry is still rejected, `/api/datasource` answers `500`, except when the
+ERP answered `401` (an invalid, expired or revoked token): that `401` is kept
+(`_utils/sessionFailureStatus.ts`) so the client closes the session. See
+[Session and server errors](../session-error-handling/README.md).
+
 ## Key Features
 
 - **Automatic Detection**: Recognizes session expiration patterns

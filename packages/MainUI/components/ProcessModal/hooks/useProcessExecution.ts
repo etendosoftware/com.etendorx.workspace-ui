@@ -74,6 +74,7 @@ import { shouldRunProcessLifecycleHooks } from "@/utils/processes/definition/pro
 import { messageBar } from "@/utils/processes/definition/messageBarStore";
 import { isManualProcess } from "@/utils/processes/definition/pickAndExecute";
 import { isCloseModalResult } from "@/utils/processes/definition/directExecute";
+import { sessionAwareFetch } from "@/utils/session/sessionAwareFetch";
 
 // ---------------------------------------------------------------------------
 // Internal types for response action shapes
@@ -136,7 +137,8 @@ export const REPORT_EXECUTION_TIMEOUT_MS = 240_000;
 
 /** Fetches `url`, throws on non-2xx, returns parsed JSON or null when body is not JSON. */
 const fetchAndParseJson = async (url: string, init: RequestInit): Promise<unknown> => {
-  const response = await fetch(url, init);
+  // The modal shows the failure as the process result.
+  const response = await sessionAwareFetch(url, { ...init, handlesOwnError: true });
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(errorText || "Execution failed");
@@ -410,9 +412,11 @@ export function useProcessExecution({
     async (targetTabId: string, recordId: string) => {
       if (isRecoveryLoading) return;
       try {
-        const res = await fetch(`/api/erp/meta/tab/${targetTabId}?language=en_US`, {
+        const res = await sessionAwareFetch(`/api/erp/meta/tab/${targetTabId}?language=en_US`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          // A failure falls back to opening the tab directly.
+          handlesOwnError: true,
         });
         const tabData = await res.json();
         const resolvedWindowId = tabData?.window || tabData?.windowId || targetTabId;
@@ -1136,7 +1140,8 @@ export function useProcessExecution({
           Object.entries(rawParameters).filter(([k, v]) => v !== null && v !== undefined && validColumns.has(k))
         );
 
-        const response = await fetch("/api/process/report-and-process", {
+        const response = await sessionAwareFetch("/api/process/report-and-process", {
+          handlesOwnError: true,
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1164,8 +1169,9 @@ export function useProcessExecution({
             return;
           }
 
-          const statusRes = await fetch(`/api/process/report-and-process/${pInstanceId}`, {
+          const statusRes = await sessionAwareFetch(`/api/process/report-and-process/${pInstanceId}`, {
             headers: { Authorization: `Bearer ${token}` },
+            handlesOwnError: true,
           });
 
           if (!statusRes.ok) {

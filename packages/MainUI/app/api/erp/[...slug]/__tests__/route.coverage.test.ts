@@ -151,6 +151,37 @@ describe("ERP slug route coverage", () => {
       expect(global.fetch).toHaveBeenCalledWith("https://erp.example/sws/copilot/chat", expect.any(Object));
     });
 
+    it("forwards the document print service and answers with the PDF as a binary file", async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        body: "%PDF-1.4",
+        headers: new Headers({
+          "content-type": "application/pdf",
+          "content-disposition": "attachment; filename=50017.pdf",
+        }),
+      });
+      const req = createMockRequest(
+        "POST",
+        "https://localhost/api/erp/sws/com.etendoerp.etendorx.print",
+        {},
+        {
+          tabId: "186",
+        }
+      );
+
+      const response: any = await POST(req, {
+        params: Promise.resolve({ slug: ["sws", "com.etendoerp.etendorx.print"] }),
+      });
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        "https://erp.example/sws/com.etendoerp.etendorx.print",
+        expect.any(Object)
+      );
+      // The binary path (the one "handles Binary content" checks the headers of), not the JSON parsing
+      expect(response).toBeInstanceOf(Response);
+    });
+
     it("handles attachments slug", async () => {
       const req = createMockRequest("POST", "https://localhost/api/erp/attachments/upload", {}, { f: 1 });
       await POST(req, { params: Promise.resolve({ slug: ["attachments", "upload"] }) });
@@ -505,6 +536,12 @@ describe("ERP slug route coverage", () => {
     // served from the Next.js Data Cache, which never revalidates.
     it.each([
       ["meta/recent-items", "https://localhost/api/erp/meta/recent-items", ["meta", "recent-items"], "RECENTITEMS123"],
+      [
+        "meta/recent-documents",
+        "https://localhost/api/erp/sws/com.etendoerp.metadata.meta/recent-documents",
+        ["sws", "com.etendoerp.metadata.meta", "recent-documents"],
+        "RECENTDOCS123",
+      ],
       [
         "meta/grid-configuration",
         "https://localhost/api/erp/meta/grid-configuration?windowId=143",

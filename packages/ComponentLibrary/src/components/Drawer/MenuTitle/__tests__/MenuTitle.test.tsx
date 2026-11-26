@@ -13,7 +13,7 @@
  * Contributor(s): Futit Services S.L.
  *************************************************************************
  */
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { MENU_ROW_SHAPE_CLASSES, MenuTitle, getMenuButtonClassName } from "../index";
 import { DEFAULT_B64, EXTERNAL_LINK_B64 } from "../constants";
@@ -130,5 +130,26 @@ describe("MenuTitle accessibility (ETP-6304)", () => {
   it("draws its icon as decorative, with no made-up text", () => {
     const { container } = render(<MenuTitle item={WINDOW_ITEM} onClick={jest.fn()} open />);
     expect(container.querySelector("img")).toHaveAttribute("alt", "");
+  });
+});
+
+describe("MenuTitle long names", () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("shows the whole name in a tooltip when the ellipsis cuts it", () => {
+    jest.useFakeTimers();
+    renderEntry();
+    const name = screen.getByText(WINDOW_ITEM.name);
+    Object.defineProperty(name, "scrollWidth", { configurable: true, value: 240 });
+    Object.defineProperty(name, "clientWidth", { configurable: true, value: 160 });
+
+    fireEvent.mouseEnter(name.parentElement as HTMLElement);
+    act(() => {
+      jest.advanceTimersByTime(600);
+    });
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent(WINDOW_ITEM.name);
   });
 });

@@ -54,6 +54,8 @@ export interface DrawerProps {
   menuToggleLabels?: { open: string; close: string };
   /** Accessible name of the search icon of the menu search box. */
   searchLabel?: string;
+  /** Shown instead of the menu when a search term matches no entry that opens something. */
+  noResultsLabel?: string;
 }
 
 export interface MenuTitleProps {

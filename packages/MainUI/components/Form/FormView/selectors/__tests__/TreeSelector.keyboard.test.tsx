@@ -24,8 +24,9 @@ import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
 jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
+let mockLoading = false;
 jest.mock("@/hooks/datasource/useTableDirDatasource", () => ({
-  useTableDirDatasource: () => ({ records: [], loading: false, refetch: jest.fn() }),
+  useTableDirDatasource: () => ({ records: [], loading: mockLoading, refetch: jest.fn() }),
 }));
 jest.mock("@/hooks/useSelectFieldOptions", () => ({
   useSelectFieldOptions: () => [],
@@ -54,7 +55,10 @@ const getTrigger = () => screen.getByLabelText(FIELD_LABEL).querySelector("[tabi
 const getSearchInput = () => document.querySelector("[data-dropdown-portal] input");
 
 describe("TreeSelector keyboard shortcuts", () => {
-  beforeEach(() => installLocalStorageMock());
+  beforeEach(() => {
+    installLocalStorageMock();
+    mockLoading = false;
+  });
 
   it("opens the tree with Alt+Down", () => {
     render(<Harness />);
@@ -88,5 +92,21 @@ describe("TreeSelector keyboard shortcuts", () => {
     fireEvent.keyDown(getTrigger(), { key: "Enter" });
 
     expect(getSearchInput()).not.toBeNull();
+  });
+});
+
+describe("TreeSelector empty tree texts (ETP-6431)", () => {
+  beforeEach(() => installLocalStorageMock());
+
+  it.each([
+    ["is loading", true, "common.loading"],
+    ["has finished without nodes", false, "multiselect.noOptionsFound"],
+  ])("shows the translated text while the tree %s", (_case, loading, text) => {
+    mockLoading = loading;
+    render(<Harness />);
+
+    fireEvent.keyDown(getTrigger(), { key: "Enter" });
+
+    expect(screen.getByText(text)).toBeInTheDocument();
   });
 });

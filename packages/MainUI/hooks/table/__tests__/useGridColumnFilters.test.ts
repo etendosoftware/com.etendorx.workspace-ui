@@ -17,7 +17,8 @@
 
 import { renderHook, act } from "@testing-library/react";
 import { useGridColumnFilters } from "../useGridColumnFilters";
-import type { Column } from "@workspaceui/api-client/src/api/types";
+import { FieldType, type Column } from "@workspaceui/api-client/src/api/types";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import type { MRT_ColumnFiltersState } from "material-react-table";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 
@@ -25,6 +26,7 @@ import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filt
 const mockSetColumnFilter = jest.fn();
 const mockSetFilterOptions = jest.fn();
 const mockLoadMoreFilterOptions = jest.fn();
+const mockLoadFilterOptions = jest.fn();
 const mockFetchFilterOptions = jest.fn();
 
 jest.mock("@workspaceui/api-client/src/hooks/useColumnFilters", () => ({
@@ -32,6 +34,7 @@ jest.mock("@workspaceui/api-client/src/hooks/useColumnFilters", () => ({
     columnFilters: [],
     setColumnFilter: mockSetColumnFilter,
     setFilterOptions: mockSetFilterOptions,
+    loadFilterOptions: mockLoadFilterOptions,
     loadMoreFilterOptions: mockLoadMoreFilterOptions,
   }),
 }));
@@ -228,6 +231,62 @@ describe("useGridColumnFilters", () => {
       });
 
       expect(options).toEqual([{ id: "entity1", label: "Entity 1", value: "entity1" }]);
+    });
+
+    it("marks the column as loading before asking the datasource (ETP-6431)", async () => {
+      jest.spyOn(ColumnFilterUtils, "isSelectColumn").mockReturnValue(false);
+      jest.spyOn(ColumnFilterUtils, "isTableDirColumn").mockReturnValue(true);
+      const { loadTableDirFilterOptions } = jest.requireMock("@/utils/columnFilterHelpers");
+      const { result } = renderHook(() => useGridColumnFilters(defaultParams));
+
+      await act(async () => {
+        await result.current.handleLoadFilterOptions("organization", "acme");
+      });
+
+      expect(mockLoadFilterOptions).toHaveBeenCalledWith("organization", "acme");
+      expect(mockLoadFilterOptions.mock.invocationCallOrder[0]).toBeLessThan(
+        loadTableDirFilterOptions.mock.invocationCallOrder.at(-1)
+      );
+    });
+
+    it("loads a tree reference column from the datasource with an entity (ETP-6431)", async () => {
+      jest.spyOn(ColumnFilterUtils, "isSelectColumn").mockReturnValue(false);
+      jest.spyOn(ColumnFilterUtils, "isTableDirColumn").mockReturnValue(false);
+      const treeColumn = {
+        id: "characteristics",
+        columnName: "characteristics",
+        name: "characteristics",
+        column: { reference: FIELD_REFERENCE_CODES.TREE_REFERENCE.id },
+      } as unknown as Column;
+      const { result } = renderHook(() =>
+        useGridColumnFilters({ ...defaultParams, columns: [...mockColumns, treeColumn] })
+      );
+
+      await act(async () => {
+        await result.current.handleLoadFilterOptions("characteristics");
+      });
+
+      expect(mockLoadFilterOptions).toHaveBeenCalledWith("characteristics", undefined);
+    });
+
+    it("does not load a TABLEDIR column without referenced entity when there is no entity (ETP-6431)", async () => {
+      jest.spyOn(ColumnFilterUtils, "isSelectColumn").mockReturnValue(false);
+      jest.spyOn(ColumnFilterUtils, "isTableDirColumn").mockReturnValue(false);
+      const { result } = renderHook(() =>
+        useGridColumnFilters({
+          ...defaultParams,
+          entityName: undefined,
+          columns: [{ id: "bp", columnName: "bp", name: "bp", type: FieldType.TABLEDIR } as unknown as Column],
+        })
+      );
+
+      let options: unknown[] = ["unchanged"];
+      await act(async () => {
+        options = await result.current.handleLoadFilterOptions("bp");
+      });
+
+      expect(options).toEqual([]);
+      expect(mockLoadFilterOptions).not.toHaveBeenCalled();
     });
 
     it("should return empty array for non-filterable columns", async () => {

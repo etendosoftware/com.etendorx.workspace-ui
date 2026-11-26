@@ -17,7 +17,7 @@
 
 import { useContext } from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import UserProvider, { UserContext } from "../user";
+import UserProvider, { SERVER_ERROR_TOAST_ID, UserContext } from "../user";
 import { useUserStore } from "@/stores/userStore";
 import { login as doLogin, logout as doLogout } from "@workspaceui/api-client/src/api/authentication";
 import { changePassword as doChangePassword } from "@workspaceui/api-client/src/api/changePassword";
@@ -447,6 +447,68 @@ describe("UserProvider expired password gate", () => {
 
     expect(await screen.findByTestId("trigger-login")).toBeInTheDocument();
     expect(useUserStore.getState().loginErrorText).toBe("login.errors.defaultLogout.title");
+  });
+
+  describe("session rule on failed responses", () => {
+    /** Logs in with a valid password and returns the interceptor registered on the metadata client. */
+    const loginAndGetInterceptor = async () => {
+      (getSession as jest.Mock).mockResolvedValue(makeSessionResponse(false));
+      renderProvider();
+      fireEvent.click(await screen.findByTestId("trigger-login"));
+      await screen.findByTestId("dashboard");
+      return (Metadata.registerInterceptor as jest.Mock).mock.calls[0][0];
+    };
+
+    it("shows a server error in a toast and keeps the session open", async () => {
+      const interceptor = await loginAndGetInterceptor();
+
+      interceptor(erpResponse(500, "https://erp/meta/menu"));
+
+      expect(toast.error).toHaveBeenCalledWith("errors.internalServerError.title", {
+        id: SERVER_ERROR_TOAST_ID,
+        description: "errors.internalServerError.description",
+      });
+      expect(screen.getByTestId("dashboard")).toBeInTheDocument();
+      expect(useUserStore.getState().token).toBe("jwt-token");
+      expect(doLogout).not.toHaveBeenCalled();
+    });
+
+    it("does not show the toast when the screen shows its own error", async () => {
+      const interceptor = await loginAndGetInterceptor();
+
+      interceptor(erpResponse(500, "https://erp/api/datasource"), { handlesOwnError: true });
+
+      expect(toast.error).not.toHaveBeenCalled();
+      expect(useUserStore.getState().token).toBe("jwt-token");
+    });
+
+    it("closes the session on a 401 from any service, including the ones a 500 never closed", async () => {
+      const interceptor = await loginAndGetInterceptor();
+
+      interceptor(erpResponse(401, "https://erp/meta/window/123"), { handlesOwnError: true });
+
+      expect(await screen.findByTestId("trigger-login")).toBeInTheDocument();
+      expect(useUserStore.getState().loginErrorText).toBe("login.errors.defaultLogout.title");
+    });
+
+    it("closes the session only once for a burst of rejected requests", async () => {
+      const interceptor = await loginAndGetInterceptor();
+
+      interceptor(erpResponse(401, "https://erp/meta/menu"));
+      interceptor(erpResponse(401, "https://erp/meta/preferences"));
+
+      expect(await screen.findByTestId("trigger-login")).toBeInTheDocument();
+      expect(doLogout).toHaveBeenCalledTimes(1);
+    });
+
+    it("leaves a 403 to the screen that made the request", async () => {
+      const interceptor = await loginAndGetInterceptor();
+
+      interceptor(erpResponse(403, "https://erp/meta/window/123"));
+
+      expect(toast.error).not.toHaveBeenCalled();
+      expect(useUserStore.getState().token).toBe("jwt-token");
+    });
   });
 
   it("goes directly to the app when the password is valid", async () => {

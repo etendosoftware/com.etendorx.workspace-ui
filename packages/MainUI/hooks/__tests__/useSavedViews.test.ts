@@ -17,8 +17,10 @@
 
 import { renderHook, act } from "@testing-library/react";
 import { useSavedViews } from "../useSavedViews";
+import { forgetPreloadedDefaultViews } from "@/utils/savedViews/defaultViews";
 
 jest.mock("@/utils/logger");
+jest.mock("@/utils/savedViews/defaultViews", () => ({ forgetPreloadedDefaultViews: jest.fn() }));
 jest.mock("@/stores/userStore", () => ({
   useUserStore: (selector: (s: any) => any) => selector({ token: "test-token" }),
 }));
@@ -778,5 +780,26 @@ describe("useSavedViews — updateView", () => {
 
     expect(result.current.error).toBe("HTTP 500");
     expect(result.current.isSaving).toBe(false);
+  });
+});
+
+describe("useSavedViews — default views loaded ahead of an opening", () => {
+  it("forgets them when a view changes, before and after the request, and not when views are read", async () => {
+    jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(makeFetchViewsResponse([makeRawRecord()]))
+      .mockReturnValueOnce(makeResponse(null, true, 204));
+    (forgetPreloadedDefaultViews as jest.Mock).mockClear();
+    const { result } = renderHook(() => useSavedViews());
+
+    await act(async () => {
+      await result.current.fetchViews("tab-abc");
+    });
+    expect(forgetPreloadedDefaultViews).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await result.current.deleteView("view-001");
+    });
+    expect(forgetPreloadedDefaultViews).toHaveBeenCalledTimes(2);
   });
 });

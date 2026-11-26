@@ -16,15 +16,21 @@
  */
 
 import { useRecentDocumentsStore } from "@/stores/recentDocumentsStore";
-import { fetchRecentDocuments, trackRecentDocument } from "@workspaceui/api-client/src/api/dashboard";
+import {
+  fetchRecentDocuments,
+  removeRecentDocument,
+  trackRecentDocument,
+} from "@workspaceui/api-client/src/api/dashboard";
 
 jest.mock("@workspaceui/api-client/src/api/dashboard", () => ({
   fetchRecentDocuments: jest.fn(),
   trackRecentDocument: jest.fn(),
+  removeRecentDocument: jest.fn(),
 }));
 
 const mockedFetch = fetchRecentDocuments as jest.Mock;
 const mockedTrack = trackRecentDocument as jest.Mock;
+const mockedRemove = removeRecentDocument as jest.Mock;
 
 const baseDoc = {
   recordId: "rec-1",
@@ -40,6 +46,7 @@ describe("recentDocumentsStore", () => {
     useRecentDocumentsStore.setState({ documents: [] });
     mockedFetch.mockReset();
     mockedTrack.mockReset();
+    mockedRemove.mockReset();
   });
 
   it("resetForRole clears the current documents", () => {
@@ -86,5 +93,26 @@ describe("recentDocumentsStore", () => {
     mockedTrack.mockRejectedValue(new Error("network error"));
     await useRecentDocumentsStore.getState().track(baseDoc);
     expect(useRecentDocumentsStore.getState().documents).toEqual([]);
+  });
+
+  describe("remove (ETP-6431)", () => {
+    const otherTabDoc = { ...baseDoc, tabId: "tab-2", viewedAt: 2 };
+
+    beforeEach(() => {
+      useRecentDocumentsStore.setState({ documents: [{ ...baseDoc, viewedAt: 1 }, otherTabDoc] });
+    });
+
+    it("drops only the document of that tab and record and removes it server-side", async () => {
+      mockedRemove.mockResolvedValue({ status: "removed" });
+      await useRecentDocumentsStore.getState().remove(baseDoc.tabId, baseDoc.recordId);
+      expect(mockedRemove).toHaveBeenCalledWith({ tabId: baseDoc.tabId, recordId: baseDoc.recordId });
+      expect(useRecentDocumentsStore.getState().documents).toEqual([otherTabDoc]);
+    });
+
+    it("keeps the document out of the list when the server call fails", async () => {
+      mockedRemove.mockRejectedValue(new Error("network error"));
+      await useRecentDocumentsStore.getState().remove(baseDoc.tabId, baseDoc.recordId);
+      expect(useRecentDocumentsStore.getState().documents).toEqual([otherTabDoc]);
+    });
   });
 });

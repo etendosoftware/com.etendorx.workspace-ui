@@ -30,6 +30,7 @@ import type {
   FooterButtonHandle,
   MessageBarHandle,
 } from "@/utils/processes/definition/scriptProxies";
+import { sessionAwareFetch } from "@/utils/session/sessionAwareFetch";
 
 /**
  * Auth credentials required to build the process context.
@@ -252,10 +253,11 @@ export function buildProcessScriptContext(credentials: ProcessContextCredentials
   ): Promise<ProcessContextResponse<T>> => {
     const base = `/api/erp/org.openbravo.client.kernel?_action=${encodeURIComponent(actionHandler)}`;
     const url = buildQuery(base, options.queryParams);
-    const response = await fetch(url, {
+    const response = await sessionAwareFetch(url, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify(payload),
+      handlesOwnError: true,
     });
     return handleResponse<T>(response);
   };
@@ -267,10 +269,11 @@ export function buildProcessScriptContext(credentials: ProcessContextCredentials
   ): Promise<ProcessContextResponse<T>> => {
     const base = `/api/datasource/${encodeURIComponent(entityName)}`;
     const url = buildQuery(base, options.queryParams);
-    const response = await fetch(url, {
+    const response = await sessionAwareFetch(url, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify(payload),
+      handlesOwnError: true,
     });
     return handleResponse<T>(response);
   };
@@ -282,8 +285,10 @@ export function buildProcessScriptContext(credentials: ProcessContextCredentials
   ): Promise<ProcessContextResponse<T>> => {
     const { method = "POST", headers: extraHeaders = {}, queryParams } = options;
     const url = buildQuery(path, queryParams);
-    const response = await fetch(url, {
+    // The process script receives the failure and decides what to show.
+    const response = await sessionAwareFetch(url, {
       method,
+      handlesOwnError: true,
       headers: { ...authHeaders(), ...extraHeaders },
       ...(method !== "GET" ? { body: JSON.stringify(payload) } : {}),
     });

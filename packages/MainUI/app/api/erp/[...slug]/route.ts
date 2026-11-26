@@ -10,6 +10,7 @@ import {
   createHtmlResponse,
   rewriteHtmlResourceUrls,
   buildErpErrorCodeHeaders,
+  resolveErpErrorStatus,
 } from "./route.helpers";
 import { withCompression } from "../../_utils/compression";
 
@@ -92,8 +93,8 @@ const getCachedErpData = unstable_cache(
 
     if (!response.ok) {
       // NOTE: Handle ERP request errors
-      // NOTE: use 404 for copilot to indicate not installed, otherwise use the actual response status
-      const defaultResponseStatus = slugContainsCopilot ? 404 : response.status;
+      // NOTE: use 404 for copilot to indicate not installed (except a 401), otherwise use the actual response status
+      const defaultResponseStatus = resolveErpErrorStatus(slugContainsCopilot, response.status);
       const errorText = await response.text();
       throw new ErpRequestError({
         message: `ERP request failed for slug ${slug}: ${defaultResponseStatus} ${response.statusText}. ${errorText}`,
@@ -146,6 +147,9 @@ function isMutationRoute(slug: string, method: string): boolean {
     // Recent items are rewritten on every menu access and shared across devices — a cached GET would
     // keep serving the list as it was at login for the whole life of the token.
     slug.includes("meta/recent-items") ||
+    // Recent documents are added on every form visit and removed when their record no longer exists
+    // (ETP-6431): a cached GET would bring a removed document back after a reload.
+    slug.includes("meta/recent-documents") ||
     // The per-user grid configuration is rewritten whenever the user resizes, pins, hides or
     // reorders a column; a cached GET would restore the layout as it was at login.
     slug.includes("meta/grid-configuration") ||
@@ -422,7 +426,7 @@ async function handleMutationRequest(
   }
 
   if (!response.ok) {
-    const status = erpUrl.includes("copilot") ? 404 : response.status;
+    const status = resolveErpErrorStatus(erpUrl.includes("copilot"), response.status);
     const errorText = await response.text();
     throw new ErpRequestError({
       message: `ERP request failed: ${status} ${response.statusText}. ${errorText}`,

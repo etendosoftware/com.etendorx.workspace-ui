@@ -1,7 +1,7 @@
 # Menu search keyboard navigation
 
-How the drawer's menu list is driven from the keyboard, and the DOM contract that makes
-it work.
+How the drawer's menu list is driven from the keyboard, the DOM contract that makes
+it work, and what the search returns.
 
 Etendo Classic exposes the menu through **Quick Launch**, a *command palette*: type three
 letters, press Enter, the window opens. The drawer of the new UI filtered in real time but
@@ -59,6 +59,50 @@ search case falls out of the same expression with no extra condition.
 `isOpenableMenuItem` mirrors the dispatch of `useItemActions`: the type must be one of
 `OPENABLE_MENU_ITEM_TYPES`, a `Window` needs its `windowId`, everything else its `id`.
 Both read that list from the same constant so they cannot drift apart.
+
+---
+
+## What the search returns
+
+As in Classic, **only entries that open something are search results** ([ETP-6337](https://etendoproject.atlassian.net/browse/ETP-6337)).
+Classic builds the Quick Launch candidates from `MenuManager.selectableMenuOptions`: every
+menu option whose type is not `Summary`. Folders are never candidates; the search only
+looks inside them.
+
+- **Folders are the path, never a result.** `createSearchIndex` keeps every node in
+  `byId` (the path and full path of an entry need its folders), but indexes the name,
+  words and full path in `byPhrase` only for an entry that passes `isOpenableMenuItem` —
+  the same rule as the keyboard navigation above. A folder therefore appears only when an
+  entry inside it matches, and it is shown expanded with its matching entries. Before,
+  a folder whose own name matched ("Transactions") was shown without children and without
+  the expand arrow: it looked like an entry and clicking it did nothing.
+- **Every suggestion finds something.** The autocomplete (`getAllItemTitles`) reads the
+  same phrase index, and a result must contain the term in its name, so only the name and
+  its words are indexed — never a folder name, and never the menu path
+  ("master data management > product"), which no search matches. Accepting a suggestion
+  with Tab always finds at least the entry it came from.
+- **A readable suggestion.** The suggestion and its Tab hint use the sidebar tokens
+  (`--ui-text-muted`, as the placeholder) instead of the fixed light grays of the shared
+  `TextInputAutocomplete`, which were barely visible on the search background (about 1.1:1
+  in the light theme). They are 13px like the typed text and start exactly where it starts
+  (the search button no longer shrinks with the sidebar width). The `Drawer` restyles them
+  through the `SUGGESTION_ATTRIBUTES` markers of `SuggestionBox`, so the other users of the
+  component (the toolbar search) are unchanged.
+- **No results.** When a term matches no entry, the `Drawer` shows a message (test ID
+  `drawer-search-no-results`) instead of an empty list. Its text is the Quick Launch one,
+  `OBUISC_ListGrid.emptyMessage` ("No items to show."), read from the backend message
+  catalog (`/meta/labels`) by `Sidebar` through `resolveCatalogLabel`, with the local key
+  `drawer.noResults` as fallback. Nothing is highlighted then, so Enter opens nothing.
+- **Without a search term nothing changes**: `filterItems` returns the menu untouched.
+
+Searching by folder name to list everything inside a folder is out of scope, as it is in
+Classic.
+
+**Long names.** An entry name that does not fit is cut by an ellipsis, in the sidebar and in
+the flyout of the collapsed sidebar. Its `MenuTitle` wraps the name in the shared `Tooltip`
+with `onlyWhenTruncated`: the whole name is shown on hover, only when it is actually cut. The
+check runs on each hover (content `scrollWidth` > `clientWidth`), so it follows the width the
+resizable sidebar has at that time, with no observer per entry.
 
 ---
 
@@ -162,6 +206,10 @@ guarantees Tab keeps working.
 | `components/Drawer/MenuTitle/index.tsx` | Marks a navigable entry, paints the highlight, scrolls it into view |
 | `components/Drawer/DrawerSection/index.tsx` | Marks a collapsed subtree |
 | `hooks/useItemType.ts` | Dispatch per item type; shares the openable-types constant |
+| `utils/searchUtils.tsx` | Search index (only openable entries by name) and filtered tree |
+| `components/Input/TextInput/TextInputAutocomplete/SuggestionBox/index.tsx` | Marks the parts of the suggestion for the sidebar to restyle |
+| `components/Tooltip/index.tsx` | `onlyWhenTruncated`: a tooltip shown only while its content is cut |
+| `MainUI/components/Sidebar.tsx` | Resolves the "no results" text from the message catalog |
 
 ## Tests
 
@@ -170,3 +218,7 @@ guarantees Tab keeps working.
 | `utils/__tests__/drawerUtils.test.tsx` | Navigability rule, DOM order, collapsed subtrees, edge stops |
 | `components/Drawer/__tests__/Drawer.keyboard.test.tsx` | The whole contract, with and without a search term |
 | `components/Drawer/DrawerSection/index.test.tsx` | The DOM markers and the highlight |
+| `utils/__tests__/searchUtils.test.ts` | Folders only as the path, no folder results, every suggestion finds an entry |
+| `components/Input/TextInput/TextInputAutocomplete/__tests__/SuggestionBox.test.tsx` | The suggestion text and its markers |
+| `MainUI/components/__tests__/Sidebar.external.test.tsx` | The "no results" text from the catalog and its fallback |
+| `playwright-tests/e2e/smoke/11_Navigation/NAVeSidebarSearchFoldersTest.spec.ts` | NAVe: the same rules against the real core menu |

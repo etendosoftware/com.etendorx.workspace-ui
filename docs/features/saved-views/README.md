@@ -49,6 +49,21 @@ The format stays `version: 1`: new parts are optional keys that are only written
 
 Each tab is restored once per opened window. A tab that remounts while its window is open, such as a child tab after the parent record changes, keeps the columns of the session.
 
+### First load of the grid
+
+The grid of a tab loads its records once when the window opens, already with the default view or the stored columns, as classic, which gets them with the window settings before showing the grid (`WindowSettingsActionHandler` → `PersonalizationHandler.getPersonalizationForWindow`). Before, the grid loaded without them and again when they arrived, so a view with filters could show, for a moment, records outside the view.
+
+- **Requested with the window, or before it.** The window asks for the default views of all its tabs in one request (`GET /meta/saved-views?window=<id>&isdefault=true`) and for its stored grid configuration (already one request per window), in parallel with the window metadata. Both requests are usually already answered when the window opens:
+  - **On hover.** When the pointer rests on an entry that opens a window (menu, recent items, favorites; 150 ms, like the metadata prefetch), both are loaded ahead (`preloadWindowViewSettings`). The next opening of that window takes them if they are at most 10 s old (`PRELOAD_MAX_AGE_MS`, `utils/savedViews/preload.ts`); older ones are asked again. Saving a view, or the columns of any tab, forgets them, so an opening never uses settings older than a change of the user. A window that is already open is not preloaded (its entry stays under the pointer after the click).
+  - **On opening.** Where the window is opened (`showWindow`: menu, links, favorites, recent items, start page, process monitor) and where the URL recovers it (reload), and, as a fallback for any other way in, when the window component mounts. Each opened window makes them once.
+
+  Measured against `main` (Goods Shipment from the menu), the first grid load starts at the same moment as before this wait existed.
+- **The grid waits only when something stored changes its first request.** That is a default view, or stored columns that sort the grid. Visibility, order, width and pinning do not change the request, so a tab whose window settings already answered with nothing else loads on its first render, as before, and its stored columns are applied after it without a new request. Otherwise the first load of each grid, header and child tabs, waits until its tab is resolved: the default view applied, or the stored columns applied, or neither exists. While it waits the grid shows as loading. The answers are kept per opened window (`getSettledTabDefaultView`, `getSettledTabColumnConfiguration`), so the grid knows this when it mounts; while they have not answered it waits.
+- **Never blocked.** If the views cannot be read (an error or a non-zero status), the tab is resolved at once and the grid loads without them, as before. A request that does not answer within 2 s (`INITIAL_VIEW_WAIT_MS`) also lets the grid load; a view that arrives later is still applied and its load replaces the first one.
+- **One request when the wait ends.** The datasource shows as loading from the very render that stops skipping, so nothing (e.g. filling the grid height, see [grid paging](../grid-paging-and-record-count/README.md)) asks for a next page before the first one; and every request uses the page size of the current params, so a view in tree mode asks for the tree fetch limit at once instead of loading with the flat page size and again with the tree one. Both also apply to a child tab whose parent gets a record and to switching the tree view on.
+- **Also when a record is restored from the URL or a link.** The header loads on mount without the context of its own record, as classic's first direct-link fetch, and does not load again when that record arrives: the record selected in a tab travels with each request but never triggers one. The child tabs wait for the parent record (not only its id) before their first load, so they load once and already with its session properties. See [parent–child datasource filtering](../parent-child-datasource-filtering.md).
+- **Answers out of order.** The datasource sends one request at a time and drops the rows of a request a newer query superseded while it was in flight (`useDatasource.fetchData`), so the grid always ends up with the records of the view. A re-run of the fetch effect with the same query while the first load is still on its way (a dependency rebuilt with the same content) does not queue that load again.
+
 An auto-applied default view restores the split heights but never the tab levels shown, because moving the active levels on open would override the navigation the user or the URL set up.
 
 ### Parent/child split
@@ -66,6 +81,8 @@ No setup is needed. The grid configuration uses the `/meta/grid-configuration` e
 
 - **The grid configuration uses its own preference attribute** instead of `OBUIAPP_GridConfiguration`. The classic value is a SmartClient view state (an `eval` string) that the new UI cannot write without breaking classic.
 - **The preference follows the user across roles and organizations** (client + user + window).
+- **The settings can be read up to 10 s before the window opens.** Classic reads them when the window opens. The new UI may use the ones it loaded when the pointer rested on the entry, at most 10 s earlier, and never older than a change of views or columns made by the user. A change made in that time by someone else (a shared view) shows on the next opening.
+- **A personal default view applies in every client of the user**, as in classic: classic stores a user-level view with the user only (`visibleAtClient` empty, `ob-manage-views-popups.js`), and the new UI resolves personal views by user. Views shared at role, organization or client level only apply in their own target.
 - **Views are per tab** (`ETMETA_SAVEDVIEW`), so the layout stored in a view is the window layout at the moment that tab's view was saved.
 - **The grid + form side-by-side split is not stored**, as in classic. It stays session-only; see `SplitViewState` in `utils/window/constants.ts`.
 - **The stored grid configuration does not include summary functions.** As in classic, a summary survives a reload only through a saved view (classic stores `summaryFunctions` but does not save them when a summary changes). While the window is open the summaries live in the window store (`table.summaries`), so a remounted tab keeps them.
@@ -83,7 +100,14 @@ No setup is needed. The grid configuration uses the `/meta/grid-configuration` e
 | `utils/table/columnState.ts` | Fixed pinned columns, pinning normalization, user reorder detection |
 | `components/Table/hooks/useColumnLayout.ts` | Controlled widths, pinning and order of the grid; schedules the save on user changes |
 | `hooks/useSavedViews.ts` | Saved views CRUD, including `updateView` |
-| `hooks/useAutoApplyDefaultView.ts` | Default view on open, else the stored grid configuration |
+| `hooks/useAutoApplyDefaultView.ts` | Default view on open, else the stored grid configuration; then marks the tab resolved |
+| `utils/savedViews/defaultViews.ts` | Default views of every tab of a window (one request per opened window, answers kept for the first render), prefetch with the window |
+| `utils/savedViews/preload.ts` | Requests started on hover, taken by the next opening of the window if recent |
+| `utils/window/showWindow.ts` | Opens a window and starts the prefetch of its view settings |
+| `stores/initialViewStore.ts` | Tabs whose initial view is resolved, so their grid can make its first load |
+| `hooks/table/useParentRecordPending.ts` | First load of a child tab waiting for the parent record of a restored window (2 s safety limit) |
+| `hooks/table/useInitialViewPending.ts` | Wait of the grid for its initial view (`tabNeedsInitialView`: only a default view or a stored sort), with the 2 s safety limit (used by `useTableData`) |
+| `components/window/Window.tsx` | Starts the prefetch when the window opens |
 | `hooks/useApplyViewState.ts` | Applies views / standard view / stored columns to the store; captures the layout |
 | `components/Toolbar/Menus/SaveViewMenu.tsx` | Save (overwrite by name), apply, default, reset |
 | `components/window/Tabs.tsx` | Parent/child split height per level |

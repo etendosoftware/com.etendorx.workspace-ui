@@ -285,3 +285,36 @@ describe("Tooltip multiline", () => {
     });
   });
 });
+
+describe("Tooltip only when truncated", () => {
+  const LONG_NAME = "Update Product Characteristics";
+
+  /**
+   * Renders the tooltip around a text with the given widths (jsdom computes no layout), hovers it
+   * and lets the show delay pass.
+   */
+  const hoverText = (scrollWidth: number, clientWidth: number) => {
+    render(
+      <Tooltip title={LONG_NAME} onlyWhenTruncated>
+        <span>{LONG_NAME}</span>
+      </Tooltip>
+    );
+    const text = screen.getByText(LONG_NAME);
+    Object.defineProperty(text, "scrollWidth", { configurable: true, value: scrollWidth });
+    Object.defineProperty(text, "clientWidth", { configurable: true, value: clientWidth });
+    fireEvent.mouseEnter(text.parentElement as HTMLElement);
+    act(() => {
+      jest.advanceTimersByTime(600);
+    });
+  };
+
+  it("shows the whole text when it is cut by the ellipsis", () => {
+    hoverText(240, 160);
+    expect(screen.getByRole("tooltip")).toHaveTextContent(LONG_NAME);
+  });
+
+  it("shows nothing when the text fits", () => {
+    hoverText(160, 160);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+});

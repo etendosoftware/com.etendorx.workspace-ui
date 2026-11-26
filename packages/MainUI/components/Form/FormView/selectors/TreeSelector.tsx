@@ -341,12 +341,14 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
   const shouldShowClearButton = selectedLabel && (isHovering || isOpen) && !isReadOnly;
 
   // --- Rendered tree options ---
+  const loadingText = t("common.loading");
+  const noOptionsText = t("multiselect.noOptionsFound");
   const renderedOptions = useMemo(() => {
     if (loading && visibleNodes.length === 0) {
-      return <li className="px-4 py-3 text-sm text-baseline-60">Loading...</li>;
+      return <li className="px-4 py-3 text-sm text-baseline-60">{loadingText}</li>;
     }
     if (visibleNodes.length === 0) {
-      return <li className="px-4 py-3 text-sm text-baseline-60">No options found</li>;
+      return <li className="px-4 py-3 text-sm text-baseline-60">{noOptionsText}</li>;
     }
 
     return visibleNodes.map((node, index) => {
@@ -411,7 +413,17 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
         </li>
       );
     });
-  }, [visibleNodes, highlightedIndex, selectedValue, collapsedNodes, handleSelect, toggleCollapse, loading]);
+  }, [
+    visibleNodes,
+    highlightedIndex,
+    selectedValue,
+    collapsedNodes,
+    handleSelect,
+    toggleCollapse,
+    loading,
+    loadingText,
+    noOptionsText,
+  ]);
 
   return (
     <>

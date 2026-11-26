@@ -118,6 +118,7 @@ import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab
 import { CellContextMenu } from "./CellContextMenu";
 import { HeaderContextMenu, type SummaryType } from "./HeaderContextMenu";
 import { RecordCounterBar } from "@workspaceui/componentlibrary/src/components";
+import { formatRecordCount } from "@workspaceui/componentlibrary/src/components/Table/RecordCounters/formatRecordCount";
 import type {
   EditingRowsState,
   InlineEditingContextMenu,
@@ -853,7 +854,6 @@ const renderGridTopToolbar = ({
   const rowSelection = mrtTable.getState().rowSelection;
   const selCount = Object.keys(rowSelection).filter((id) => rowSelection[id]).length;
   const loaded = displayRecords.length;
-  const total = hasMoreRecords ? loaded + 1 : loaded;
   const labels = {
     showingRecords: t("table.counter.showingRecords"),
     showingPartialRecords: t("table.counter.showingPartialRecords"),
@@ -869,8 +869,9 @@ const renderGridTopToolbar = ({
   const canDockChild = tab.tabLevel > 0 && toolbarExtrasSlot;
   const counterBar = (
     <RecordCounterBar
-      totalRecords={total}
+      totalRecords={loaded}
       loadedRecords={loaded}
+      hasMoreRecords={hasMoreRecords}
       selectedCount={selCount}
       isLoading={loading}
       labels={labels}
@@ -928,13 +929,17 @@ interface TitleRecordCountProps {
   isGridVisible: boolean;
   isLoading: boolean;
   count: number;
+  /** More records than the loaded ones exist: the count shows "N+" instead of passing for the total. */
+  hasMoreRecords: boolean;
   t: TranslateFunction;
 }
 
 /** Record count of the active grid, shown in the shared title bar through a portal. */
-const TitleRecordCount = ({ slot, isGridVisible, isLoading, count, t }: TitleRecordCountProps) => {
+const TitleRecordCount = ({ slot, isGridVisible, isLoading, count, hasMoreRecords, t }: TitleRecordCountProps) => {
   if (!slot || !isGridVisible) return null;
-  const label = isLoading ? "" : t("table.counter.titleCount").replace("{count}", String(count));
+  const label = isLoading
+    ? ""
+    : t("table.counter.titleCount").replace("{count}", formatRecordCount(count, hasMoreRecords));
   return createPortal(
     <span className="flex items-center gap-2" data-testid="TitleRecordCount__table">
       <span className="whitespace-nowrap text-xs text-(--ui-text-soft)">{label}</span>
@@ -1320,6 +1325,7 @@ const DynamicTable = ({
     hasMultipleParents,
     isLoading: loading,
     loadedRecordsCount: displayRecords.length,
+    hasMoreRecords,
   });
 
   // Summary State (the summary functions live in the window store so saved views can capture them)
@@ -4476,6 +4482,7 @@ const DynamicTable = ({
         isGridVisible={isGridVisible}
         isLoading={loading}
         count={displayRecords.length}
+        hasMoreRecords={hasMoreRecords}
         t={t}
         data-testid="TitleRecordCount__8ca888"
       />

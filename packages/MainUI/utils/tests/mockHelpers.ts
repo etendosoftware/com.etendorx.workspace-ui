@@ -139,9 +139,10 @@ export const createSessionRetryResult = (data: unknown, recovered = false) => ({
 /**
  * Helper to create session retry error result
  */
-export const createSessionRetryError = (error: string) => ({
+export const createSessionRetryError = (error: string, status?: number) => ({
   success: false,
   error,
+  status,
 });
 
 interface MockResponse {

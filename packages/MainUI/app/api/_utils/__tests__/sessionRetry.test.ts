@@ -118,6 +118,7 @@ describe("sessionRetryWithCsrf", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Request failed with status 403");
+      expect(result.status).toBe(403);
       expect(result.data).toEqual(mockData);
       expect(requestFn).toHaveBeenCalledTimes(1);
       expect(mockRecoverSession).not.toHaveBeenCalled();
@@ -181,6 +182,7 @@ describe("sessionRetryWithCsrf", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Session recovery failed: Recovery failed");
+      expect(result.status).toBe(401);
       expect(result.data).toEqual(expiredData);
       expect(requestFn).toHaveBeenCalledTimes(1);
       expect(mockRecoverSession).toHaveBeenCalledWith(testToken);
@@ -209,6 +211,7 @@ describe("sessionRetryWithCsrf", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Request failed even after session recovery");
+      expect(result.status).toBe(401);
       expect(result.data).toEqual(expiredData);
       expect(requestFn).toHaveBeenCalledTimes(2);
       expect(mockRecoverSession).toHaveBeenCalledWith(testToken);

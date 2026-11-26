@@ -44,6 +44,7 @@ import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { toast } from "sonner";
 import { ToastContent } from "@/components/ToastContent";
+import { sessionAwareFetch } from "@/utils/session/sessionAwareFetch";
 
 export const useToolbarConfig = ({
   tabId,
@@ -475,13 +476,15 @@ export const useToolbarConfig = ({
 
           const apiUrl = `${baseUrl}?${queryParams.toString()}`;
 
-          const response = await fetch(apiUrl, {
+          const response = await sessionAwareFetch(apiUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json;charset=UTF-8",
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({}),
+            // A failure is shown in the process error toast.
+            handlesOwnError: true,
           });
 
           if (!response.ok) {

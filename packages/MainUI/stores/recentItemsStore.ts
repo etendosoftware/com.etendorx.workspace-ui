@@ -39,6 +39,8 @@ interface RecentItemsStore {
   loadForScope: (scopeKey: string) => Promise<void>;
   /** Moves the item to the front of the list and persists the list server-side. */
   add: (item: RecentItem) => Promise<void>;
+  /** Removes the item from the list, e.g. because the current role can no longer open it, and persists the list. */
+  remove: (id: string) => Promise<void>;
   /** Replaces the items locally only (e.g. refreshed translations), without writing to the server. */
   setItems: (items: RecentItem[]) => void;
 }
@@ -64,6 +66,20 @@ export const useRecentItemsStore = create<RecentItemsStore>()(
         setLocalItems(data.items);
       };
 
+      // Shows the new list at once and persists it server-side, unless nothing changed.
+      const saveList = async (current: RecentItem[], next: RecentItem[]) => {
+        if (isSameList(current, next)) return;
+        const requestRevision = ++revision;
+        setLocalItems(next);
+
+        try {
+          applyServerList(requestRevision, await saveRecentItems(next));
+        } catch (err) {
+          // The local cache keeps the change as a backup; the next successful save syncs it.
+          logger.warn("[RecentItemsStore] Failed to save recent items:", err);
+        }
+      };
+
       return {
         scopeKey: "",
         items: [],
@@ -84,18 +100,16 @@ export const useRecentItemsStore = create<RecentItemsStore>()(
         add: async (item: RecentItem) => {
           const { scopeKey, items, size } = get();
           if (!scopeKey) return;
+          await saveList(items, upsertRecentItem(items, item, size));
+        },
 
-          const next = upsertRecentItem(items, item, size);
-          if (isSameList(items, next)) return;
-          const requestRevision = ++revision;
-          setLocalItems(next);
-
-          try {
-            applyServerList(requestRevision, await saveRecentItems(next));
-          } catch (err) {
-            // The local cache keeps the change as a backup; the next successful save syncs it.
-            logger.warn("[RecentItemsStore] Failed to save recent items:", err);
-          }
+        remove: async (id: string) => {
+          const { scopeKey, items } = get();
+          if (!scopeKey) return;
+          await saveList(
+            items,
+            items.filter((item) => item.id !== id)
+          );
         },
 
         setItems: setLocalItems,

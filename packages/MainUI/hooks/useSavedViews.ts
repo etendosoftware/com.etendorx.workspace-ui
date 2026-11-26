@@ -31,12 +31,29 @@ import type {
   ViewStateSnapshot,
 } from "@/utils/savedViews/types";
 import { useUserStore } from "@/stores/userStore";
+import { forgetPreloadedDefaultViews } from "@/utils/savedViews/defaultViews";
+import { sessionAwareFetch } from "@/utils/session/sessionAwareFetch";
 
 const BASE_URL = "/api/meta/saved-views";
 
 async function apiFetch(url: string, token: string, options?: RequestInit): Promise<unknown> {
-  const res = await fetch(url, {
+  const isWrite = options?.method !== undefined && options.method !== "GET";
+  if (isWrite) {
+    // Default views loaded ahead of an opening may predate this change
+    forgetPreloadedDefaultViews();
+  }
+  try {
+    return await sendRequest(url, token, options);
+  } finally {
+    if (isWrite) forgetPreloadedDefaultViews();
+  }
+}
+
+async function sendRequest(url: string, token: string, options?: RequestInit): Promise<unknown> {
+  // The saved views menu shows its own error.
+  const res = await sessionAwareFetch(url, {
     ...options,
+    handlesOwnError: true,
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",

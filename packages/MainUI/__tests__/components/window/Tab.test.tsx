@@ -41,6 +41,9 @@ import { useWindowStore } from "@/stores/windowStore";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import { SPLIT_PANE_TEST_IDS, getFocusBorderColor } from "@/utils/window/splitView";
 import { DIRTY_SOURCE_KINDS, buildDirtySourceKey } from "@/utils/window/dirtyState";
+import { useSelectedRecords } from "@/hooks/useSelectedRecords";
+import { useUserStore } from "@/stores/userStore";
+import { expectSessionAwareFetchFor } from "@/utils/tests/sessionAwareFetchMock";
 
 // Mock other dependencies
 jest.mock("next/cache", () => ({
@@ -57,6 +60,14 @@ jest.mock("@/components/ProcessModal/ProcessDefinitionModal", () => ({
 }));
 
 const mockPrintLegacy = jest.fn();
+jest.mock(
+  "@/utils/session/sessionAwareFetch",
+  () => require("@/utils/tests/sessionAwareFetchMock").sessionAwareFetchModule
+);
+jest.mock("@/hooks/useSelectedRecords", () => {
+  const actual = jest.requireActual("@/hooks/useSelectedRecords");
+  return { useSelectedRecords: jest.fn(actual.useSelectedRecords) };
+});
 jest.mock("@/hooks/Toolbar/useLegacyPrint", () => ({
   useLegacyPrint: () => ({ printLegacy: mockPrintLegacy }),
 }));
@@ -266,6 +277,35 @@ describe("Tab - Refresh Registration", () => {
       await runPrintRecord({ ...mockTab, printConfig: { ...LEGACY_PRINT_CONFIG, legacy: false } });
 
       expect(mockPrintLegacy).not.toHaveBeenCalled();
+    });
+
+    it("downloads the document through the ERP proxy, with the toast as the only failure notice", async () => {
+      const originalFetch = global.fetch;
+      const createObjectURL = URL.createObjectURL;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue({ ok: true, blob: async () => new Blob(["pdf"]), headers: new Headers() });
+      URL.createObjectURL = jest.fn(() => "blob:print");
+      (useSelectedRecords as jest.Mock).mockReturnValue([{ id: "record-1" }]);
+      useUserStore.setState({ token: "jwt-token" });
+
+      const view = renderWithTheme(
+        <Tab tab={{ ...mockTab, printConfig: { ...LEGACY_PRINT_CONFIG, legacy: false } }} collapsed={false} />
+      );
+      const actions = mockRegisterActions.mock.calls.reduce((acc, call) => Object.assign(acc, call[0]), {});
+      await act(async () => {
+        await actions.printRecord();
+      });
+
+      expect(global.fetch).toHaveBeenCalledWith("/api/erp/sws/com.etendoerp.etendorx.print", expect.anything());
+      expectSessionAwareFetchFor("/api/erp/sws/com.etendoerp.etendorx.print", false);
+      view.unmount();
+      (useSelectedRecords as jest.Mock).mockImplementation(
+        jest.requireActual("@/hooks/useSelectedRecords").useSelectedRecords
+      );
+      useUserStore.setState({ token: null });
+      global.fetch = originalFetch;
+      URL.createObjectURL = createObjectURL;
     });
   });
 });

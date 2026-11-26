@@ -9,6 +9,11 @@ describe("RecordCounter", () => {
     expect(screen.getByText("Showing 25 records")).toBeInTheDocument();
   });
 
+  it("marks the count as partial while more records exist", () => {
+    render(<RecordCounter totalRecords={101} loadedRecords={101} hasMoreRecords />);
+    expect(screen.getByText("Showing 101+ records")).toBeInTheDocument();
+  });
+
   it("shows loading skeleton when isLoading is true", () => {
     render(<RecordCounter totalRecords={100} loadedRecords={0} isLoading />);
     // LoadingSkeleton renders a skeleton element

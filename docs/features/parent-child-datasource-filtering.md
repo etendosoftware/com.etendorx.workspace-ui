@@ -54,6 +54,22 @@ Classic sends these with every child fetch — they are the parent record's *ses
   parent's `id` / `client` / `organization`, emitted from the selected parent record in
   `useTableData`.
 
+`buildEtendoContext` is the sum of `buildAncestorContext` (the records selected in the ancestors)
+and `buildRecordContext` (the record selected in the tab itself). A grid keeps them apart:
+
+- **The ancestors decide the records**, so they are part of the query: a new parent record reloads
+  the child. The direct parent uses the record the child fetches with (`queryParentRecord`), which the
+  graph may clear without notice.
+- **The tab's own record only travels with each request** (`useDatasource`'s `withRequestContext`,
+  also applied to the tree child nodes, the summaries and `getRequestParams`), read when the request
+  is sent. As in classic, selecting a record never reloads its own grid. It overrides the ancestors
+  but not the parent keys the query writes after them, as when it was part of the query.
+- **A child waits for the parent record, not only its id**, when that record is on its way: the
+  parent tab was rebuilt from a link or the URL (`initializedWithDirectLink`), or its form is loading
+  it (`useParentRecordPending`, at most 2 s). Classic loads a child once its parent record is
+  selected; loading with the id alone sent the where clause without these properties and loaded again
+  when the record arrived. When the record is not on its way, the child loads with the id, as before.
+
 > **A missing `@<ParentEntity>.organization@` silently returns zero rows.** The variable falls
 > back to the classic session and, if that is empty, `AD_ISORGINCLUDED(org, '', client)` evaluates
 > to `-1` — so a where clause of the usual shape

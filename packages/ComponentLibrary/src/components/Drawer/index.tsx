@@ -51,6 +51,22 @@ interface RecentlyViewedHandler {
   handleWindowAccess?: (item: Menu) => void;
 }
 
+/**
+ * The autocomplete suggestion in the colors and size of the sidebar search. The text and the Tab
+ * hint are muted like the placeholder: the default grays are barely visible on the search
+ * background, in light and dark themes. The text has the 13px of the typed text and starts where
+ * it starts: 8px of padding of the field, the 24px search button (kept from shrinking, or its width
+ * would follow the width of the sidebar) and its 8px margin, so 40px. Attributes from `SuggestionBox`.
+ */
+const SIDEBAR_SUGGESTION_CLASSES =
+  "[&_button]:shrink-0 [&_[data-autocomplete-ghost]]:left-[40px]! [&_[data-autocomplete-ghost]]:text-[13px]! [&_[data-autocomplete-suggestion]]:text-(--ui-text-muted)! [&_[data-autocomplete-tab-hint]_p]:text-(--ui-text-muted)! [&_[data-autocomplete-tab-hint]_svg]:text-(--ui-text-muted)!";
+
+/** Stable test ID of the message shown when the search finds no entry. */
+export const DRAWER_NO_RESULTS_TEST_ID = "drawer-search-no-results";
+
+/** Stable test ID of the menu list, which leaves "Recently Viewed" out. */
+export const DRAWER_MENU_LIST_TEST_ID = "drawer-menu-list";
+
 const DRAWER_OPEN_WIDTH = 16.25;
 const DRAWER_CLOSED_WIDTH = 3.5;
 const DRAWER_MAX_WIDTH = 50;
@@ -71,6 +87,7 @@ const Drawer: React.FC<DrawerProps> = ({
   searchContext,
   menuToggleLabels,
   searchLabel,
+  noResultsLabel,
 }) => {
   const [open, setOpen] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
@@ -217,6 +234,9 @@ const Drawer: React.FC<DrawerProps> = ({
 
   const highlightContextValue = useMemo(() => ({ highlightedItemId }), [highlightedItemId]);
 
+  // As the Quick Launch of Classic, a search that matches no entry says so instead of showing an empty list.
+  const hasNoResults = Boolean(searchValue) && filteredItems.length === 0;
+
   return (
     <ResizeHandle
       initialWidth={drawerWidth}
@@ -246,7 +266,7 @@ const Drawer: React.FC<DrawerProps> = ({
           // would replace its own handler instead of composing with it.
           <div className="px-3 pt-3 pb-2" onKeyDown={handleSearchKeyDown}>
             <div
-              className={`drawer-search ${SIDEBAR_SEARCH_INSET_CLASS} rounded-lg bg-(--ui-search-bg) [&_div]:bg-transparent! [&_div]:rounded-lg! [&_fieldset]:border-0! [&_input]:text-(--ui-text)! [&_input]:text-[13px]! [&_input::placeholder]:text-(--ui-text-muted)! [&_svg]:text-(--ui-text-muted)`}>
+              className={`drawer-search ${SIDEBAR_SEARCH_INSET_CLASS} rounded-lg bg-(--ui-search-bg) [&_div]:bg-transparent! [&_div]:rounded-lg! [&_fieldset]:border-0! [&_input]:text-(--ui-text)! [&_input]:text-[13px]! [&_input::placeholder]:text-(--ui-text-muted)! [&_svg]:text-(--ui-text-muted) ${SIDEBAR_SUGGESTION_CLASSES}`}>
               <TextInputAutocomplete
                 value={searchValue}
                 setValue={setSearchValue}
@@ -270,7 +290,17 @@ const Drawer: React.FC<DrawerProps> = ({
             ref={setRecentlyViewedRef}
           />
         )}
-        <div ref={menuListRef} className={`flex-grow overflow-y-auto hide-scrollbar ${!open && "flex flex-col gap-2"}`}>
+        <div
+          ref={menuListRef}
+          data-testid={DRAWER_MENU_LIST_TEST_ID}
+          className={`flex-grow overflow-y-auto hide-scrollbar ${!open && "flex flex-col gap-2"}`}>
+          {open && hasNoResults && (
+            <output
+              className="block px-5 py-2 text-[13px] text-(--ui-text-muted)"
+              data-testid={DRAWER_NO_RESULTS_TEST_ID}>
+              {noResultsLabel}
+            </output>
+          )}
           <DrawerHighlightContext.Provider value={highlightContextValue}>
             <DrawerItems
               items={searchValue ? filteredItems : items}

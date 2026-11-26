@@ -17,7 +17,10 @@
 
 import { act, renderHook } from "@testing-library/react";
 import { buildExternalPageWindowId } from "@/utils/menu/externalMenuEntry";
+import { preloadWindowViewSettings } from "@/utils/savedViews/defaultViews";
 import { usePrefetchWindowOnHover } from "../usePrefetchWindowOnHover";
+
+jest.mock("@/utils/savedViews/defaultViews", () => ({ preloadWindowViewSettings: jest.fn() }));
 
 const mockPrefetchWindowData = jest.fn();
 
@@ -49,6 +52,8 @@ describe("usePrefetchWindowOnHover", () => {
     });
     expect(mockPrefetchWindowData).toHaveBeenCalledTimes(1);
     expect(mockPrefetchWindowData).toHaveBeenCalledWith("143");
+    // The saved views and stored columns its grids wait for are loaded with it
+    expect(preloadWindowViewSettings).toHaveBeenCalledWith("143");
   });
 
   it("only prefetches the last item when the pointer moves across several quickly", () => {

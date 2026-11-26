@@ -17,13 +17,14 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useMetadataZustandStore } from "@/stores/metadataStore";
 import { isExternalPageWindowId } from "@/utils/menu/externalMenuEntry";
+import { preloadWindowViewSettings } from "@/utils/savedViews/defaultViews";
 
 /** Same delay the sidebar menu uses, so brushing past an item does not fire a request. */
 const PREFETCH_HOVER_DELAY_MS = 150;
 
 /**
- * Loads a window's metadata when the pointer rests on (or focus lands on) an item that opens it,
- * so the click finds it already in the store instead of waiting for the download.
+ * Loads a window's metadata, and the saved views and stored columns its grids wait for, when the pointer rests
+ * on (or focus lands on) an item that opens it, so the click finds them instead of waiting for the download.
  */
 export function usePrefetchWindowOnHover() {
   const prefetchWindowData = useMetadataZustandStore((s) => s.prefetchWindowData);
@@ -33,7 +34,11 @@ export function usePrefetchWindowOnHover() {
     (windowId?: string | null) => {
       if (!windowId || isExternalPageWindowId(windowId)) return;
       if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => prefetchWindowData(windowId), PREFETCH_HOVER_DELAY_MS);
+      timerRef.current = setTimeout(() => {
+        prefetchWindowData(windowId);
+        // The grids of the window wait for its saved views and stored columns when it opens
+        preloadWindowViewSettings(windowId);
+      }, PREFETCH_HOVER_DELAY_MS);
     },
     [prefetchWindowData]
   );

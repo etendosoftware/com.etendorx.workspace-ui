@@ -1,5 +1,11 @@
 import { renderHook, act } from "@testing-library/react";
 import { useToolbarConfig } from "../useToolbarConfig";
+import { expectSessionAwareFetchFor } from "@/utils/tests/sessionAwareFetchMock";
+
+jest.mock(
+  "@/utils/session/sessionAwareFetch",
+  () => require("@/utils/tests/sessionAwareFetchMock").sessionAwareFetchModule
+);
 import { useTabContext } from "@/contexts/tab";
 import { useWindowStore } from "@/stores/windowStore";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
@@ -434,6 +440,7 @@ describe("useToolbarConfig", () => {
         await result.current.actionHandlers.INITIALIZE_RX_SERVICES();
       });
 
+      expectSessionAwareFetchFor("InitializeRXServices", true);
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining("com.etendoerp.etendorx.actionhandler.InitializeRXServices"),
         expect.objectContaining({

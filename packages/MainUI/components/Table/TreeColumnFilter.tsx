@@ -146,6 +146,7 @@ function TreeColumnFilterCmp({
   const [selfSelectedValues, setSelfSelectedValues] = useState<string[]>([]);
 
   const isCharacteristics = isSelfLoading && !!characteristicsContext;
+  const searchesSelfOptions = isSelfLoading && !isCharacteristics;
   const appliedSelection = useMemo(() => appliedOptions ?? [], [appliedOptions]);
   const options = isSelfLoading ? selfLoadedOptions : (externalOptions ?? []);
   const loading = isSelfLoading ? selfLoading : externalLoading;
@@ -404,10 +405,11 @@ function TreeColumnFilterCmp({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const term = e.target.value;
       setSearchTerm(term);
-      if (onSearch) setIsDebouncing(true);
+      // Self-loaded options are searched on the server too (the characteristics tree is searched locally).
+      if (onSearch || searchesSelfOptions) setIsDebouncing(true);
       debouncedSearch(term);
     },
-    [debouncedSearch, onSearch]
+    [debouncedSearch, onSearch, searchesSelfOptions]
   );
 
   const handleSearchBlur = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
