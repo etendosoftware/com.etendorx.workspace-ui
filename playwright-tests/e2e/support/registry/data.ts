@@ -93,6 +93,8 @@ export const DOCUMENT_TYPE = {
 export const ROLE = {
   QA_TESTING_ADMIN: { id: "4028E6C72959682B01295A071429011E", name: "QA Testing Admin" },
   QA_TESTING_SALES_ADMIN: { id: "FA057013C10148828D2430F66F42EF1A", name: "QA Testing Sales Admin" },
+  /** Core sample data (F&B International Group): a second client role of the user, with eight organizations. */
+  FB_INTERNATIONAL_GROUP_ADMIN: { id: "42D0EEB1C66F497A90DD526DC597E6F0", name: "F&B International Group Admin" },
 } as const satisfies Record<string, SampleRecord>;
 
 /** List values of process parameters (AD_Ref_List). */
