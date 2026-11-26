@@ -53,12 +53,6 @@ test.describe("Requisition flow - Create and generate Purchase Order @smoke", ()
     await app.toast.closeAll();
 
     // ── Step 4: Post Requisition ──────────────────────────────────────────────
-    // First open: preview the process modal title, then close without executing
-    await app.toolbar.process("Complete");
-    await expect(app.processModal.legacyTitle).toHaveText(POST_REQUISITION, { timeout: 10_000 });
-    await app.processModal.closeResult();
-
-    // Second open: actually execute
     await app.toolbar.process("Complete");
     await expect(app.processModal.legacyTitle).toHaveText(POST_REQUISITION, { timeout: 10_000 });
     await app.processModal.confirm();
