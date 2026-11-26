@@ -529,7 +529,9 @@ export function useProcessExecution({
       }
       formData.append("processId", processId || "");
       formData.append(REPORT_ID_PARAM, reportId ?? NO_REPORT_ID);
-      formData.append("windowId", String(tab?.window || ""));
+      // ETP-6339: a process opened from the menu has no window. An empty windowId makes the server check the
+      // access of a window that does not exist and reject the request, so it is only sent when there is one.
+      if (tab?.window) formData.append("windowId", String(tab.window));
       if (payload._params) {
         for (const [paramName, file] of Object.entries(fileParams)) {
           payload._params[paramName] = `C:\\fakepath\\${(file as File).name}`;

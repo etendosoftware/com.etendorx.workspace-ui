@@ -86,6 +86,8 @@ export default defineConfig({
         "**/smoke/08_Process/PRCf*",
         // PRCg rejects the file before anything is sent
         "**/smoke/08_Process/PRCg*",
+        // PRCh opens processes from the menu: grid full screen, a file request and a multi-selector request; nothing is run
+        "**/smoke/08_Process/PRCh*",
         "**/smoke/09_Form/**",
         "**/smoke/10_Grid/**",
         "**/smoke/11_Navigation/**",

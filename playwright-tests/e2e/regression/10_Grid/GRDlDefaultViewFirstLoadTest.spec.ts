@@ -15,6 +15,12 @@ const SORT_BY = "_sortBy";
 const DESCENDING_SORT = /^-/;
 /** Param only the requests of the tree view carry. */
 const TREE_PARAM = "referencedTableId";
+/**
+ * Param of the requests sent once a record of Unit of Measure is selected: the grid sends the context of its own
+ * selected record. The one record the view leaves is selected on its own, so a request with it comes after the first
+ * load and is not part of it.
+ */
+const OWN_RECORD_CONTEXT = "@UOM.id@";
 /** Default views of the window, requested once when it opens. */
 const WINDOW_DEFAULT_VIEWS = /\/api\/meta\/saved-views\?window=/;
 
@@ -90,9 +96,12 @@ test.describe("Grid - default view on the first load @regression @grid", () => {
 
     await expect(app.grid.rowWithCell(KILOGRAM)).toBeVisible();
     await expect(app.grid.rows()).toHaveCount(1);
-    expect(fetches, "the grid loaded more than once").toHaveLength(1);
-    expect(sentFilter(fetches[0], KILOGRAM), "the first load did not carry the filter of the view").toBe(true);
-    expect(fetches[0][SORT_BY]).toMatch(DESCENDING_SORT);
+    // The first load, made before the only record of the view is selected: counting every request would depend on
+    // how soon this check runs, since the grid sends one more with that record's context a moment later
+    const firstLoads = fetches.filter((params) => !(OWN_RECORD_CONTEXT in params));
+    expect(firstLoads, "the grid loaded more than once").toHaveLength(1);
+    expect(sentFilter(firstLoads[0], KILOGRAM), "the first load did not carry the filter of the view").toBe(true);
+    expect(firstLoads[0][SORT_BY]).toMatch(DESCENDING_SORT);
     await expect(app.grid.filterInput(NAME)).toHaveValue(KILOGRAM);
   });
 

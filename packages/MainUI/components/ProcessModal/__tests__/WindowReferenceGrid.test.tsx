@@ -158,6 +158,38 @@ describe("WindowReferenceGrid Utilities", () => {
       applyRecordValues(parameters, recordValues, validColumnNames, options);
       expect(options.COL1).toBe("VAL1");
     });
+
+    // ETP-6333: a grid column with the same name as a multi-selector parameter must not change its format
+    describe("multi-selector parameter with a grid column of the same name", () => {
+      const MULTI_SELECTOR = "87E6CFF8F71548AFA33F181C317970B5";
+      const parameters = { p1: { name: "my_status", dBColumnName: "my_status", reference: MULTI_SELECTOR } };
+      const validColumnNames = new Set(["my_status"]);
+
+      it("sends the chosen values as a list, as Classic does", () => {
+        const options: any = {};
+        applyRecordValues(parameters, { my_status: "id1,id2" }, validColumnNames, options);
+        expect(options.my_status).toEqual(["id1", "id2"]);
+      });
+
+      it("keeps the list when the parameter was already merged as a list", () => {
+        const options: any = { my_status: ["id1", "id2"] };
+        applyRecordValues(parameters, { my_status: "id1,id2" }, validColumnNames, options);
+        expect(options.my_status).toEqual(["id1", "id2"]);
+      });
+
+      it("sends nothing when the selection has no ids", () => {
+        const options: any = {};
+        applyRecordValues(parameters, { my_status: ",," }, validColumnNames, options);
+        expect(options).toEqual({});
+      });
+
+      it("keeps sending the other parameter types as they are", () => {
+        const options: any = {};
+        const plain = { p2: { name: "amount", dBColumnName: "amount", reference: "22" } };
+        applyRecordValues(plain, { amount: "1,5" }, new Set(["amount"]), options);
+        expect(options.amount).toBe("1,5");
+      });
+    });
   });
 
   describe("evaluateFieldReadOnlyLogic", () => {
