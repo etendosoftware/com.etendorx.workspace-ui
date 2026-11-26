@@ -89,7 +89,7 @@ const ImageThumbnail = ({ imageUrl, failed, alt, missingLabel, fieldId }: ImageT
         aria-label={missingLabel}
         className="flex items-center justify-center"
         data-testid={`ImageSelector__missing__${fieldId}`}>
-        <ImagePlaceholderIcon />
+        <ImagePlaceholderIcon data-testid="ImagePlaceholderIcon__d6c74a" />
       </span>
     );
   }
@@ -389,7 +389,11 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
       disabled={isReadOnly || isUploading}
       className={`flex flex-col items-center justify-center gap-2 w-full h-full min-h-[150px] border border-dashed rounded-md transition-colors ${buttonDynamicClasses}`}
       data-testid={`ImageSelector__empty__${field.id}`}>
-      {isUploading ? <Spinner size={24} data-testid={`Spinner__${field.id}`} /> : <ImagePlaceholderIcon />}
+      {isUploading ? (
+        <Spinner size={24} data-testid={`Spinner__${field.id}`} />
+      ) : (
+        <ImagePlaceholderIcon data-testid={"ImagePlaceholderIcon__" + field.id} />
+      )}
       {isUploading && <span className="text-sm text-(--ui-text-muted)">{t("image.upload.uploading")}</span>}
       {!isUploading && !isReadOnly && (
         <span className="text-sm text-(--ui-text-muted)">{t("image.selector.clickToUpload")}</span>
@@ -422,6 +426,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
           alt={field.name || t("image.selector.altText")}
           missingLabel={t("image.selector.noImage")}
           fieldId={field.id}
+          data-testid={"ImageThumbnail__" + field.id}
         />
       </button>
 
