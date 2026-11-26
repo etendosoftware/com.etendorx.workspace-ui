@@ -87,6 +87,9 @@ docs/
 │   │   └── README.md                # printConfig, enable rules, classic PrinterReports delegation
 │   ├── ui-visual-consistency/        # Feature: Shared styles, contrast and alignment rules (ETP-6287)
 │   │   └── README.md                # Theme tokens, ellipsis, numeric alignment, label column, toolbar icons
+│   ├── performance-benchmark/        # Feature: Performance benchmark and perf:compare (branch against its base)
+│   │   ├── 2026-10-08-perf-compare-design.md # Local comparison workflow, statistics, pre-push warning
+│   │   └── ci-check.md              # Automatic "Performance" check of PRs in the Playwright pipeline
 │   └── table-state-persistence/      # Feature: Table state persistence
 │       └── README.md                # Multi-window table state management
 ├── process/                          # Process execution internals
