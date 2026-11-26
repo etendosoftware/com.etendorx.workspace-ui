@@ -177,6 +177,18 @@ describe("searchUtils", () => {
       expect(getAllItemTitles(index)).toContain("sales order");
     });
 
+    it("never suggests the menu path, which the search does not match", () => {
+      const titles = getAllItemTitles(createSearchIndex(menu));
+      expect(titles.some((title) => title.includes(">"))).toBe(false);
+      expect(search(menu, "sales management > transactions > sales order").filteredItems).toHaveLength(0);
+    });
+
+    it("only suggests text that finds at least one entry", () => {
+      for (const suggestion of getAllItemTitles(createSearchIndex(menu))) {
+        expect(search(menu, suggestion).filteredItems.length).toBeGreaterThan(0);
+      }
+    });
+
     it("shows nothing when only folder names match", () => {
       const { filteredItems, searchExpandedItems } = search(menu, "transactions");
       expect(filteredItems).toHaveLength(0);

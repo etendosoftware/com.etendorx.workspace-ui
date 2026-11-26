@@ -26,16 +26,19 @@ const addToPhraseIndex = (index: SearchIndex, phrase: string, id: string) => {
   index.byPhrase.get(phrase)?.add(id);
 };
 
-/** Indexes an entry by its whole name, each word of the name and its full menu path. */
-const indexPhrases = (index: SearchIndex, item: Menu, fullPath: string) => {
+/**
+ * Indexes an entry by its whole name and each word of the name. The phrases are also the
+ * autocomplete suggestions, and a result must contain the term in its name, so only text of
+ * the name is indexed: accepting a suggestion always finds at least that entry. The menu path
+ * is not indexed — as in Classic, the search never matches by folder.
+ */
+const indexPhrases = (index: SearchIndex, item: Menu) => {
   const lowerName = item.name.toLowerCase();
   addToPhraseIndex(index, lowerName, item.id);
 
   for (const word of lowerName.split(/\s+/)) {
     addToPhraseIndex(index, word, item.id);
   }
-
-  addToPhraseIndex(index, fullPath.toLowerCase(), item.id);
 };
 
 const traverse = (index: SearchIndex, items: Menu[], path: string[] = [], fullPath = "") => {
@@ -49,7 +52,7 @@ const traverse = (index: SearchIndex, items: Menu[], path: string[] = [], fullPa
     // As in Classic, only entries that open something are search results: a folder is kept in
     // `byId`, to be shown as the path of its matches, but never indexed by its name.
     if (isOpenableMenuItem(item)) {
-      indexPhrases(index, item, newFullPath);
+      indexPhrases(index, item);
     }
 
     if (Array.isArray(item.children)) {
