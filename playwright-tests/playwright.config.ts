@@ -29,8 +29,17 @@ const NAVIGATION_TIMEOUT_MS = 60_000;
  */
 const FAILURE_EVIDENCE = IS_CI ? "on-first-retry" : "retain-on-failure";
 
-/** Last project of the smoke chain: the regression and mocked projects run after it. */
-const LAST_SMOKE_PROJECT = "suite-04-financial";
+/**
+ * Specs that take much longer than the rest of their group, each in a project of its own that starts with the
+ * group: in one project the files start in alphabetical order, so they used to start last and run alone at the
+ * end (PROe ~2 min, FINe ~4 min in CI, ETP-6295). A phase queues the files of its projects in the order the
+ * projects are listed here, so these projects go before the rest of their group.
+ */
+const LANDED_COST_SPEC = "**/03_Procurement/PROeOrderToLandedCostTest*";
+const MATCH_STATEMENT_SPEC = "**/05_Financial/FINeMatchStatementTest*";
+const PROCUREMENT_PROJECTS = ["suite-03-procurement-landed-cost", "suite-03-procurement"];
+/** Last projects of the smoke chain: the regression and mocked projects run after them. */
+const LAST_SMOKE_PROJECTS = ["suite-04-financial-match-statement", "suite-04-financial"];
 
 export default defineConfig({
   testDir: "./e2e",
@@ -128,21 +137,40 @@ export default defineConfig({
     },
 
     // Group 4 — Procurement (starts only after Sales finishes). Each spec filters by its own
-    // document numbers; PROe runs the client-wide costing process, harmless to the others.
+    // document numbers; PROe runs the client-wide costing process, harmless to the others. PROe, the longest,
+    // has a project of its own listed first so it starts with the group.
     {
-      name: "suite-03-procurement",
+      name: PROCUREMENT_PROJECTS[0],
+      testMatch: [LANDED_COST_SPEC],
+      dependencies: ["suite-02-sales"],
+      timeout: 360_000,
+      use: DESKTOP_CHROME,
+    },
+    {
+      name: PROCUREMENT_PROJECTS[1],
       testMatch: ["**/03_Procurement/**"],
+      // Read-only, it already runs in suite-01-base
+      testIgnore: ["**/PurchaseOrderDisplayLogicTest*", LANDED_COST_SPEC],
       dependencies: ["suite-02-sales"],
       timeout: 360_000,
       workers: 3,
       use: DESKTOP_CHROME,
     },
 
-    // Group 5 — Financial (runs last). Each spec selects only its own invoices and payments.
+    // Group 5 — Financial (runs last). Each spec selects only its own invoices and payments. FINe, the
+    // longest, has a project of its own listed first so it starts with the group.
     {
-      name: LAST_SMOKE_PROJECT,
+      name: LAST_SMOKE_PROJECTS[0],
+      testMatch: [MATCH_STATEMENT_SPEC],
+      dependencies: PROCUREMENT_PROJECTS,
+      timeout: 360_000,
+      use: DESKTOP_CHROME,
+    },
+    {
+      name: LAST_SMOKE_PROJECTS[1],
       testMatch: ["**/05_Financial/**"],
-      dependencies: ["suite-03-procurement"],
+      testIgnore: [MATCH_STATEMENT_SPEC],
+      dependencies: PROCUREMENT_PROJECTS,
       timeout: 360_000,
       workers: 3,
       use: DESKTOP_CHROME,
@@ -154,7 +182,7 @@ export default defineConfig({
     {
       name: "suite-05-regression",
       testMatch: ["**/regression/**/*.spec.ts"],
-      dependencies: [LAST_SMOKE_PROJECT],
+      dependencies: LAST_SMOKE_PROJECTS,
       timeout: 360_000,
       workers: 3,
       use: DESKTOP_CHROME,
@@ -166,7 +194,7 @@ export default defineConfig({
     {
       name: "mocked",
       testMatch: ["**/mocked/**/*.spec.ts"],
-      dependencies: [LAST_SMOKE_PROJECT],
+      dependencies: LAST_SMOKE_PROJECTS,
       fullyParallel: true,
       use: DESKTOP_CHROME,
     },
