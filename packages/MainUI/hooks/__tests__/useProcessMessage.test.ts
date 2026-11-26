@@ -1,5 +1,11 @@
 import { renderHook, act } from "@testing-library/react";
 import { PROCESS_MESSAGE_FETCH_ATTEMPTS, useProcessMessage } from "../useProcessMessage";
+import { expectSessionAwareFetchFor } from "@/utils/tests/sessionAwareFetchMock";
+
+jest.mock(
+  "@/utils/session/sessionAwareFetch",
+  () => require("@/utils/tests/sessionAwareFetchMock").sessionAwareFetchModule
+);
 
 // Mock dependencies
 jest.mock("@/hooks/useTranslation", () => ({
@@ -59,6 +65,7 @@ describe("useProcessMessage", () => {
       type: "success",
       title: "Success Title",
     });
+    expectSessionAwareFetchFor("GetTabMessageActionHandler", true);
   });
 
   it("fetchMetadataMessage should return processed data on success", async () => {

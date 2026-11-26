@@ -72,6 +72,7 @@ import { ToastContent } from "@/components/ToastContent";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { useAutoApplyDefaultView } from "@/hooks/useAutoApplyDefaultView";
 import { useApplyViewState } from "@/hooks/useApplyViewState";
+import { sessionAwareFetch } from "@/utils/session/sessionAwareFetch";
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({
   windowId,
@@ -393,9 +394,11 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
   const handleOpenEmailModal = useCallback(async () => {
     if (!selectedRecord?.id || !tab?.id) return;
     try {
-      const response = await fetch(`/api/erp/meta/email/config?recordId=${String(selectedRecord.id)}&tabId=${tab.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await sessionAwareFetch(
+        `/api/erp/meta/email/config?recordId=${String(selectedRecord.id)}&tabId=${tab.id}`,
+        // A failure is shown in its own toast.
+        { headers: { Authorization: `Bearer ${token}` }, handlesOwnError: true }
+      );
       const configResult = await response.json();
       if (!response.ok || configResult.success === false) {
         toast.error(t("process.processError"), {
@@ -447,10 +450,12 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
         for (const file of files) {
           formData.append("files", file);
         }
-        const response = await fetch("/api/erp/meta/email/send", {
+        const response = await sessionAwareFetch("/api/erp/meta/email/send", {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
           body: formData,
+          // A failure is shown in its own toast and the modal stays open.
+          handlesOwnError: true,
         });
         const result = await response.json();
         if (!response.ok || result.success === false) {
@@ -479,7 +484,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
   const handleFetchEmailAttachments = useCallback(async () => {
     if (!selectedRecord?.id || !tab?.id) return [];
     try {
-      const response = await fetch(
+      const response = await sessionAwareFetch(
         `/api/erp/meta/email/attachments?recordId=${String(selectedRecord.id)}&tabId=${tab.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );

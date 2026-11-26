@@ -46,7 +46,7 @@ describe("api/processMonitor", () => {
 
     const [path, options] = request.mock.calls[0];
     expect(path.startsWith(`${PROCESS_MONITOR_PATH}?`)).toBe(true);
-    expect(options).toEqual({ method: "GET", headers: { Accept: "application/json" } });
+    expect(options).toEqual({ method: "GET", headers: { Accept: "application/json" }, handlesOwnError: true });
     expect(path).toContain("ignoreForSessionTimeout=1");
     expect(path).not.toContain("since=");
   });

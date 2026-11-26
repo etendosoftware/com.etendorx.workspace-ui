@@ -33,6 +33,7 @@ import { useLanguage } from "@/contexts/language";
 import type { Language } from "@/contexts/types";
 import type { TranslationKeys } from "@workspaceui/componentlibrary/src/locales/types";
 import { resolveCatalogLabel } from "@/utils/catalogLabel";
+import { sortByName } from "../profileOrdering";
 
 type PasswordField = "current" | "new" | "confirm";
 
@@ -151,7 +152,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
         }
       }
 
-      return Array.from(uniqueWarehousesMap.values());
+      return sortByName(Array.from(uniqueWarehousesMap.values()));
     }
     return [];
   }, [roles, selectedRole, selectedOrg, isSystem]);

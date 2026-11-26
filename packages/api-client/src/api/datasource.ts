@@ -29,7 +29,8 @@ export class Datasource {
   private readonly RESPONSE_CACHE_TTL_MS = 30_000;
 
   private constructor(url: string) {
-    this.client = new Client(url);
+    // Grid and selector data: the grid shows its own error when a fetch fails.
+    this.client = new Client(url, { handlesOwnError: true });
     this.pendingRequests = new Map();
     this.responseCache = new Map();
   }

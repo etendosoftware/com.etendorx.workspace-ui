@@ -19,6 +19,16 @@ import { Box } from "@mui/material";
 import TabIcon from "@mui/icons-material/KeyboardTab";
 import { useStyle } from "../TextInputAutocomplete.styles";
 
+/**
+ * Markers of the parts of the suggestion, so a container can restyle them with its own
+ * tokens (the sidebar search does). The inline styles below stay the default everywhere else.
+ */
+export const SUGGESTION_ATTRIBUTES = {
+  BOX: "data-autocomplete-ghost",
+  TEXT: "data-autocomplete-suggestion",
+  TAB_HINT: "data-autocomplete-tab-hint",
+} as const;
+
 export interface SuggestionBoxProps {
   suggestion: string;
   value: string;
@@ -27,10 +37,12 @@ export interface SuggestionBoxProps {
 const SuggestionBox = ({ suggestion, value }: SuggestionBoxProps) => {
   const { sx, styles } = useStyle();
   return (
-    <Box sx={sx.suggestionBox}>
+    <Box sx={sx.suggestionBox} {...{ [SUGGESTION_ATTRIBUTES.BOX]: "" }}>
       <span style={styles.spanOpacity}>{value}</span>
-      <span style={styles.suggestionText}>{suggestion.slice(value.length)}</span>
-      <Box sx={sx.tabBox}>
+      <span style={styles.suggestionText} {...{ [SUGGESTION_ATTRIBUTES.TEXT]: "" }}>
+        {suggestion.slice(value.length)}
+      </span>
+      <Box sx={sx.tabBox} {...{ [SUGGESTION_ATTRIBUTES.TAB_HINT]: "" }}>
         <TabIcon sx={sx.tabIcon} />
         <p style={styles.tabText}>Tab</p>
       </Box>

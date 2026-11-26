@@ -22,6 +22,8 @@
  * that create them bound to a given token and processId, avoiding duplication.
  */
 
+import { sessionAwareFetch } from "@/utils/session/sessionAwareFetch";
+
 export type CallActionFn = (actionHandler: string, params: Record<string, unknown>) => Promise<Record<string, unknown>>;
 
 export type FetchDatasourceFn = (entity: string, params: Record<string, unknown>) => Promise<Record<string, unknown>>;
@@ -33,7 +35,17 @@ export type FetchDatasourceFn = (entity: string, params: Record<string, unknown>
  * flat in the request body — required for handlers like ValidateActionHandler that
  * read params at the root level instead of from `_params`.
  */
-export function createCallAction(token: string, defaultProcessId: string): CallActionFn {
+/** Options of the action calls a warehouse process makes. */
+export interface CallActionOptions {
+  /** The process shows its own error when a call fails, so no generic notice is needed. */
+  handlesOwnError?: boolean;
+}
+
+export function createCallAction(
+  token: string,
+  defaultProcessId: string,
+  { handlesOwnError = false }: CallActionOptions = {}
+): CallActionFn {
   return async (actionHandler, params) => {
     const { processId: pidOverride, _entityName, _topLevel, ...innerParams } = params;
     const pid = (pidOverride as string) || defaultProcessId;
@@ -50,11 +62,15 @@ export function createCallAction(token: string, defaultProcessId: string): CallA
           ...(_entityName ? { _entityName } : {}),
         });
 
-    const res = await fetch(`/api/erp/org.openbravo.client.kernel?processId=${pid}&_action=${actionHandler}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body,
-    });
+    const res = await sessionAwareFetch(
+      `/api/erp/org.openbravo.client.kernel?processId=${pid}&_action=${actionHandler}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body,
+        handlesOwnError,
+      }
+    );
     if (!res.ok) throw new Error(`callAction failed: ${res.status}`);
     return res.json();
   };
@@ -66,7 +82,7 @@ export function createCallAction(token: string, defaultProcessId: string): CallA
  */
 export function createFetchDatasource(token: string): FetchDatasourceFn {
   return async (entity, params) => {
-    const res = await fetch("/api/datasource", {
+    const res = await sessionAwareFetch("/api/datasource", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ entity, params }),

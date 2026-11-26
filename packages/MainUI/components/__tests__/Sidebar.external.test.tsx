@@ -20,7 +20,7 @@
 
 import { act, render } from "@testing-library/react";
 import type { Menu } from "@workspaceui/api-client/src/api/types";
-import Sidebar from "../Sidebar";
+import Sidebar, { MENU_SEARCH_EMPTY_MESSAGE } from "../Sidebar";
 import { useWindowStore } from "@/stores/windowStore";
 import { notifyReportPopupBlocked, tryOpenReportPopup } from "@/utils/reportPopup";
 import { preloadWindowViewSettings } from "@/utils/savedViews/defaultViews";
@@ -28,11 +28,23 @@ import { preloadWindowViewSettings } from "@/utils/savedViews/defaultViews";
 const mockOpenExternalMenuEntry = jest.fn();
 let capturedOnClick: (item: Menu) => void = () => {};
 let capturedOnItemHover: (item: Menu) => void = () => {};
+let capturedNoResultsLabel: string | undefined;
+/** Backend message catalog served to `getLabel`: unknown codes come back as themselves. */
+let mockLabels: Record<string, string> = {};
 
 jest.mock("@workspaceui/componentlibrary/src/components/Drawer/index", () => ({
-  Drawer: ({ onClick, onItemHover }: { onClick: (item: Menu) => void; onItemHover: (item: Menu) => void }) => {
+  Drawer: ({
+    onClick,
+    onItemHover,
+    noResultsLabel,
+  }: {
+    onClick: (item: Menu) => void;
+    onItemHover: (item: Menu) => void;
+    noResultsLabel?: string;
+  }) => {
     capturedOnClick = onClick;
     capturedOnItemHover = onItemHover;
+    capturedNoResultsLabel = noResultsLabel;
     return null;
   },
 }));
@@ -53,7 +65,13 @@ jest.mock("../../hooks/useMenuTranslation", () => ({ useMenuTranslation: () => (
 jest.mock("../../hooks/useExpandedMenuItems", () => ({
   useExpandedMenuItems: () => ({ expandedItems: new Set(), setExpandedItems: jest.fn() }),
 }));
-jest.mock("@/contexts/language", () => ({ useLanguage: () => ({ language: "en_US", prevLanguage: "en_US" }) }));
+jest.mock("@/contexts/language", () => ({
+  useLanguage: () => ({
+    language: "en_US",
+    prevLanguage: "en_US",
+    getLabel: (code: string) => mockLabels[code] ?? code,
+  }),
+}));
 jest.mock("../../contexts/RuntimeConfigContext", () => ({ useRuntimeConfig: () => ({ config: {} }) }));
 jest.mock("@/stores/metadataStore", () => ({
   useMetadataZustandStore: (selector: (state: unknown) => unknown) =>
@@ -77,6 +95,26 @@ const clickMenuItem = (item: Menu) => {
   render(<Sidebar />);
   act(() => capturedOnClick(item));
 };
+
+describe("Sidebar empty search message", () => {
+  beforeEach(() => {
+    mockLabels = {};
+  });
+
+  it("hands the Drawer the Quick Launch message of the backend catalog", () => {
+    mockLabels = { [MENU_SEARCH_EMPTY_MESSAGE]: "No items to show." };
+
+    render(<Sidebar />);
+
+    expect(capturedNoResultsLabel).toBe("No items to show.");
+  });
+
+  it("falls back to the local translation when the catalog lacks the message", () => {
+    render(<Sidebar />);
+
+    expect(capturedNoResultsLabel).toBe("drawer.noResults");
+  });
+});
 
 describe("Sidebar menu click dispatch", () => {
   beforeEach(() => {

@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useUserStore } from "@/stores/userStore";
 import { useTranslation } from "./useTranslation";
+import { sessionAwareFetch } from "@/utils/session/sessionAwareFetch";
 
 interface UploadImageParams {
   file: File;
@@ -77,7 +78,9 @@ export const useImageUpload = (): UseImageUploadReturn => {
         formData.append("imageHeightValue", String(params.imageHeight ?? 0));
         formData.append("inpSelectorId", "isc_OBImageSelector_0");
 
-        const uploadResponse = await fetch("/api/erp/utility/ImageInfoBLOB", {
+        // A failure is shown in the image selector's own toast.
+        const uploadResponse = await sessionAwareFetch("/api/erp/utility/ImageInfoBLOB", {
+          handlesOwnError: true,
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -119,7 +122,9 @@ export const useImageUpload = (): UseImageUploadReturn => {
       formData.append("imageId", imageId);
 
       try {
-        await fetch("/api/erp/utility/ImageInfoBLOB", {
+        // Silent cleanup of a rejected upload: the user already got the reason.
+        await sessionAwareFetch("/api/erp/utility/ImageInfoBLOB", {
+          handlesOwnError: true,
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,

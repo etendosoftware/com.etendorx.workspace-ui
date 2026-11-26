@@ -4,6 +4,7 @@ import { getUserContext, extractBearerToken } from "@/lib/auth";
 import { shouldCacheDatasource } from "@/app/api/_utils/datasourceCache";
 import { shouldPassthroughJson, getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
 import { executeWithSessionAndCsrfRetry } from "@/app/api/_utils/sessionRetryWithCsrf";
+import { getFailureStatus } from "@/app/api/_utils/sessionFailureStatus";
 import { getDatasourceUrl } from "../_utils/endpoints";
 import type { DatasourceParams } from "@workspaceui/api-client/src/api/types";
 import type { SmartClientPayload } from "@/app/api/_utils/datasource";
@@ -301,7 +302,7 @@ async function handleDatasourcePost(request: NextRequest) {
       }
 
       console.error(`Datasource request failed (${errorContext}):`, result.error);
-      return NextResponse.json({ error: result.error || "Failed to fetch data" }, { status: 500 });
+      return NextResponse.json({ error: result.error || "Failed to fetch data" }, { status: getFailureStatus(result) });
     }
 
     return NextResponse.json(result.data);

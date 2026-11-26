@@ -702,6 +702,7 @@ const AttachmentSection = ({
         onCancel={() => setShowDownloadAllConfirmation(false)}
         saveLabel={t("common.download")}
         secondaryButtonLabel={t("common.cancel")}
+        showConfirmIcon={false}
         data-testid="ConfirmModal__attachments_download_all"
       />
     </Box>

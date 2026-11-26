@@ -38,10 +38,12 @@ docs/
 │   │   └── README.md                # Grammar, preference source, shortcut map per surface
 │   ├── login-logout/                 # Feature: Clean session start after logout, Classic default role, login protections
 │   │   └── README.md                # resetSessionState, token revocation, /meta/login-defaults, /meta/login-guard, AD_Session
+│   ├── session-error-handling/       # Feature: A server error is shown and keeps the session; only a 401 closes it
+│   │   └── README.md                # Session rule, handlesOwnError, server answers per service, Classic parity
 │   ├── match-statement/              # Feature: Match Statement process (Classic parity)
 │   │   └── README.md                # Classic analysis, Confirm dialog, request params, context
-│   ├── menu-search-keyboard-navigation/ # Feature: Keyboard navigation of the drawer menu
-│   │   └── README.md                # Arrow/Enter/Escape contract, navigability rule
+│   ├── menu-search-keyboard-navigation/ # Feature: Search and keyboard navigation of the drawer menu
+│   │   └── README.md                # Arrow/Enter/Escape contract, navigability rule, folders only as the path
 │   ├── application-forms/            # Feature: Classic Application Forms opened from the menu
 │   │   └── README.md                # Form address from the default mapping, entry points
 │   ├── role-access-restrictions/     # Feature: Role Tab Access, Field Access and Process Access
@@ -68,7 +70,7 @@ docs/
 │   │   └── README.md                # Request params, sort by every column, Classic differences
 │   ├── record-notes/                 # Feature: Notes section of the form (OBUIAPP_Note)
 │   │   └── README.md                # Inline list, own-note deletion, storage rules, Classic differences
-│   ├── profile-menu/                 # Feature: Profile menu feedback and current context
+│   ├── profile-menu/                 # Feature: Profile menu feedback, current context and role switch defaults
 │   │   └── README.md                # Password confirmation, context tooltip, accessible password panel
 │   ├── grid-default-sort/            # Feature: Grid default sort as classic (order-by clause or default field)
 │   ├── grid-paging-and-record-count/   # Feature: Grid paging without repeated records and the N+ record count

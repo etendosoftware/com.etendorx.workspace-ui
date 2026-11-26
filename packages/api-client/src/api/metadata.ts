@@ -31,10 +31,18 @@ import type * as Etendo from "./types";
 
 export type { Etendo };
 
+/** Settings of the clients whose screens show their own message when a request fails. */
+const OWN_ERROR_CLIENT_SETTINGS = { handlesOwnError: true };
+
 export class Metadata {
   public static client = new Client();
-  public static kernelClient = new Client();
-  public static datasourceServletClient = new Client();
+  /**
+   * Kernel calls (callouts, form and process initialization, process execution) and datasource
+   * servlet calls (form save, delete, inline save) come from screens that show their own message
+   * when they fail.
+   */
+  public static kernelClient = new Client(undefined, OWN_ERROR_CLIENT_SETTINGS);
+  public static datasourceServletClient = new Client(undefined, OWN_ERROR_CLIENT_SETTINGS);
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION, "etendo_metadata_");
   /**
    * Window and tab definitions, kept in memory only. They are 1–3 MB each, so persisting them
@@ -164,9 +172,13 @@ export class Metadata {
     if (existing) return existing as Promise<Etendo.WindowMetadata>;
 
     const promise = (async () => {
-      const { data, ok, status } = await Metadata.client.request(`meta/window/${windowId}`);
+      const { data, ok, status } = await Metadata.client.request(`meta/window/${windowId}`, {
+        // The window shows its own error (not found or access denied).
+        handlesOwnError: true,
+      });
       if (!ok) {
-        if (status === HTTP_CODES.UNAUTHORIZED) {
+        // The ERP answers 403 when the role has no access; older backends answered 401.
+        if (status === HTTP_CODES.FORBIDDEN || status === HTTP_CODES.UNAUTHORIZED) {
           throw new WindowAccessDeniedError(windowId, status);
         }
         throw new Error(WINDOW_NOT_FOUND_ERROR_MESSAGE);

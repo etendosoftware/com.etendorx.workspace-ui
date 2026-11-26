@@ -21,9 +21,26 @@ import { getDecodedJsonResponse } from "./utils";
 export interface ClientOptions extends Omit<RequestInit, "body"> {
   headers?: Record<string, string>;
   body?: RequestInit["body"] | Record<string, unknown>;
+  /**
+   * The calling screen shows its own message when the request fails, so the interceptor must not
+   * show a generic one as well. It is never sent to the server. Defaults to the client's own value
+   * (see {@link ClientSettings.handlesOwnError}).
+   */
+  handlesOwnError?: boolean;
 }
 
-export type Interceptor = (response: Response) => Promise<Response> | Response;
+/** Settings shared by every request of a client. */
+export interface ClientSettings {
+  /** The requests of this client are, unless told otherwise, made by screens that show their own error. */
+  handlesOwnError?: boolean;
+}
+
+/** What the interceptor knows about the request a response belongs to. */
+export interface InterceptorContext {
+  handlesOwnError: boolean;
+}
+
+export type Interceptor = (response: Response, context?: InterceptorContext) => Promise<Response> | Response;
 
 export class UnauthorizedError extends Error {
   public response: Response;
@@ -39,11 +56,13 @@ export class Client {
   private baseQueryParams: URLSearchParams;
   private baseUrl: string;
   private interceptor: Interceptor | null;
+  private handlesOwnErrorByDefault: boolean;
   private readonly JSON_CONTENT_TYPE = "application/json";
   private readonly FORM_CONTENT_TYPE = "application/x-www-form-urlencoded";
 
-  constructor(url?: string) {
+  constructor(url?: string, settings: ClientSettings = {}) {
     this.baseUrl = url || "";
+    this.handlesOwnErrorByDefault = settings.handlesOwnError ?? false;
     this.baseHeaders = {};
     this.interceptor = null;
     this.baseQueryParams = new URLSearchParams();
@@ -132,7 +151,8 @@ export class Client {
     return this;
   }
 
-  public async request(url: string, options: ClientOptions = {}) {
+  public async request(url: string, clientOptions: ClientOptions = {}) {
+    const { handlesOwnError = this.handlesOwnErrorByDefault, ...options } = clientOptions;
     try {
       if (options.method !== "GET") {
         this.setContentType(options);
@@ -168,7 +188,7 @@ export class Client {
       });
 
       if (typeof this.interceptor === "function") {
-        response = await this.interceptor(response);
+        response = await this.interceptor(response, { handlesOwnError });
       }
 
       // Handle different response types

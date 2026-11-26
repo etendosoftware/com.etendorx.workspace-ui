@@ -1,5 +1,11 @@
 import { render, waitFor } from "@testing-library/react";
 import SSOLinkCallback from "../page";
+import { expectSessionAwareFetchFor } from "@/utils/tests/sessionAwareFetchMock";
+
+jest.mock(
+  "@/utils/session/sessionAwareFetch",
+  () => require("@/utils/tests/sessionAwareFetchMock").sessionAwareFetchModule
+);
 
 const replace = jest.fn();
 jest.mock("next/navigation", () => ({ useRouter: () => ({ replace: (...a: unknown[]) => replace(...a) }) }));
@@ -62,6 +68,7 @@ describe("SSOLinkCallback", () => {
     expect(opts.headers.Authorization).toBe("Bearer jwt-abc");
     expect(JSON.parse(opts.body)).toEqual({ accessToken: "mw-token" });
     expect(replace).toHaveBeenCalledWith("/");
+    expectSessionAwareFetchFor("/api/erp/meta/sso/link", true);
   });
 
   it("posts an Auth0 code whose state matches the stored one", async () => {

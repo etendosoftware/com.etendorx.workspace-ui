@@ -353,7 +353,10 @@ export interface TrackRecentDocumentRequest {
 // ── API functions ─────────────────────────────────────────────────────────────
 
 export async function fetchWidgetClasses(): Promise<WidgetClassesResponse> {
-  const response = await Metadata.client.request(`${DASHBOARD_BASE}/widget/classes`, { method: "GET" });
+  const response = await Metadata.client.request(`${DASHBOARD_BASE}/widget/classes`, {
+    method: "GET",
+    handlesOwnError: true,
+  });
   if (!response.ok) {
     throw new Error(`Failed to fetch widget classes: ${response.status}`);
   }
@@ -361,7 +364,11 @@ export async function fetchWidgetClasses(): Promise<WidgetClassesResponse> {
 }
 
 export async function fetchDashboardLayout(): Promise<DashboardLayoutResponse> {
-  const response = await Metadata.client.request(`${DASHBOARD_BASE}/dashboard/layout`, { method: "GET" });
+  const response = await Metadata.client.request(`${DASHBOARD_BASE}/dashboard/layout`, {
+    method: "GET",
+    // The dashboard shows its own error, and the layout is also refreshed silently.
+    handlesOwnError: true,
+  });
   if (!response.ok) {
     throw new Error(`Failed to fetch dashboard layout: ${response.status}`);
   }
@@ -377,7 +384,8 @@ export async function fetchWidgetData(
     : "";
   const response = await Metadata.client.request(
     `${DASHBOARD_BASE}/widget/${encodeURIComponent(instanceId)}/data${query}`,
-    { method: "GET" }
+    // Each widget shows its own error.
+    { method: "GET", handlesOwnError: true }
   );
   if (!response.ok) {
     throw new Error(`Failed to fetch widget data for ${instanceId}: ${response.status}`);

@@ -36,6 +36,11 @@ export class Toast {
     await expect(this.page.locator(ERROR_TOASTS).filter({ hasText: text }).first()).toBeVisible({ timeout });
   }
 
+  /** Asserts no error toast with the given text is open (the screen showed the failure itself). */
+  async expectNoError(text: string | RegExp): Promise<void> {
+    await expect(this.page.locator(ERROR_TOASTS).filter({ hasText: text })).toHaveCount(0);
+  }
+
   /** Waits for a success toast with the given text and returns its whole text. */
   async successText(text: string | RegExp, timeout = SUCCESS_TIMEOUT): Promise<string> {
     const toast = this.page.locator(SUCCESS_TOASTS).filter({ hasText: text }).first();

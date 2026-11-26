@@ -17,12 +17,28 @@
 
 import type { Menu } from "@workspaceui/api-client/src/api/types";
 import type { IndexedMenu, SearchIndex } from "../components/Drawer/types";
+import { isOpenableMenuItem } from "./drawerUtils";
 
 const addToPhraseIndex = (index: SearchIndex, phrase: string, id: string) => {
   if (!index.byPhrase.has(phrase)) {
     index.byPhrase.set(phrase, new Set());
   }
   index.byPhrase.get(phrase)?.add(id);
+};
+
+/**
+ * Indexes an entry by its whole name and each word of the name. The phrases are also the
+ * autocomplete suggestions, and a result must contain the term in its name, so only text of
+ * the name is indexed: accepting a suggestion always finds at least that entry. The menu path
+ * is not indexed — as in Classic, the search never matches by folder.
+ */
+const indexPhrases = (index: SearchIndex, item: Menu) => {
+  const lowerName = item.name.toLowerCase();
+  addToPhraseIndex(index, lowerName, item.id);
+
+  for (const word of lowerName.split(/\s+/)) {
+    addToPhraseIndex(index, word, item.id);
+  }
 };
 
 const traverse = (index: SearchIndex, items: Menu[], path: string[] = [], fullPath = "") => {
@@ -33,15 +49,11 @@ const traverse = (index: SearchIndex, items: Menu[], path: string[] = [], fullPa
     const indexedItem: IndexedMenu = { ...item, path, fullPath: newFullPath };
     index.byId.set(item.id, indexedItem);
 
-    const lowerName = item.name.toLowerCase();
-    addToPhraseIndex(index, lowerName, item.id);
-
-    const words = lowerName.split(/\s+/);
-    for (const word of words) {
-      addToPhraseIndex(index, word, item.id);
+    // As in Classic, only entries that open something are search results: a folder is kept in
+    // `byId`, to be shown as the path of its matches, but never indexed by its name.
+    if (isOpenableMenuItem(item)) {
+      indexPhrases(index, item);
     }
-
-    addToPhraseIndex(index, newFullPath.toLowerCase(), item.id);
 
     if (Array.isArray(item.children)) {
       traverse(index, item.children, [...path, item.id], newFullPath);

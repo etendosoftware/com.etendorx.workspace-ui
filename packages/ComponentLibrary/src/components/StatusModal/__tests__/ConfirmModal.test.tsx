@@ -108,6 +108,20 @@ describe("ConfirmModal", () => {
     expect(screen.getByTestId("mock-modal")).toHaveAttribute("data-autofocus-save", "true");
   });
 
+  it("shows the trash icon on the confirm button by default", () => {
+    mockModalProps.mockClear();
+    render(<ConfirmModal {...defaultProps} />);
+
+    expect(mockModalProps).toHaveBeenCalledWith(expect.objectContaining({ SaveIcon: expect.anything() }));
+  });
+
+  it("leaves the confirm button without icon when the confirmation deletes nothing", () => {
+    mockModalProps.mockClear();
+    render(<ConfirmModal {...defaultProps} showConfirmIcon={false} />);
+
+    expect(mockModalProps).toHaveBeenCalledWith(expect.objectContaining({ SaveIcon: undefined }));
+  });
+
   it("shows a warning badge on a flat surface instead of a tinted gradient", () => {
     mockModalProps.mockClear();
     render(<ConfirmModal {...defaultProps} />);

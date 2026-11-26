@@ -50,6 +50,8 @@ export interface DrawerProps {
   getTranslatedName?: (item: Menu) => string;
   searchContext: SearchContextType;
   VersionComponent?: React.FC<VersionProps>;
+  /** Shown instead of the menu when a search term matches no entry that opens something. */
+  noResultsLabel?: string;
 }
 
 export interface MenuTitleProps {

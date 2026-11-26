@@ -37,6 +37,11 @@ export interface ShownCount {
 export class Grid {
   constructor(private readonly page: Page) {}
 
+  /** Asserts the grid shows its own load error, with the button that retries the fetch. */
+  async expectLoadError(): Promise<void> {
+    await expect(this.page.getByRole("button", { name: "Retry" }).first()).toBeVisible();
+  }
+
   /**
    * Column filter input, by column name (placeholder `Filter <column>...`). Pass `scope` (e.g. a
    * child tab, `Tab__<AD_Tab_ID>`) when another grid on the page has a column with the same name.

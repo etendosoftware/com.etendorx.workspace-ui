@@ -127,7 +127,12 @@ const readErrorMessage = (data: unknown, status: number): string => {
 };
 
 const get = async <T>(path: string): Promise<T> => {
-  const response = await Metadata.client.request(path, { method: "GET", headers: { Accept: "application/json" } });
+  const response = await Metadata.client.request(path, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    // The monitor polls in the background and its views show their own error.
+    handlesOwnError: true,
+  });
   if (!response.ok) {
     throw new ProcessMonitorError(response.status, readErrorMessage(response.data, response.status));
   }

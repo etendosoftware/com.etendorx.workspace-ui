@@ -3,9 +3,29 @@
  * These functions handle encoding detection, content type detection, and HTML rewriting
  */
 
-import { detectCharset, isBinaryContentType, rewriteHtmlResourceUrls, createHtmlResponse } from "../route.helpers";
+import {
+  detectCharset,
+  isBinaryContentType,
+  rewriteHtmlResourceUrls,
+  createHtmlResponse,
+  resolveErpErrorStatus,
+} from "../route.helpers";
 
 describe("ERP route helper functions", () => {
+  describe("resolveErpErrorStatus", () => {
+    it("answers 404 for a failed Copilot request, which reads as not installed", () => {
+      expect(resolveErpErrorStatus(true, 500)).toBe(404);
+    });
+
+    it("keeps the 401 of a Copilot request so the session is closed", () => {
+      expect(resolveErpErrorStatus(true, 401)).toBe(401);
+    });
+
+    it.each([401, 500, 403])("keeps the status %i of any other service", (status) => {
+      expect(resolveErpErrorStatus(false, status)).toBe(status);
+    });
+  });
+
   describe("detectCharset", () => {
     it("should return iso-8859-1 when contentType is null", () => {
       expect(detectCharset(null)).toBe("iso-8859-1");

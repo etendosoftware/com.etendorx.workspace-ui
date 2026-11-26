@@ -68,9 +68,9 @@ jest.mock("@workspaceui/componentlibrary/src/components/BasicModal", () => ({
 
 jest.mock("@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal", () => ({
   __esModule: true,
-  default: ({ open, onConfirm, onCancel }: any) =>
+  default: ({ open, onConfirm, onCancel, showConfirmIcon = true }: any) =>
     open ? (
-      <div data-testid="mock-confirm-modal">
+      <div data-testid="mock-confirm-modal" data-confirm-icon={String(showConfirmIcon)}>
         <button onClick={onConfirm} data-testid="confirm-button">
           Confirm
         </button>
@@ -145,6 +145,14 @@ describe("AttachmentSection", () => {
     expect(screen.getByText("Test description")).toBeInTheDocument();
   });
 
+  it("asks before downloading every attachment, without the trash icon of a deletion", async () => {
+    renderWithTheme(<AttachmentSection {...defaultProps} />);
+
+    fireEvent.click(await screen.findByTestId("Button__attachments_download_all_chip"));
+
+    expect(screen.getByTestId("mock-confirm-modal")).toHaveAttribute("data-confirm-icon", "false");
+  });
+
   it("shows delete confirmation and deletes attachment", async () => {
     (deleteAttachment as jest.Mock).mockResolvedValue({ success: true });
 
@@ -155,6 +163,8 @@ describe("AttachmentSection", () => {
     fireEvent.click(deleteButton);
 
     expect(screen.getByTestId("mock-confirm-modal")).toBeInTheDocument();
+    // Deleting keeps the trash icon on the confirm button
+    expect(screen.getByTestId("mock-confirm-modal")).toHaveAttribute("data-confirm-icon", "true");
 
     const confirmButton = screen.getByTestId("confirm-button");
     fireEvent.click(confirmButton);

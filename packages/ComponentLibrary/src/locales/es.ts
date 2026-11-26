@@ -204,6 +204,7 @@ const es = {
     },
     internalServerError: {
       title: "Algo salió mal",
+      description: "El servidor no pudo completar la solicitud. Tu sesión sigue abierta: inténtalo de nuevo.",
       retry: "Reintentar",
     },
     missingRecord: {
@@ -468,6 +469,7 @@ const es = {
     openExternalLink: "Abrir enlace",
     legacyWindowPopupBlocked: "El navegador bloqueó la ventana que esta entrada del menú intentó abrir.",
     openLegacyWindow: "Abrir ventana",
+    noResults: "No hay elementos para mostrar.",
   },
   login: {
     title: "Iniciar sesión",

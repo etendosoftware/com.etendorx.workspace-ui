@@ -203,6 +203,7 @@ const en = {
     },
     internalServerError: {
       title: "Something went wrong",
+      description: "The server could not complete the request. Your session is still open: try again.",
       retry: "Retry",
     },
     missingRecord: {
@@ -461,6 +462,7 @@ const en = {
     openExternalLink: "Open link",
     legacyWindowPopupBlocked: "Your browser blocked the window this menu entry tried to open.",
     openLegacyWindow: "Open window",
+    noResults: "No items to show.",
   },
   login: {
     title: "Log In",

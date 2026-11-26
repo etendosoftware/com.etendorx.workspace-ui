@@ -25,6 +25,7 @@
 
 import { logger } from "@/utils/logger";
 import { REPORT_OUTPUT_FORMATS, type ReportOutputFormat } from "./constants";
+import { sessionAwareFetch } from "@/utils/session/sessionAwareFetch";
 
 /** A fetched report file ready to be opened or downloaded. */
 export interface ReportBlob {
@@ -47,7 +48,10 @@ function parseFileName(disposition: string | null): string | undefined {
  * non-OK response so the caller can surface the failure.
  */
 export async function fetchReportBlob(url: string, token: string): Promise<ReportBlob> {
-  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const response = await sessionAwareFetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    handlesOwnError: true,
+  });
   if (!response.ok) {
     throw new Error(`Report request failed with status ${response.status}`);
   }
