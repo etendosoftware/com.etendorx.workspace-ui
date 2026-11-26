@@ -758,6 +758,28 @@ export function resolveContextValue(key: string, recordValues: Record<string, un
   return recordValues[key] ?? recordValues[`inp${key}`];
 }
 
+/**
+ * The value of a process parameter in the format its definition requires in a datasource request.
+ *
+ * Multi-record selectors store the selection internally as a single comma-separated string
+ * (`"id1,id2,id3"`). Classic Etendo's `OBMultiSelectorItem.getValue()` returns a JS array, which
+ * SmartClient serializes as repeated form-urlencoded keys (`accounting_status=id1&accounting_status=id2`),
+ * and that is what `OBPickAndExecuteDataSource` expects to drive its `IN (...)` filter. A CSV string
+ * would arrive as a single value that matches nothing, with no error. The format depends only on the
+ * parameter, never on the columns of the grid it filters.
+ *
+ * @param parameter The process parameter, as its definition describes it
+ * @param value     The value of the parameter in the form
+ * @returns The value to send, or `undefined` when a multi-selector has no ids to send
+ */
+export function toDatasourceParamValue(parameter: { reference?: string }, value: unknown): unknown {
+  if (parameter.reference === FIELD_REFERENCE_CODES.MULTI_SELECTOR.id && typeof value === "string") {
+    const ids = value.split(",").filter((id) => id.length > 0);
+    return ids.length > 0 ? ids : undefined;
+  }
+  return value;
+}
+
 /** Mapping of system parameter names to their datasource option names */
 const SYSTEM_KEY_MAP: Record<string, string> = {
   inpadOrgId: "ad_org_id",
@@ -804,23 +826,9 @@ export function applyMergedParam(
 
   if (matchingParameter && value !== "" && value !== null && value !== undefined) {
     const outKey = matchingParameter.dBColumnName || key;
-    // Multi-record selectors store the selection internally as a single
-    // comma-separated string (`"id1,id2,id3"`). Classic Etendo's
-    // `OBMultiSelectorItem.getValue()` returns a JS array, which SmartClient
-    // serializes as repeated form-urlencoded keys
-    // (`accounting_status=id1&accounting_status=id2&...`) — and that's what
-    // `OBPickAndExecuteDataSource` expects to drive its `IN (...)` filter.
-    // Hand the proxy an array so `createFormData` (route.ts:132) emits the
-    // same repeated-key shape; a CSV string would arrive as a single value
-    // and silently match nothing.
-    if (matchingParameter.reference === FIELD_REFERENCE_CODES.MULTI_SELECTOR.id && typeof value === "string") {
-      const ids = value.split(",").filter((id) => id.length > 0);
-      if (ids.length > 0) {
-        options[outKey] = ids;
-      }
-      return;
-    }
-    options[outKey] = value;
+    const outValue = toDatasourceParamValue(matchingParameter, value);
+    // A multi-selector with no id left sends nothing, as a plain empty value does
+    if (outValue !== undefined) options[outKey] = outValue;
   }
 }
 

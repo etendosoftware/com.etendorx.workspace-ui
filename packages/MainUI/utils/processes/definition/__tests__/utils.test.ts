@@ -3,6 +3,7 @@ import {
   normalizeContextKey,
   resolveContextValue,
   applyMergedParam,
+  toDatasourceParamValue,
   buildFilterCriteriaEntry,
   applyGridSelection,
   buildContextResponse,
@@ -992,5 +993,23 @@ describe("Process Definition Utils", () => {
       expect(addSelectedIDsToCriteria({ operator: "and" }, [])).toEqual({ operator: "and" });
       expect(addSelectedIDsToCriteria({ operator: "and" }, SELECTED, false)).toEqual({ operator: "and" });
     });
+  });
+});
+
+describe("toDatasourceParamValue (ETP-6333)", () => {
+  const MULTI_SELECTOR = "87E6CFF8F71548AFA33F181C317970B5";
+
+  it("turns the comma-separated selection of a multi-selector into a list", () => {
+    expect(toDatasourceParamValue({ reference: MULTI_SELECTOR }, "id1,id2,id3")).toEqual(["id1", "id2", "id3"]);
+  });
+
+  it("returns undefined when a multi-selector has no ids", () => {
+    expect(toDatasourceParamValue({ reference: MULTI_SELECTOR }, "")).toBeUndefined();
+    expect(toDatasourceParamValue({ reference: MULTI_SELECTOR }, ",")).toBeUndefined();
+  });
+
+  it("leaves the value of any other parameter type untouched", () => {
+    expect(toDatasourceParamValue({ reference: "22" }, "1,5")).toBe("1,5");
+    expect(toDatasourceParamValue({}, 7)).toBe(7);
   });
 });

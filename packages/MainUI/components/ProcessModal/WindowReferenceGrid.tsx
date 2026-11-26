@@ -53,6 +53,7 @@ import {
 
 import { useDatasource } from "@/hooks/useDatasource";
 import { useGridColumnFilters } from "@/hooks/table/useGridColumnFilters";
+import { getFullScreenWrapperStyle, useExitFullScreenOnEscape } from "./hooks/useGridFullScreen";
 import { useColumns } from "@/hooks/table/useColumns";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { tabAllowsMultipleSelection } from "@/utils/processes/definition/pickAndExecute";
@@ -85,6 +86,7 @@ import {
   convertDatasourceValue,
   resolveContextValue,
   applyMergedParam,
+  toDatasourceParamValue,
   buildFilterCriteriaEntry,
   normalizeContextKey,
   addSelectedIDsToCriteria,
@@ -1430,7 +1432,8 @@ export function applyRecordValues(
     const rawValue = extractActualValue(recordValues[param.name]);
     if (rawValue === undefined || rawValue === "" || rawValue === null || !param.dBColumnName) continue;
     if (validColumnNames.has(param.dBColumnName.toLowerCase())) {
-      options[param.dBColumnName] = rawValue;
+      const outValue = toDatasourceParamValue(param, rawValue);
+      if (outValue !== undefined) options[param.dBColumnName] = outValue;
     }
   }
 }
@@ -3841,6 +3844,11 @@ const WindowReferenceGrid = ({
 
   const table = useMaterialReactTable(tableOptions);
 
+  // Escape in full screen leaves the full screen first, without closing the process window (ETP-6312)
+  const isGridFullScreen = table.getState().isFullScreen;
+  const exitGridFullScreen = useCallback(() => table.setIsFullScreen(false), [table]);
+  useExitFullScreenOnEscape(isGridFullScreen, exitGridFullScreen);
+
   // Separate initial loading from filter/refresh loading.
   // The previous predicate `(... ) && !records` short-circuited as soon as
   // `localRecords` was initialized to `[]` (truthy in JS), so the empty
@@ -3885,6 +3893,7 @@ const WindowReferenceGrid = ({
         className={`flex flex-col w-full overflow-hidden transition duration-100 ${
           datasourceLoading ? "opacity-40 cursor-wait cursor-to-children" : "opacity-100"
         }`}
+        style={getFullScreenWrapperStyle(isGridFullScreen, TABLE_PAPER_HEIGHT)}
         ref={contentRef}>
         <MaterialReactTable table={table} data-testid="MaterialReactTable__ce8544" />
       </div>

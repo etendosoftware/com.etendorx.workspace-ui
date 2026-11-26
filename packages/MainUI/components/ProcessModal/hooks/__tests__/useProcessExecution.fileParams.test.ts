@@ -136,6 +136,26 @@ describe("useProcessExecution — executeJavaProcess with fileParams", () => {
     expect(fd.get("processId")).toBe("PROC-XYZ");
   });
 
+  it("sends no windowId for a process opened from the menu (ETP-6339)", async () => {
+    const file = makeTestFile();
+    const { result } = renderHook(() => useProcessExecution(makeParams({ tab: undefined, fileParams: { col: file } })));
+    await result.current.executeJavaProcess({});
+
+    const fd = lastFetch?.body as FormData;
+    expect(fd.has("windowId")).toBe(false);
+    expect(lastFetch?.url).not.toContain("windowId");
+  });
+
+  it("sends the windowId of the window a process was opened from (ETP-6339)", async () => {
+    const file = makeTestFile();
+    const tab = { window: "WIN-1" } as never;
+    const { result } = renderHook(() => useProcessExecution(makeParams({ tab, fileParams: { col: file } })));
+    await result.current.executeJavaProcess({});
+
+    const fd = lastFetch?.body as FormData;
+    expect(fd.get("windowId")).toBe("WIN-1");
+  });
+
   it("appends reportId as the string 'null' to FormData", async () => {
     const file = makeTestFile();
     const { result } = renderHook(() => useProcessExecution(makeParams({ fileParams: { col: file } })));
