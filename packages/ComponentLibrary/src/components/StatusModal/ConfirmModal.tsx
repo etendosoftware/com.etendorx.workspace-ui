@@ -18,7 +18,7 @@
 import { memo } from "react";
 import { Box, Typography } from "@mui/material";
 import { Modal } from "..";
-import SaveIcon from "../../assets/icons/trash.svg";
+import TrashIcon from "../../assets/icons/trash.svg";
 import { useStyle } from "../StatusModal/styles";
 import { statusConfig } from "./states";
 import StatusIconBadge from "./StatusIconBadge";
@@ -32,6 +32,7 @@ const ConfirmModal = memo(
     saveLabel = "Confirm",
     secondaryButtonLabel = "Cancel",
     hideSecondaryButton = false,
+    showConfirmIcon = true,
     open = true,
   }: ConfirmModalProps) => {
     const { sx } = useStyle();
@@ -42,7 +43,7 @@ const ConfirmModal = memo(
         showHeader={false}
         saveButtonLabel={saveLabel}
         secondaryButtonLabel={hideSecondaryButton ? undefined : secondaryButtonLabel}
-        SaveIcon={SaveIcon}
+        SaveIcon={showConfirmIcon ? TrashIcon : undefined}
         autoFocusSave
         onSave={onConfirm}
         onCancel={onCancel}>

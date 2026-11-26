@@ -515,6 +515,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
         <ConfirmModal
           open={true}
           confirmText={pendingConfirm.message}
+          showConfirmIcon={false}
           onConfirm={() => {
             setValue(field.hqlName, pendingConfirm.imageId, { shouldDirty: true });
             setCacheBuster(Date.now());
@@ -533,6 +534,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
           confirmText={pendingError.message}
           saveLabel={t("common.close")}
           hideSecondaryButton={true}
+          showConfirmIcon={false}
           onConfirm={() => setPendingError(null)}
           onCancel={() => setPendingError(null)}
           data-testid={"ConfirmModal__" + field.id}

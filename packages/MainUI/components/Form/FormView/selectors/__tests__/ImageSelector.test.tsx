@@ -26,16 +26,20 @@ jest.mock("@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal
     onConfirm,
     onCancel,
     hideSecondaryButton,
+    showConfirmIcon = true,
   }: {
     open: boolean;
     confirmText: string;
     onConfirm: () => void;
     onCancel: () => void;
     hideSecondaryButton?: boolean;
+    showConfirmIcon?: boolean;
   }) => {
     if (!open) return null;
     return (
-      <div data-testid={hideSecondaryButton ? "ErrorModal" : "ConfirmModal"}>
+      <div
+        data-testid={hideSecondaryButton ? "ErrorModal" : "ConfirmModal"}
+        data-confirm-icon={String(showConfirmIcon)}>
         <span data-testid={hideSecondaryButton ? "ErrorModal__message" : "ConfirmModal__message"}>{confirmText}</span>
         <button
           type="button"
@@ -326,6 +330,7 @@ describe("ImageSelector", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("ErrorModal")).toBeInTheDocument();
+      expect(screen.getByTestId("ErrorModal")).toHaveAttribute("data-confirm-icon", "false");
     });
     expect(deleteUploadedImageMock).toHaveBeenCalledWith("bad-img");
     expect(setValueMock).not.toHaveBeenCalled();
@@ -375,6 +380,8 @@ describe("ImageSelector", () => {
     await waitFor(() => {
       expect(screen.getByTestId("ConfirmModal")).toBeInTheDocument();
     });
+    // Accepting a resized image deletes nothing: no trash icon on its confirm button
+    expect(screen.getByTestId("ConfirmModal")).toHaveAttribute("data-confirm-icon", "false");
     expect(setValueMock).not.toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
   });
