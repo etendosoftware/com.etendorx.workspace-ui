@@ -99,10 +99,11 @@ export class ProcessModal {
   /**
    * Clicks a button of a legacy page that only appears in some cases (e.g. "Do not use Credit"
    * when the business partner has credit). Returns whether the button was shown within
-   * `timeout`. Follow it with {@link finishLegacy}: the page may also go on by itself.
+   * `timeout`. Stops waiting as soon as the legacy modal closes by itself: the process went on
+   * without asking, so the button cannot appear any more. Follow it with {@link finishLegacy}.
    */
   async clickLegacyButtonIfShown(text: RegExp, timeout: number): Promise<boolean> {
-    const button = await this.waitForLegacyButton(text, timeout);
+    const button = await this.waitForLegacyButton(text, timeout, () => this.legacyTitle.isHidden());
     if (!button) {
       return false;
     }
@@ -128,12 +129,22 @@ export class ProcessModal {
     await expect(this.legacyTitle).toBeHidden({ timeout });
   }
 
-  /** Polls every frame for a visible legacy button with `text`. */
-  private async waitForLegacyButton(text: RegExp, timeout: number): Promise<Locator | undefined> {
+  /**
+   * Polls every frame for a visible legacy button with `text`. `gone` ends the wait early, without
+   * a button, when it tells the button can no longer appear.
+   */
+  private async waitForLegacyButton(
+    text: RegExp,
+    timeout: number,
+    gone: () => Promise<boolean> = async () => false
+  ): Promise<Locator | undefined> {
     let button: Locator | undefined;
     try {
       await expect(async () => {
         button = await this.visibleLegacyButton(text);
+        if (!button && (await gone())) {
+          return;
+        }
         expect(button, `${text} is not shown`).toBeDefined();
       }).toPass({ intervals: POLL_INTERVALS, timeout });
     } catch {
