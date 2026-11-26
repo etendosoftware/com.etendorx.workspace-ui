@@ -34,6 +34,10 @@ async function openCountry(app: App, name: string): Promise<void> {
  * stays as it is and nothing is saved.
  */
 test.describe("Form - display logic with the not-equals aliases ^ and - @smoke @form", () => {
+  // Independent tests (each test overrides the tab metadata in its own page only): spread them over the workers instead of
+  // running them one after another in one worker, the tail of suite-01-base in CI (ETP-6295)
+  test.describe.configure({ mode: "parallel" });
+
   for (const operator of NOT_EQUALS_OPERATORS) {
     test(`@HasRegion@${operator}'N' shows the Region tab with regions and hides it without`, async ({ app }) => {
       await setRegionDisplayLogic(app, `@HasRegion@${operator}'N'`);

@@ -35,6 +35,10 @@ async function openOrderThenProduct(app: App, order: string, product: string): P
  * only opened, and the changes made to a form are discarded.
  */
 test.describe("Navigation - browser Back and Forward between windows and records @smoke @nav", () => {
+  // Independent tests (read-only: the sample orders are never saved): spread them over the workers instead of
+  // running them one after another in one worker, the tail of suite-01-base in CI (ETP-6295)
+  test.describe.configure({ mode: "parallel" });
+
   test("Back and Forward restore the window and the record of each step", async ({ app }) => {
     const order = SAMPLE_DOCUMENT.SALES_ORDER_DRAFT;
     const product = PRODUCT.RAW_MATERIAL_A.name;
