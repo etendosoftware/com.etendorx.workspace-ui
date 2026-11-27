@@ -212,11 +212,12 @@ const unlessUnsavedChangesDialog = (page, pending) =>
       }),
   ]);
 
-// The record count is in the status bar ("Showing N records") or, with the grid docked, in the title ("(N records)")
+// The record count is in the status bar ("Showing N records") or, with the grid docked, in the title ("(N records)").
+// With more records than a page the count has a plus ("(100+ records)"): it is still a loaded grid.
 const recordCount = (page, digits) =>
   page
-    .getByText(new RegExp(`Showing ${digits} records?`))
-    .or(page.getByTestId("TitleRecordCount__table").filter({ hasText: new RegExp(`\\(${digits} \\w+\\)`) }))
+    .getByText(new RegExp(`Showing ${digits}\\+? records?`))
+    .or(page.getByTestId("TitleRecordCount__table").filter({ hasText: new RegExp(`\\(${digits}\\+? \\w+\\)`) }))
     .filter({ visible: true })
     .first();
 
