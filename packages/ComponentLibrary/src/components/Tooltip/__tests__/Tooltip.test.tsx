@@ -283,6 +283,50 @@ describe("Tooltip multiline", () => {
       expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
       expect(button).toHaveFocus();
     });
+
+    it("keeps the Escape that hides the tooltip from reaching the rest of the page", () => {
+      const onPageEscape = jest.fn();
+      document.addEventListener("keydown", onPageEscape);
+      render(
+        <Tooltip title="Keyboard tip">
+          <button type="button">Open</button>
+        </Tooltip>
+      );
+      const button = screen.getByRole("button", { name: "Open" });
+      act(() => button.focus());
+      act(() => {
+        jest.advanceTimersByTime(SHOW_DELAY);
+      });
+
+      fireEvent.keyDown(button, { key: "Escape" });
+      expect(onPageEscape).not.toHaveBeenCalled();
+
+      // with no tooltip showing, Escape is left to the page
+      fireEvent.keyDown(button, { key: "Escape" });
+      expect(onPageEscape).toHaveBeenCalledTimes(1);
+      document.removeEventListener("keydown", onPageEscape);
+    });
+
+    it("leaves Escape to the page when the tooltip shows because of the pointer, not the focus", () => {
+      const onPageEscape = jest.fn();
+      document.addEventListener("keydown", onPageEscape);
+      render(
+        <Tooltip title="Hover tip">
+          <button type="button">Open</button>
+        </Tooltip>
+      );
+      const button = screen.getByRole("button", { name: "Open" });
+      fireEvent.mouseEnter(button.parentElement as HTMLElement);
+      act(() => {
+        jest.advanceTimersByTime(SHOW_DELAY);
+      });
+      expect(screen.getByRole("tooltip")).toBeInTheDocument();
+
+      fireEvent.keyDown(document.body, { key: "Escape" });
+
+      expect(onPageEscape).toHaveBeenCalledTimes(1);
+      document.removeEventListener("keydown", onPageEscape);
+    });
   });
 });
 

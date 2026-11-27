@@ -115,6 +115,22 @@ const Tooltip: React.FC<TooltipProps> = ({
     }
   }, [disabled]);
 
+  // Dismissible without moving the focus (WCAG 1.4.13). While the tooltip of the focused element is showing, the
+  // Escape is only for it: it is taken in the capture phase so that it does not also reach the Escape shortcuts of the page, such as the one
+  // that leaves the form for the grid
+  useEffect(() => {
+    if (!visible) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      // Only for the tooltip of the element that has the focus: one shown because the pointer rests on its
+      // element leaves the Escape to the page
+      if (event.key !== "Escape" || !wrapperRef.current?.contains(document.activeElement)) return;
+      event.stopPropagation();
+      hideTooltip();
+    };
+    document.addEventListener("keydown", handleEscape, true);
+    return () => document.removeEventListener("keydown", handleEscape, true);
+  }, [visible]);
+
   const showTooltip = () => {
     if (disabled) return;
     if (onlyWhenTruncated && !isContentTruncated(wrapperRef.current)) return;
@@ -164,11 +180,7 @@ const Tooltip: React.FC<TooltipProps> = ({
       onFocus={(event) => {
         if (isKeyboardFocus(event.target)) showTooltip();
       }}
-      onBlur={hideTooltip}
-      onKeyDown={(event) => {
-        // Dismissible without moving the focus (WCAG 1.4.13); the key still reaches whatever else listens to it
-        if (event.key === "Escape") hideTooltip();
-      }}>
+      onBlur={hideTooltip}>
       {children}
       {visible &&
         ReactDOM.createPortal(

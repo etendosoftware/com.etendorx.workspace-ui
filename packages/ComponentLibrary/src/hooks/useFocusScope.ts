@@ -54,13 +54,31 @@ export function setFocusReturnTarget(popup: Element, target: HTMLElement): void 
   focusReturnTargets.set(popup, target);
 }
 
+/**
+ * The last element that took the focus. When a menu item opens a dialog, React removes the menu and mounts the
+ * dialog in the same render, so by the time the dialog looks for the element that had the focus it is gone and
+ * the focus is on the body: this is where it was.
+ */
+let lastFocused: Element | null = null;
+
+if (typeof document !== "undefined") {
+  document.addEventListener(
+    "focusin",
+    (event) => {
+      lastFocused = event.target instanceof Element ? event.target : null;
+    },
+    true
+  );
+}
+
 /** The element to give the focus back to: the one that has it, or the target of the popup that contains it. */
 function resolveFocusReturnTarget(active: Element | null): HTMLElement | null {
-  for (let element = active; element; element = element.parentElement) {
+  const focused = active && active !== document.body ? active : lastFocused;
+  for (let element = focused; element; element = element.parentElement) {
     const target = focusReturnTargets.get(element);
     if (target) return target;
   }
-  return active instanceof HTMLElement ? active : null;
+  return focused instanceof HTMLElement ? focused : null;
 }
 
 interface UseFocusScopeOptions {

@@ -183,4 +183,27 @@ describe("useFocusScope (ETP-6304)", () => {
 
     expect(screen.getByText("menu button")).toHaveFocus();
   });
+
+  it("gives the focus back when the popup is removed in the same render that opens the dialog", () => {
+    const Popup = ({ popupOpen, dialogOpen }: { popupOpen: boolean; dialogOpen: boolean }) => (
+      <div>
+        <button type="button">menu button</button>
+        {popupOpen && (
+          <div data-testid="popup">
+            <button type="button">menu item</button>
+          </div>
+        )}
+        <Harness open={dialogOpen} />
+      </div>
+    );
+    const { rerender } = render(<Popup popupOpen dialogOpen={false} />);
+    setFocusReturnTarget(screen.getByTestId("popup"), screen.getByText("menu button"));
+    screen.getByText("menu item").focus();
+
+    // one render removes the menu item that has the focus and opens the dialog
+    rerender(<Popup popupOpen={false} dialogOpen />);
+    rerender(<Popup popupOpen={false} dialogOpen={false} />);
+
+    expect(screen.getByText("menu button")).toHaveFocus();
+  });
 });
