@@ -12,7 +12,7 @@ import {
 import { overrideField } from "../../support/processOverrides";
 import { FIELD } from "../../support/registry/data";
 import { TABS, WINDOW_IDS } from "../../support/registry/windows";
-import { datasourceCriteria } from "../../support/wait";
+import { collectGridFetches, type DatasourceRequestParams, datasourceCriteria } from "../../support/wait";
 
 const NAME = "Name";
 const EMPTY_GRID_TEXT = "No records to show";
@@ -173,14 +173,25 @@ test.describe("Grid - Product characteristics filter @regression @grid", () => {
     const filter = app.characteristicsFilter;
     await filter.open();
 
-    // Two characteristics: only the products with both, as one exists criterion per characteristic
+    // Two characteristics: only the products with both, as one exists criterion per characteristic.
+    // The request of the first value can still be in flight when the second is checked, so the request
+    // that carries both criteria is looked for among all of them instead of taking the next one.
+    const fetches = collectGridFetches(app.page, PRODUCT_TAB);
     await filter.toggle(BIO);
-    const request = await filter.toggleAndCapture(PRODUCT_TAB, ML_330);
-    const characteristicsCriteria = datasourceCriteria(request).find(
-      (criterion) => (criterion as { isProductCharacteristicsCriteria?: boolean }).isProductCharacteristicsCriteria
-    ) as { operator?: string; criteria?: unknown[] } | undefined;
+    await filter.toggle(ML_330);
+    const characteristicsCriteriaOf = (params: DatasourceRequestParams) =>
+      datasourceCriteria(params).find(
+        (criterion) => (criterion as { isProductCharacteristicsCriteria?: boolean }).isProductCharacteristicsCriteria
+      ) as { operator?: string; criteria?: unknown[] } | undefined;
+    await expect
+      .poll(() => fetches.map((params) => characteristicsCriteriaOf(params)?.criteria?.length), {
+        message: "no grid request carried the criteria of both characteristics",
+      })
+      .toContain(2);
+    const characteristicsCriteria = fetches
+      .map((params) => characteristicsCriteriaOf(params))
+      .find((criteria) => criteria?.criteria?.length === 2);
     expect(characteristicsCriteria?.operator).toBe("and");
-    expect(characteristicsCriteria?.criteria).toHaveLength(2);
     await expectProducts(app, prefix, [ZUMO]);
     await expect(filter.cell).toHaveText(`${prefix} Certificación:[${BIO}], ${prefix} Formato:[${ML_330}]`);
 
