@@ -24,8 +24,9 @@ const SVG_PREFIX = "data:image/svg+xml;base64,";
 
 const renderIcon = (overrides: Partial<Menu>) => {
   const item: Menu = { id: "MENU_ID", name: "Menu Name", ...overrides };
-  render(<MenuTitle item={item} onClick={jest.fn()} open />);
-  return screen.getByRole("img");
+  const { container } = render(<MenuTitle item={item} onClick={jest.fn()} open />);
+  // The icon is decorative (empty alt), so it has no `img` role to look it up by
+  return container.querySelector("img") as HTMLImageElement;
 };
 
 describe("MenuTitle icon", () => {
@@ -94,6 +95,41 @@ describe("MenuTitle keyboard highlight", () => {
 
     expect(title).toHaveClass("bg-(--ui-selected-bg)");
     expect(title).not.toHaveClass("bg-(--ui-hover)");
+  });
+});
+
+describe("MenuTitle accessibility (ETP-6304)", () => {
+  const FOLDER: Menu = {
+    id: "FOLDER_ID",
+    name: "Sales Management",
+    type: "Folder",
+    children: [{ id: "CHILD", name: "Sales Order", type: "Window", windowId: "W1" }],
+  };
+
+  it("tells whether a folder is open on the button that opens it", () => {
+    const { rerender } = render(<MenuTitle item={FOLDER} onClick={jest.fn()} open isExpandable expanded />);
+    expect(screen.getByRole("button", { name: /Sales Management/ })).toHaveAttribute("aria-expanded", "true");
+
+    rerender(<MenuTitle item={FOLDER} onClick={jest.fn()} open isExpandable expanded={false} />);
+    expect(screen.getByRole("button", { name: /Sales Management/ })).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("does not claim to be expandable when it is a plain entry", () => {
+    render(<MenuTitle item={WINDOW_ITEM} onClick={jest.fn()} open />);
+    expect(screen.getByTestId(TITLE_TEST_ID)).not.toHaveAttribute("aria-expanded");
+  });
+
+  it("is named by its text while the menu is open, and by its label when only the icon shows", () => {
+    const { rerender } = render(<MenuTitle item={WINDOW_ITEM} onClick={jest.fn()} open />);
+    expect(screen.getByRole("button", { name: "Sales Order" })).toBeInTheDocument();
+
+    rerender(<MenuTitle item={WINDOW_ITEM} onClick={jest.fn()} open={false} />);
+    expect(screen.getByRole("button", { name: "Sales Order" })).toBeInTheDocument();
+  });
+
+  it("draws its icon as decorative, with no made-up text", () => {
+    const { container } = render(<MenuTitle item={WINDOW_ITEM} onClick={jest.fn()} open />);
+    expect(container.querySelector("img")).toHaveAttribute("alt", "");
   });
 });
 

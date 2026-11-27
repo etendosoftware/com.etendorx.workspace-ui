@@ -47,17 +47,28 @@ export const OPTION_IDLE_CLASSES =
 export const getOptionStateClasses = (selected: boolean): string =>
   selected ? OPTION_SELECTED_CLASSES : OPTION_IDLE_CLASSES;
 
-const IconRenderer = ({
+/** An imported image that is not a plain url: Next gives \`{ src, ... }\` for it. */
+const isImageSource = (icon: unknown): icon is { src: string } =>
+  typeof icon === "object" && icon !== null && typeof (icon as { src?: unknown }).src === "string";
+
+/**
+ * Draws the icon or image of an option. It is decorative: the button that holds it has its own accessible
+ * name, so the image has an empty \`alt\` and a screen reader does not read a made-up text for it.
+ */
+export const IconRenderer = ({
   icon,
   imageStyles,
-}: { icon: string | React.ReactNode; imageStyles?: string }): React.ReactElement => {
+}: { icon: string | React.ReactNode; imageStyles?: string }): React.ReactElement | null => {
   if (typeof icon === "string") {
-    return <img src={icon} alt="icon" className={imageStyles} />;
+    return <img src={icon} alt="" className={imageStyles} />;
+  }
+  if (isImageSource(icon)) {
+    return <img src={icon.src} alt="" className={imageStyles} />;
   }
   if (React.isValidElement(icon)) {
     return icon;
   }
-  return <span>Invalid icon</span>;
+  return null;
 };
 
 const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
@@ -165,6 +176,8 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
                     <button
                       key={id}
                       type="button"
+                      aria-label={label}
+                      aria-pressed={isSelected(section.selectedItem, imageIndex)}
                       onClick={() => handleImageClick(sectionIndex, imageIndex)}
                       className={`relative ${hideRadioButton ? "p-3" : "p-3 pt-12"} ${OPTION_BASE_CLASSES} ${isBasicItem ? "items-center justify-center" : ""} ${getOptionStateClasses(isSelected(section.selectedItem, imageIndex))}`}
                       style={{

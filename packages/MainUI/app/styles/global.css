@@ -264,6 +264,8 @@ body {
   --color-blue-800: #140a2c;
   --color-blue-900: #0e061f;
   --ui-accent: var(--color-dynamic-main);
+  /* Keyboard focus ring (ETP-6304): 14:1 on the light surfaces. */
+  --ui-focus-ring: #2a1757;
   --ui-accent-hover: var(--color-dynamic-dark);
   --ui-accent-dark: var(--color-dynamic-dark);
   /* Focused or open form field: tinted background, accent text and border. */
@@ -634,6 +636,8 @@ html[data-theme="dark"] {
   --ui-text-muted: #9a9ca8;
   --ui-link: #9bb4ff;
   --ui-accent: #5a49a8;
+  /* Keyboard focus ring (ETP-6304): 8:1 on the dark surfaces. */
+  --ui-focus-ring: #c8bff4;
   --ui-accent-hover: #6a58bd;
   --ui-accent-dark: #3b2d78;
 
@@ -771,4 +775,35 @@ html.theme-transitioning *::before,
 html.theme-transitioning *::after {
   transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, fill 0.3s ease, stroke 0.3s ease,
     box-shadow 0.3s ease !important;
+}
+
+/*
+ * One focus style for everything the keyboard can reach (ETP-6304): a 2px ring in the theme's focus colour, offset
+ * so it does not touch the element. Only keyboard focus draws it (:focus-visible), so a click does not. It is
+ * not inside a cascade layer on purpose: it must win over the `outline-none` utilities, which would otherwise
+ * leave buttons, links and menu items with no sign of where the focus is. Text fields get it too: several (the
+ * menu search and the grid filters) had no sign of focus at all.
+ */
+:is(
+    a[href],
+    button,
+    summary,
+    input:not([type="hidden"]),
+    textarea,
+    select,
+    [role="button"],
+    [role="link"],
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [role="tab"],
+    [role="switch"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="option"],
+    [role="combobox"],
+    [tabindex]:not([tabindex="-1"])
+  ):focus-visible {
+  outline: 2px solid var(--ui-focus-ring);
+  outline-offset: 2px;
 }

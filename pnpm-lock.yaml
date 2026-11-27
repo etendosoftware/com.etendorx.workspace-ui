@@ -471,6 +471,9 @@ importers:
       '@types/node':
         specifier: ^22.7.8
         version: 22.17.0
+      axe-core:
+        specifier: 4.10.2
+        version: 4.10.2
       typescript:
         specifier: ^5.2.2
         version: 5.9.2

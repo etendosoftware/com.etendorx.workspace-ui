@@ -91,6 +91,8 @@ export default defineConfig({
         "**/smoke/09_Form/**",
         "**/smoke/10_Grid/**",
         "**/smoke/11_Navigation/**",
+        // A11Y only reads the DOM of the main screens: nothing is changed
+        "**/smoke/13_Accessibility/**",
         // SESa never ticks "Save as default": the defaults other specs start from stay as they are
         "**/smoke/12_Session/**",
       ],

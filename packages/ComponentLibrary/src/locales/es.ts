@@ -23,6 +23,11 @@ const es = {
     close: "Cerrar",
     scrollTabsBack: "Ver las pestañas anteriores",
     scrollTabsForward: "Ver las pestañas siguientes",
+    expandTabsPanel: "Expandir el panel",
+    clearField: "Borrar el campo",
+    openDatePicker: "Abrir el selector de fecha",
+    maximizeTabsPanel: "Maximizar el panel",
+    restoreTabsPanel: "Restaurar el tamaño del panel",
     closing: "Cerrando...",
     unsavedChangesCloseMessage:
       "Tiene cambios sin guardar que se perderán. ¿Está seguro de que desea cerrar esta ventana?",
@@ -465,6 +470,9 @@ const es = {
   },
   drawer: {
     recentlyViewed: "Visto recientemente",
+    openMenu: "Abrir el menú",
+    closeMenu: "Cerrar el menú",
+    search: "Buscar en el menú",
     externalLinkPopupBlocked: "El navegador bloqueó el enlace que esta entrada del menú intentó abrir.",
     openExternalLink: "Abrir enlace",
     legacyWindowPopupBlocked: "El navegador bloqueó la ventana que esta entrada del menú intentó abrir.",

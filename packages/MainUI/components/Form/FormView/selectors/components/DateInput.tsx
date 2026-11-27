@@ -20,6 +20,7 @@ import { forwardRef, useCallback, useRef, useState, useEffect, useMemo } from "r
 import CalendarIcon from "../../../../../../ComponentLibrary/src/assets/icons/calendar.svg";
 import { formatClassicDate, getLocaleDatePlaceholder } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { autocompleteDate, toLocalIsoDate } from "@/utils/dateAutocomplete";
+import { useTranslation } from "@/hooks/useTranslation";
 import { NOT_TABBABLE } from "@/utils/form/focus";
 import {
   getInputClassNames,
@@ -39,6 +40,7 @@ interface DateInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
   ({ name, label, isReadOnly, error, helperText, field, currentValue, ...props }, ref) => {
+    const { t } = useTranslation();
     const inputRef = useRef<HTMLInputElement>(null);
     const hiddenDateInputRef = useRef<HTMLInputElement | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -257,9 +259,11 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             aria-details={field.helpComment}
             placeholder={datePlaceholder}
           />
-          {/* Hidden date input connected to react-hook-form */}
+          {/* Hidden date input connected to react-hook-form: the visible text input above is the one assistive
+              technology sees, so this one is hidden from it */}
           <input
             type="date"
+            aria-hidden="true"
             {...props}
             ref={(node) => {
               hiddenDateInputRef.current = node;
@@ -275,6 +279,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
           <button
             type="button"
             onClick={handleCalendarClick}
+            aria-label={`${t("common.openDatePicker")} (${field.name})`}
             className={buttonClassNames}
             disabled={isReadOnly}
             tabIndex={NOT_TABBABLE}>

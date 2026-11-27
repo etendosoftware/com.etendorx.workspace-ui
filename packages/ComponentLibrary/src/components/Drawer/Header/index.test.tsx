@@ -67,4 +67,19 @@ describe("DrawerHeader", () => {
     const button = screen.getByRole("button");
     expect(button).toHaveAttribute("tabIndex", "5");
   });
+
+  describe("accessible name (ETP-6304)", () => {
+    it("names the toggle button with the label it is given", () => {
+      render(<DrawerHeader {...defaultProps} toggleLabel="Close the menu" />);
+      expect(screen.getByRole("button", { name: "Close the menu" })).toBeInTheDocument();
+    });
+
+    it("tells a screen reader whether the menu is open", () => {
+      const { rerender } = render(<DrawerHeader {...defaultProps} open={true} toggleLabel="Toggle" />);
+      expect(screen.getByRole("button", { name: "Toggle" })).toHaveAttribute("aria-expanded", "true");
+
+      rerender(<DrawerHeader {...defaultProps} open={false} toggleLabel="Toggle" />);
+      expect(screen.getByRole("button", { name: "Toggle" })).toHaveAttribute("aria-expanded", "false");
+    });
+  });
 });

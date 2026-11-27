@@ -15,9 +15,10 @@
  *************************************************************************
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useClickOutside, useEscapeKey, useWindowResize } from "../../hooks/useEventListeners";
+import { getFocusableElements, setFocusReturnTarget, useFocusScope } from "../../hooks/useFocusScope";
 import { cleanDefaultClasses } from "../../utils/classUtil";
 import { computeMenuVerticalPlacement } from "./placement";
 
@@ -213,6 +214,35 @@ const Menu: React.FC<DropdownMenuProps> = ({
     };
   }, []);
 
+  // The focus goes into the menu when it opens and back to the button that opened it when it closes (ETP-6304)
+  useFocusScope(menuRef, visible);
+  useEffect(() => {
+    if (anchorEl && menuRef.current) setFocusReturnTarget(menuRef.current, anchorEl);
+  }, [anchorEl, visible]);
+
+  const NAVIGATION_KEYS = new Set(["ArrowDown", "ArrowUp", "Home", "End"]);
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Tab") {
+      // Tab leaves the menu: it closes and the focus goes back to its button
+      event.preventDefault();
+      handleClose();
+      return;
+    }
+    const target = event.target as HTMLElement;
+    const isTextField = target.matches("input:not([type='checkbox']):not([type='radio']), textarea, select");
+    if (!NAVIGATION_KEYS.has(event.key) || isTextField || !menuRef.current) return;
+
+    const items = getFocusableElements(menuRef.current);
+    if (items.length === 0) return;
+    event.preventDefault();
+    const index = items.indexOf(document.activeElement as HTMLElement);
+    let next = 0;
+    if (event.key === "ArrowDown") next = (index + 1) % items.length;
+    else if (event.key === "ArrowUp") next = (index <= 0 ? items.length : index) - 1;
+    else if (event.key === "End") next = items.length - 1;
+    items[next].focus();
+  };
+
   useClickOutside(menuRef as React.RefObject<HTMLElement>, handleClose);
   useEscapeKey(handleClose);
   useWindowResize(calculatePosition);
@@ -225,6 +255,7 @@ const Menu: React.FC<DropdownMenuProps> = ({
       <div
         role="menu"
         ref={menuRef}
+        onKeyDown={handleKeyDown}
         className={`${cleanDefaultClasses(DEFAULT_MENU_CLASSES, className)}`}
         style={{
           top: position.y,

@@ -117,6 +117,17 @@ function buildFadeMask(overflow: { left: boolean; right: boolean }): string {
   return `linear-gradient(to right, transparent 0, #000 ${leftFade}px, #000 calc(100% - ${rightFade}px), transparent 100%)`;
 }
 
+/**
+ * Translation key of the name of the button that resizes the panel of child tabs: it names what a press does.
+ * A closed panel opens; an open one is maximized, and a maximized one goes back to its size.
+ */
+type PanelToggleLabelKey = "common.expandTabsPanel" | "common.restoreTabsPanel" | "common.maximizeTabsPanel";
+
+export const getPanelToggleLabelKey = (collapsed: boolean | undefined, isExpanded?: boolean): PanelToggleLabelKey => {
+  if (collapsed) return "common.expandTabsPanel";
+  return isExpanded ? "common.restoreTabsPanel" : "common.maximizeTabsPanel";
+};
+
 export const SubTabsSwitch = ({
   tabs,
   current,
@@ -175,15 +186,17 @@ export const SubTabsSwitch = ({
       )}
       <IconButton
         className="self-center bg-transparent"
+        ariaLabel={t(getPanelToggleLabelKey(collapsed, isExpanded))}
+        aria-expanded={!collapsed}
+        onClick={() => {
+          if (collapsed) {
+            onClick(current);
+          } else {
+            onDoubleClick(current);
+          }
+        }}
         data-testid={`IconButton__${current?.id ?? activeTabId ?? "a89627"}`}>
         <ChevronDown
-          onClick={() => {
-            if (collapsed) {
-              onClick(current);
-            } else {
-              onDoubleClick(current);
-            }
-          }}
           className={`transition-transform duration-300 ease-in-out ${!isExpanded ? "rotate-180" : "rotate-0"}`}
           data-testid={`ChevronDown__${current?.id ?? activeTabId ?? "a89627"}`}
         />

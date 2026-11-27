@@ -19,8 +19,21 @@ const RECORDING_EXTENSION = ".har";
 const COMPACT_EXTENSION = ".har.gz";
 const SPEC_SUFFIX = ".spec.ts";
 const RECORD_MODE = process.env.PW_MOCK_RECORD === "1";
-/** Background polling: how many times it fires depends on timing, so it may be unrecorded. */
-const TOLERATED_UNRECORDED = [/AlertActionHandler/, /process-monitor/i, /ProcessMonitor/];
+/**
+ * Requests whose count or target depends on timing, so they may be unrecorded:
+ * - background polling;
+ * - the preload of a window the pointer rests on in the menu (ETP-6303): it asks for the metadata, the saved
+ *   views and the stored columns of whichever entry is under the pointer after the layout changes, a window the
+ *   flow never opens.
+ */
+const TOLERATED_UNRECORDED = [
+  /AlertActionHandler/,
+  /process-monitor/i,
+  /ProcessMonitor/,
+  /\/api\/erp\/meta\/window\/\d+/,
+  /\/api\/meta\/saved-views/,
+  /\/api\/erp\/meta\/grid-configuration/,
+];
 /** Request keys can be long (a datasource body): the failure shows their beginning. */
 const REPORTED_KEY_LENGTH = 300;
 

@@ -63,6 +63,19 @@ export interface TooltipProps {
   onlyWhenTruncated?: boolean;
 }
 
+/**
+ * Whether the focus on `target` comes from the keyboard. A click focuses a button too, and it already shows the
+ * tooltip through the mouse, so only the focus a screen of keys can see is taken. Where `:focus-visible` is not
+ * supported, any focus counts.
+ */
+const isKeyboardFocus = (target: EventTarget): boolean => {
+  try {
+    return target instanceof Element && target.matches(":focus-visible");
+  } catch {
+    return true;
+  }
+};
+
 const Tooltip: React.FC<TooltipProps> = ({
   title,
   children,
@@ -101,6 +114,22 @@ const Tooltip: React.FC<TooltipProps> = ({
       hideTooltip();
     }
   }, [disabled]);
+
+  // Dismissible without moving the focus (WCAG 1.4.13). While the tooltip of the focused element is showing, the
+  // Escape is only for it: it is taken in the capture phase so that it does not also reach the Escape shortcuts of the page, such as the one
+  // that leaves the form for the grid
+  useEffect(() => {
+    if (!visible) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      // Only for the tooltip of the element that has the focus: one shown because the pointer rests on its
+      // element leaves the Escape to the page
+      if (event.key !== "Escape" || !wrapperRef.current?.contains(document.activeElement)) return;
+      event.stopPropagation();
+      hideTooltip();
+    };
+    document.addEventListener("keydown", handleEscape, true);
+    return () => document.removeEventListener("keydown", handleEscape, true);
+  }, [visible]);
 
   const showTooltip = () => {
     if (disabled) return;
@@ -147,7 +176,11 @@ const Tooltip: React.FC<TooltipProps> = ({
       className={`relative group ${containerClassName ?? ""}`}
       onMouseEnter={showTooltip}
       onMouseLeave={hideTooltip}
-      onMouseDown={hideTooltip}>
+      onMouseDown={hideTooltip}
+      onFocus={(event) => {
+        if (isKeyboardFocus(event.target)) showTooltip();
+      }}
+      onBlur={hideTooltip}>
       {children}
       {visible &&
         ReactDOM.createPortal(

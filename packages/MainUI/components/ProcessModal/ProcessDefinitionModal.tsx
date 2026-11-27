@@ -28,7 +28,7 @@
  * - Response message display and success/error states
  *
  */
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { type FieldValues, FormProvider, useForm, useFormState, type UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
@@ -343,6 +343,7 @@ function ProcessDefinitionModalContent({
   stackEntryId,
 }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
+  const titleId = useId();
   const { getLabel, language } = useLanguage();
   const { graph } = useSelected();
   const { tab: contextTab, record: tabRecord } = useTabContext();
@@ -2035,7 +2036,7 @@ function ProcessDefinitionModalContent({
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <div className="flex flex-col gap-1">
-                <h3 className="text-lg font-bold" data-testid="process-modal-title">
+                <h3 id={titleId} className="text-lg font-bold" data-testid="process-modal-title">
                   {button.name}
                 </h3>
                 {!!headerDescription && <p className="text-sm text-gray-600">{headerDescription}</p>}
@@ -2044,6 +2045,7 @@ function ProcessDefinitionModalContent({
                 <button
                   type="button"
                   onClick={handleClose}
+                  aria-label={t("common.close")}
                   className="p-1 rounded-full hover:bg-(--color-baseline-10)"
                   disabled={isPending}
                   data-testid="process-modal-close-button">
@@ -2098,7 +2100,11 @@ function ProcessDefinitionModalContent({
     <>
       {open && !isFinalSuccess && (
         <>
-          <Modal open={open && !isFinalSuccess} onClose={handleClose} data-testid="Modal__761503">
+          <Modal
+            open={open && !isFinalSuccess}
+            onClose={handleClose}
+            ariaLabelledBy={titleId}
+            data-testid="Modal__761503">
             {renderModalContent()}
           </Modal>
           {/* Host for migrated-script dialogs (confirm/warn/say); unmounts with the modal. Only the

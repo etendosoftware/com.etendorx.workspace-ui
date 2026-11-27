@@ -31,7 +31,15 @@ import SearchIcon from "../../../../assets/icons/search.svg";
 import IconButton from "../../../IconButton";
 
 const TextInputAutoComplete = (props: TextInputProps) => {
-  const { value, setValue, autoCompleteTexts = [], rightIcon, onLeftIconClick, ...textFieldProps } = props;
+  const {
+    value,
+    setValue,
+    autoCompleteTexts = [],
+    rightIcon,
+    onLeftIconClick,
+    leftIconAriaLabel,
+    ...textFieldProps
+  } = props;
 
   const [isFocused, setIsFocused] = useState<boolean>(false);
   const [suggestion, setSuggestion] = useState<string>("");
@@ -86,6 +94,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     return (
       <IconButton
         className={`[&>svg]:w-4 [&>svg]:h-4 w-6 h-6 mr-2 bg-transparent hover:bg-transparent hover:text- ${value && isFocused ? "text-(--color-dynamic-main)" : ""}`}
+        ariaLabel={leftIconAriaLabel}
         onClick={onLeftIconClick}>
         <SearchIcon />
       </IconButton>

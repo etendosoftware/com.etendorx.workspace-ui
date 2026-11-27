@@ -50,6 +50,10 @@ export interface DrawerProps {
   getTranslatedName?: (item: Menu) => string;
   searchContext: SearchContextType;
   VersionComponent?: React.FC<VersionProps>;
+  /** Accessible names of the button that toggles the menu: what it does when it is closed and when it is open. */
+  menuToggleLabels?: { open: string; close: string };
+  /** Accessible name of the search icon of the menu search box. */
+  searchLabel?: string;
   /** Shown instead of the menu when a search term matches no entry that opens something. */
   noResultsLabel?: string;
 }
@@ -148,6 +152,8 @@ export interface DrawerHeaderProps {
   open?: boolean;
   onClick: () => unknown;
   tabIndex?: number;
+  /** Accessible name of the toggle button. */
+  toggleLabel?: string;
 }
 
 export interface RecentlyViewedProps {

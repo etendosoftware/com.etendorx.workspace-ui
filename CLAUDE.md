@@ -179,6 +179,21 @@ mocked flow (a new endpoint, a new parameter, an extra request when a window ope
 bug the recording would hide. Then run `pnpm pw:record` with the backend and the UI running, and commit the updated
 `.har.gz` with the change.
 
+## Accessibility
+
+Every screen, component and process must work with the keyboard alone and with a screen reader. Read
+[docs/patterns/accessibility.md](docs/patterns/accessibility.md) before building UI. In short:
+
+- Everything interactive has a translated accessible name; an icon-only button uses `aria-label` or the `tooltip`
+  of `IconButton`; decorative images have `alt=""`.
+- Controls are `button` or `a`; a `div` that acts as one needs `role`, `tabIndex` and Enter/Space handlers.
+  State attributes (`aria-expanded`, `aria-pressed`) go on the element that has the role.
+- Dialogs, popups and menus use `Modal`, `Menu` or `useFocusScope`: the focus goes in, stays in (dialogs), Escape
+  closes and the focus goes back to the opener.
+- Shortcuts on `document` that take Enter or the arrow keys need a `scopeRef` (`useKeyboardShortcuts`).
+- Do not hide the focus: no `outline-none` without the ring (`--ui-focus-ring`, drawn by `global.css`).
+- Unit tests query by role and name. The e2e accessibility spec (`13_Accessibility`) must keep passing.
+
 ## Git Conventions (Git Police)
 
 This repository is enforced by the Git Police bot. All branches, commits, and PRs MUST follow these rules.

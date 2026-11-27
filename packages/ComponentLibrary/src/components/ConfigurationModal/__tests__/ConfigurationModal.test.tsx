@@ -16,7 +16,12 @@
  */
 
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import ConfigurationModal, { OPTION_BASE_CLASSES, OPTION_IDLE_CLASSES, OPTION_SELECTED_CLASSES } from "../index";
+import ConfigurationModal, {
+  IconRenderer,
+  OPTION_BASE_CLASSES,
+  OPTION_IDLE_CLASSES,
+  OPTION_SELECTED_CLASSES,
+} from "../index";
 import type { ISection } from "../types";
 
 describe("ConfigurationModal", () => {
@@ -193,5 +198,65 @@ describe("ConfigurationModal", () => {
     await waitFor(() => {
       expect(screen.getByText("Test Section")).toBeInTheDocument();
     });
+  });
+});
+
+describe("ConfigurationModal accessibility (ETP-6304)", () => {
+  const sections: ISection[] = [
+    {
+      id: "scale",
+      name: "Scale",
+      items: [
+        { id: "small", img: "small.svg", label: "Small" },
+        { id: "large", img: { src: "large.svg" } as unknown as string, label: "Large" },
+      ],
+      selectedItem: 1,
+      isDisabled: false,
+      itemsPerRow: 2,
+      displayOptions: { hideItemLabel: true },
+    } as ISection,
+  ];
+
+  const open = async () => {
+    render(<ConfigurationModal icon={<span>⚙</span>} tooltipButtonProfile="Settings" sections={sections} />);
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    await screen.findByRole("button", { name: "Small" });
+  };
+
+  it("names each option by its label even when the label is not shown", async () => {
+    await open();
+
+    expect(screen.getByRole("button", { name: "Small" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Large" })).toBeInTheDocument();
+  });
+
+  it("tells a screen reader which option is the current one", async () => {
+    await open();
+
+    expect(screen.getByRole("button", { name: "Large" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Small" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("never exposes a made-up text for an image it cannot draw", async () => {
+    await open();
+
+    expect(screen.queryByText("Invalid icon")).not.toBeInTheDocument();
+  });
+});
+
+describe("IconRenderer (ETP-6304)", () => {
+  it("draws a url as a decorative image", () => {
+    const { container } = render(<IconRenderer icon="a.svg" />);
+    expect(container.querySelector("img")).toHaveAttribute("alt", "");
+  });
+
+  it("draws an imported image object through its src", () => {
+    const { container } = render(<IconRenderer icon={{ src: "b.svg" } as unknown as string} />);
+    expect(container.querySelector("img")).toHaveAttribute("src", "b.svg");
+  });
+
+  it("draws nothing for something it cannot draw", () => {
+    const { container } = render(<IconRenderer icon={undefined} />);
+    expect(container).toBeEmptyDOMElement();
   });
 });

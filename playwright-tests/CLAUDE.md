@@ -253,6 +253,15 @@ whole body of a request that only reports what the user did changes with timing,
 A new window goes in `registry/windows.ts` (`search`, `menuId` = AD_Menu_ID, `breadcrumb`), a new sample
 record in `registry/data.ts` (look its id up in `referencedata/sampledata/QA_Testing`).
 
+## Accessibility check
+
+`e2e/smoke/13_Accessibility/A11YaMainScreensTest.spec.ts` runs axe-core (`e2e/support/a11y.ts`) on the login, the
+home, a window with grid and form, and a process window, for the name, role and state rules of `ENFORCED_RULES`.
+It only reads the DOM, so it is safe in `suite-01-base`. A new violation fails it with the rule, the selectors and
+the start of the HTML. A violation that cannot be fixed yet goes in `KNOWN`, with the task that fixes it; once it
+is fixed the test fails until the entry is removed. When a new main screen appears, add it there. See
+[docs/patterns/accessibility.md](../docs/patterns/accessibility.md).
+
 ## Running
 
 ```bash

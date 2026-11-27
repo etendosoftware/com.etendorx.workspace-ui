@@ -147,4 +147,84 @@ describe("useKeyboardShortcuts", () => {
       expect(handler).not.toHaveBeenCalled();
     });
   });
+
+  describe("scopeRef (ETP-6304)", () => {
+    const setup = () => {
+      const handler = jest.fn();
+      const scope = document.createElement("div");
+      const inside = document.createElement("button");
+      const outside = document.createElement("button");
+      scope.appendChild(inside);
+      document.body.append(scope, outside);
+      const scopeRef = { current: scope };
+      renderHook(() => useKeyboardShortcuts({ Enter: { handler } }, true, { scopeRef }));
+      return {
+        handler,
+        inside,
+        outside,
+        cleanup: () => {
+          scope.remove();
+          outside.remove();
+        },
+      };
+    };
+
+    it("leaves Enter on a button outside the scope to that button", () => {
+      const { handler, outside, cleanup } = setup();
+
+      const notCancelled = fireEvent.keyDown(outside, { key: "Enter" });
+      cleanup();
+
+      expect(handler).not.toHaveBeenCalled();
+      expect(notCancelled).toBe(true);
+    });
+
+    it("still takes Enter on a button inside the scope", () => {
+      const { handler, inside, cleanup } = setup();
+
+      const notCancelled = fireEvent.keyDown(inside, { key: "Enter" });
+      cleanup();
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(notCancelled).toBe(false);
+    });
+
+    it("still takes Enter when the focus is on the page body", () => {
+      const { handler, cleanup } = setup();
+
+      fireEvent.keyDown(document.body, { key: "Enter" });
+      cleanup();
+
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it("leaves a menu item and a link outside the scope alone", () => {
+      const { handler, cleanup } = setup();
+      const menuItem = document.createElement("li");
+      menuItem.setAttribute("role", "menuitem");
+      const link = document.createElement("a");
+      link.setAttribute("href", "#");
+      document.body.append(menuItem, link);
+
+      fireEvent.keyDown(menuItem, { key: "Enter" });
+      fireEvent.keyDown(link, { key: "Enter" });
+      menuItem.remove();
+      link.remove();
+      cleanup();
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it("keeps the old behaviour without a scope", () => {
+      const handler = jest.fn();
+      renderHook(() => useKeyboardShortcuts({ Enter: { handler } }));
+      const button = document.createElement("button");
+      document.body.appendChild(button);
+
+      fireEvent.keyDown(button, { key: "Enter" });
+      button.remove();
+
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+  });
 });

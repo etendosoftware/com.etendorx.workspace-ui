@@ -137,6 +137,10 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
         aria-current={isHighlighted || undefined}
         role="button"
         tabIndex={0}
+        // The entry that opens or closes a folder says whether it is open; when the menu is closed only the icon
+        // shows, so the name goes in the label (ETP-6304)
+        aria-expanded={canToggle ? expanded : undefined}
+        aria-label={open ? undefined : item.name}
         onClick={onClick}
         onKeyDown={handleTitleKeyDown}
         className={`${getMenuButtonClassName(open, selected, isParentActive)} ${highlightClasses}`.trim()}
@@ -146,7 +150,7 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
             className={`${open ? MENU_ICON_SLOT_OPEN_CLASS : "w-full h-full"} shrink-0 flex justify-center items-center`}>
             <span className="text-base">
               <img
-                alt={item.icon ? "img" : item.type || "icon"}
+                alt=""
                 src={getIconSrc(item)}
                 className="filter-[brightness(0)] dark:filter-[brightness(0)_invert(1)] opacity-70 w-5 h-5"
               />

@@ -105,6 +105,7 @@ docs/
 │       └── README.md
 ├── patterns/                         # Patterns and conventions
 │   ├── react-patterns.md           # React patterns including state persistence
+│   ├── accessibility.md            # Keyboard and screen reader contract: names, roles, focus, tests
 │   ├── state-management.md
 │   └── error-handling.md
 └── troubleshooting/                  # Troubleshooting guides

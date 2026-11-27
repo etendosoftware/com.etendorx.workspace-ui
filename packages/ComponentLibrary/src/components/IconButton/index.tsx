@@ -26,9 +26,9 @@ import { cleanDefaultClasses } from "../../utils/classUtil";
 export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /** Whether the button is disabled */
   disabled?: boolean;
-  /** Accessibility label for screen readers */
+  /** Accessibility label for screen readers. Without it, an icon-only button is named by its `tooltip`. */
   ariaLabel?: string;
-  /** Text to display in a tooltip on hover */
+  /** Text to display in a tooltip on hover or keyboard focus. */
   tooltip?: string;
   /** Position of the tooltip */
   tooltipPosition?: "top" | "bottom" | "left" | "right";
@@ -104,7 +104,7 @@ const IconButton = ({
       <button
         ref={ref}
         type="button"
-        aria-label={ariaLabel}
+        aria-label={ariaLabel ?? (iconText ? undefined : tooltip)}
         disabled={disabled}
         className={cleanDefaultClasses(DEFAULT_BUTTON_CLASSES, className)}
         style={buttonStyle}
