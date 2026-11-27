@@ -19,6 +19,11 @@ const SAVE_DEFAULTS_REQUEST = /kernel\?command=save/;
 const CANCEL_LABEL = "Cancel";
 const LOGIN_FORM_TIMEOUT = 10_000;
 const LANDING_TIMEOUT = 30_000;
+/**
+ * Where the pointer rests after the login: the corner of the logo. Left on the login button, it would rest on
+ * whatever the Home shows there, and a recent document or menu entry under it loads its window on hover.
+ */
+const POINTER_REST = { x: 0, y: 0 };
 
 /** Role and organization selected in the profile menu after logging in. */
 export interface RoleSelection {
@@ -167,6 +172,7 @@ export class Auth {
 
   private async submitLogin(): Promise<void> {
     await this.page.getByTestId(AUTH_TEST_IDS.loginSubmit).click();
+    await this.page.mouse.move(POINTER_REST.x, POINTER_REST.y);
     await this.page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: LANDING_TIMEOUT });
   }
 
