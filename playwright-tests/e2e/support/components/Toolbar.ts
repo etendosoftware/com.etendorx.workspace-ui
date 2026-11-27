@@ -1,6 +1,11 @@
 import { readFile } from "node:fs/promises";
 import { expect, type Locator, type Page, type Response } from "@playwright/test";
-import { runAndWaitForDatasource, runAndWaitForFormInitialization, runAndWaitForResponse } from "../wait";
+import {
+  FILE_DOWNLOAD_TIMEOUT,
+  runAndWaitForDatasource,
+  runAndWaitForFormInitialization,
+  runAndWaitForResponse,
+} from "../wait";
 import { atLevel, exactText, type TabLevel } from "./level";
 
 /** Toolbar actions; each button carries the semantic class `toolbar-button-<action>`. */
@@ -63,7 +68,7 @@ export class Toolbar {
 
   /** Clicks "Export to Spreadsheet" and returns the text of the CSV file it downloads. */
   async exportCsv(level: TabLevel = "header"): Promise<string> {
-    const download = this.page.waitForEvent("download");
+    const download = this.page.waitForEvent("download", { timeout: FILE_DOWNLOAD_TIMEOUT });
     await this.button("export-csv", level).click();
     return readFile(await (await download).path(), "utf8");
   }

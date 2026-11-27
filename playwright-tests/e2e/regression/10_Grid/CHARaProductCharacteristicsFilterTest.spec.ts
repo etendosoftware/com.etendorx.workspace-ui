@@ -173,8 +173,10 @@ test.describe("Grid - Product characteristics filter @regression @grid", () => {
     const filter = app.characteristicsFilter;
     await filter.open();
 
-    // Two characteristics: only the products with both, as one exists criterion per characteristic
-    await filter.toggle(BIO);
+    // Two characteristics: only the products with both, as one exists criterion per characteristic. The first
+    // value waits for its own request too: on a slow machine it arrived after the second click and was taken
+    // for the request of both values
+    await filter.toggleAndCapture(PRODUCT_TAB, BIO);
     const request = await filter.toggleAndCapture(PRODUCT_TAB, ML_330);
     const characteristicsCriteria = datasourceCriteria(request).find(
       (criterion) => (criterion as { isProductCharacteristicsCriteria?: boolean }).isProductCharacteristicsCriteria

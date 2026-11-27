@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { expect, test } from "../../support/fixtures";
 import { TABS } from "../../support/registry/windows";
+import { FILE_DOWNLOAD_TIMEOUT } from "../../support/wait";
 
 const RECONCILIATIONS = "Reconciliations";
 const RECONCILIATION_DETAILS = "Reconciliation Details";
@@ -27,7 +28,7 @@ test.describe("Process - classic popup file download @regression @process", () =
     await app.grid.filter(DOCUMENT_NO, reconciliation, tab);
     await app.grid.setRowSelected(app.grid.rowWithCell(reconciliation, tab), true);
 
-    const download = page.waitForEvent("download");
+    const download = page.waitForEvent("download", { timeout: FILE_DOWNLOAD_TIMEOUT });
     await app.toolbar.inTab(TABS.FINANCIAL_ACCOUNT_RECONCILIATION).process(RECONCILIATION_DETAILS);
     await app.processModal.expectSuccess();
 

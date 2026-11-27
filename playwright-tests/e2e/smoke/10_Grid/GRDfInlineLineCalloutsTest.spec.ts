@@ -44,6 +44,10 @@ const DOCUMENT_TARGETS = {
  * the values, and the row can be saved. Each test creates its own order and deletes it afterwards, lines included.
  */
 test.describe("Grid - callouts in the inline editing of document lines @smoke @grid", () => {
+  // Independent tests (each test creates and deletes its own order (`created` is per worker)): spread them over the workers instead of
+  // running them one after another in one worker, the tail of suite-01-base in CI (ETP-6295)
+  test.describe.configure({ mode: "parallel" });
+
   let created: { target: Target; id: string } | undefined;
 
   test.afterEach(async ({ api }) => {

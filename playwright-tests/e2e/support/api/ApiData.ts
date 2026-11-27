@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { APIResponse, Page } from "@playwright/test";
 import type { DatasourceTarget } from "../registry/datasources";
 
 /** Record values sent to or returned by the datasource, keyed by property name. */
@@ -164,6 +164,18 @@ export function treeNodeMoveBody(move: TreeNodeMove): RecordValues {
 
 type WriteResponse = { status?: number; data?: SavedRecord[]; error?: { message?: string } };
 
+/** What Classic answers to a write whose CSRF token is not the one of its session. */
+const INVALID_CSRF_TOKEN = "InvalidCSRFToken";
+
+/**
+ * Whether Classic rejected a datasource write for its CSRF token. Right after a login the app's own startup
+ * requests can still be settling the server-side session, and a write sent meanwhile is rejected without
+ * being applied (ETP-6295), so it is safe to send it again.
+ */
+export function isInvalidCsrfTokenAnswer(body: unknown): boolean {
+  return (body as { response?: WriteResponse })?.response?.error?.message === INVALID_CSRF_TOKEN;
+}
+
 /**
  * The `response` of a datasource write (`{ response: { status, data } }`).
  * @throws when the backend rejected the write, with its message.
@@ -222,11 +234,13 @@ export class ApiData {
 
   /** Creates a record and returns it as saved (with its id and the defaults the backend set). */
   async add(target: DatasourceTarget, values: RecordValues): Promise<SavedRecord> {
-    const response = await this.page.request.post(datasourceWriteUrl(target, ADD), {
-      headers: await this.authHeaders(),
-      data: datasourceAddBody(values),
-    });
-    return savedRecordFrom(await response.json(), target.entity);
+    const body = await this.write(async () =>
+      this.page.request.post(datasourceWriteUrl(target, ADD), {
+        headers: await this.authHeaders(),
+        data: datasourceAddBody(values),
+      })
+    );
+    return savedRecordFrom(body, target.entity);
   }
 
   /** Reads records through the datasource, as a grid does, with the tab's rules applied. */
@@ -240,10 +254,10 @@ export class ApiData {
 
   /** Deletes a record by id, with the DELETE request the UI sends (a POST "remove" deletes nothing). */
   async remove(target: DatasourceTarget, id: string): Promise<void> {
-    const response = await this.page.request.delete(datasourceWriteUrl(target, REMOVE, id), {
-      headers: await this.authHeaders(),
-    });
-    assertRemoved(await response.json(), target.entity);
+    const body = await this.write(async () =>
+      this.page.request.delete(datasourceWriteUrl(target, REMOVE, id), { headers: await this.authHeaders() })
+    );
+    assertRemoved(body, target.entity);
   }
 
   /**
@@ -252,11 +266,10 @@ export class ApiData {
    * @throws when the backend rejected the move, with its message.
    */
   async moveTreeNode(move: TreeNodeMove): Promise<void> {
-    const response = await this.page.request.put(treeNodeMoveUrl(move), {
-      headers: await this.authHeaders(),
-      data: treeNodeMoveBody(move),
-    });
-    acceptedResponse(await response.json(), "tree node");
+    const body = await this.write(async () =>
+      this.page.request.put(treeNodeMoveUrl(move), { headers: await this.authHeaders(), data: treeNodeMoveBody(move) })
+    );
+    acceptedResponse(body, "tree node");
   }
 
   /**
@@ -339,6 +352,15 @@ export class ApiData {
     if (!response.ok()) {
       throw new Error(`Removing the recent document ${document.recordId} failed: ${response.status()}`);
     }
+  }
+
+  /** Sends a datasource write and returns its answer, sending it once more when it was rejected for its CSRF token. */
+  private async write(send: () => Promise<APIResponse>): Promise<unknown> {
+    const body = await (await send()).json();
+    if (!isInvalidCsrfTokenAnswer(body)) {
+      return body;
+    }
+    return (await send()).json();
   }
 
   private async authHeaders(): Promise<Record<string, string>> {

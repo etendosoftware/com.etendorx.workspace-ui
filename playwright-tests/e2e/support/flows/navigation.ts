@@ -13,6 +13,11 @@ const RECORD_IN_URL = /[?&]wi_0=[^&]+&ti_0=[^&]+&ri_0=[0-9A-F]{32}/;
 /** A record restored from the URL reloads its window and its parent records: up to a minute on a busy CI. */
 const RECOVERY_TIMEOUT = 60_000;
 
+/** Address that opens `recordId` of `tabId` in a new window instance (the URL state the UI restores). */
+export function recordLink(windowId: string, tabId: string, recordId: string): string {
+  return `/window?wi_0=${windowId}_${Date.now()}&ti_0=${tabId}&ri_0=${recordId}`;
+}
+
 /** Opens in the form the record of the active grid whose `column` shows exactly `value`. */
 async function openRecord(app: App, column: string, value: string): Promise<void> {
   await app.grid.filter(column, value);

@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import { DEFAULT_PASSWORD, DEFAULT_USER } from "../../../playwright.config";
 import { ORGANIZATION, ROLE } from "../registry/data";
+import { hasProfile, profileOfSession, SESSION_REQUEST, type SessionProfile } from "../sessionProfile";
 import { runAndWaitForResponse } from "../wait";
 import { SIDEBAR_TEST_IDS } from "./Sidebar";
 
@@ -18,6 +19,11 @@ const SAVE_DEFAULTS_REQUEST = /kernel\?command=save/;
 const CANCEL_LABEL = "Cancel";
 const LOGIN_FORM_TIMEOUT = 10_000;
 const LANDING_TIMEOUT = 30_000;
+/**
+ * Where the pointer rests after the login: the corner of the logo. Left on the login button, it would rest on
+ * whatever the Home shows there, and a recent document or menu entry under it loads its window on hover.
+ */
+const POINTER_REST = { x: 0, y: 0 };
 
 /** Role and organization selected in the profile menu after logging in. */
 export interface RoleSelection {
@@ -47,6 +53,12 @@ const PROFILE_SELECTS = { role: "role-select", organization: "organization-selec
 
 /** Login, logout and role/organization/warehouse selection. */
 export class Auth {
+  /**
+   * The profile the last login of this page opened, while nothing changed it since. Undefined after any
+   * profile change or logout made through this class, so a stale value never skips the profile menu.
+   */
+  private loggedInProfile?: SessionProfile;
+
   constructor(private readonly page: Page) {}
 
   /** Clears cookies and storage so every test starts logged out. */
@@ -62,25 +74,38 @@ export class Auth {
     }
   }
 
-  /** Logs in through the login page and waits for the application shell. */
+  /**
+   * Logs in through the login page and waits for the application shell. Keeps the profile of the session it
+   * opened, from the `meta/session` answer the UI loads after logging in.
+   */
   async login(username = DEFAULT_USER, password = DEFAULT_PASSWORD): Promise<void> {
+    this.loggedInProfile = undefined;
     await this.page.goto("/");
     const user = this.page.locator("#username");
     await user.waitFor({ state: "visible", timeout: LOGIN_FORM_TIMEOUT });
     await user.fill(username);
     await this.page.locator("#password").fill(password);
-    await this.page.getByTestId(AUTH_TEST_IDS.loginSubmit).click();
-    await this.page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: LANDING_TIMEOUT });
+    const [session] = await Promise.all([
+      this.page.waitForResponse((response) => SESSION_REQUEST.test(response.url()), { timeout: LANDING_TIMEOUT }),
+      this.submitLogin(),
+    ]);
+    this.loggedInProfile = session.ok() ? profileOfSession(await session.json()) : undefined;
   }
 
   /**
    * Selects role and organization by name (the backend returns roles in no stable order, so an
    * index could land on another role), takes the first warehouse and saves them as default.
+   * Nothing to do when the login already opened that role and organization with a warehouse: the
+   * user's default, which an earlier test saved the same way.
    */
   async selectRoleOrgWarehouse({
     roleName = ROLE.QA_TESTING_ADMIN.name,
     organizationName = ORGANIZATION.SPAIN,
   }: RoleSelection = {}): Promise<void> {
+    if (hasProfile(this.loggedInProfile, roleName, organizationName)) {
+      return;
+    }
+    this.loggedInProfile = undefined;
     await this.page.getByTestId(AUTH_TEST_IDS.profileMenu).click();
     await this.pickOption("role-select", roleName);
     await this.pickOption("organization-select", organizationName);
@@ -96,6 +121,7 @@ export class Auth {
    * open window. Pick the role before the organization: changing the role resets the rest.
    */
   async switchProfile(selection: ProfileSelection): Promise<void> {
+    this.loggedInProfile = undefined;
     await this.page.getByTestId(AUTH_TEST_IDS.profileMenu).click();
     await this.pickProfile(selection);
     await this.saveProfile();
@@ -128,6 +154,7 @@ export class Auth {
 
   /** Logs out through the profile menu. */
   async logout(): Promise<void> {
+    this.loggedInProfile = undefined;
     await this.page.getByTestId(AUTH_TEST_IDS.profileMenu).click();
     await this.page.getByTestId(AUTH_TEST_IDS.logout).click();
   }
@@ -141,6 +168,12 @@ export class Auth {
   /** Asserts the session is still open: the login form is not on screen. */
   async expectStillLoggedIn(): Promise<void> {
     await expect(this.loginForm).toHaveCount(0);
+  }
+
+  private async submitLogin(): Promise<void> {
+    await this.page.getByTestId(AUTH_TEST_IDS.loginSubmit).click();
+    await this.page.mouse.move(POINTER_REST.x, POINTER_REST.y);
+    await this.page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: LANDING_TIMEOUT });
   }
 
   /** The user name input of the login form. */

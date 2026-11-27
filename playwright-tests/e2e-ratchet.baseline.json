@@ -1,5 +1,5 @@
 {
-  "waitForTimeout": 6,
+  "waitForTimeout": 5,
   "forceTrue": 6,
   "swallowedCatch": 2,
   "hashTestId": 0,

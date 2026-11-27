@@ -1,4 +1,5 @@
 import { expect, test } from "../../support/fixtures";
+import { FILE_DOWNLOAD_TIMEOUT } from "../../support/wait";
 
 /** "Payables Aging Schedule" (OBUIAPP_Report process definition) in the sidebar menu. */
 const AGING_SCHEDULE = {
@@ -29,7 +30,7 @@ test.describe("Process - OBUIAPP report launched from the menu @regression @proc
       await expect(app.processModal.root.locator(`input[aria-label="${parameter}"]`)).toHaveValue(value);
     }
 
-    const download = page.waitForEvent("download");
+    const download = page.waitForEvent("download", { timeout: FILE_DOWNLOAD_TIMEOUT });
     await app.processModal.root.locator(PDF_EXPORT).click();
     expect((await download).suggestedFilename()).toMatch(PDF_FILE);
     await expect(app.processModal.title).toBeVisible();

@@ -5,6 +5,7 @@ import type * as Data from "../../support/registry/data";
 import { DATASOURCE } from "../../support/registry/datasources";
 import { WINDOW_IDS } from "../../support/registry/windows";
 import { addWindowPreferences, reloginToReadPreferences, removePreferences } from "../../support/flows/preferences";
+import { runAndWaitForFormInitialization } from "../../support/wait";
 
 const BUSINESS_PARTNER = "Business Partner";
 const ORDER_REFERENCE = "Order Reference";
@@ -79,7 +80,9 @@ test.describe("Form - autosave when changing tab or record @smoke @form", () => 
     await app.breadcrumb.documentNumber();
     await app.formSections.open(MORE_INFORMATION);
     await app.field.fill(ORDER_REFERENCE, FIRST_REFERENCE);
-    await app.toolbar.save();
+    // Saving an existing record reloads it into the form too, and that reload replaces the values: on a slow
+    // machine it came after the next value was typed and put the first one back (ETP-6295)
+    await runAndWaitForFormInitialization(app.page, () => app.toolbar.save());
     // Saved: both saves answered, and the form has taken the saved record back as its reference
     await expect.poll(() => answered.length).toBe(2);
     await expect(app.toolbar.button("save")).toBeDisabled();

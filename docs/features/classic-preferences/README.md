@@ -178,13 +178,15 @@ Two regression specs in `playwright-tests/e2e/regression/12_Session/` check the 
 login, session and preferences. See the [E2E suite](../../testing/playwright-e2e/README.md#feature-probes) for
 the data they use.
 
-- `PREFaClassicPreferencesTest.spec.ts`: accounting and translation tabs, audit section, Linked Items, notes in a
-  read-only tab, page size and filling the grid height, window personalization, StartPage (record and new
-  record), LogoutRedirectURL, the filter messages (closing, the funnel and "Never show this message again"
-  after a reload and a new session) and the tree fetch limit (a broad filter on Account Tree is refused with
-  `OBUIAPP_TooManyNodes`, with the limit of 200 the core ships) and `ShowProductCharacteristicsParents` (with 1, a
-  grouped value of the product form shows its group, with a preference of the user without window, as the server
-  reads it).
+- PREFa, in three files that run side by side (ETP-6295), each on preferences only its own tests read:
+  - `PREFaProductPreferencesTest.spec.ts`: accounting and translation tabs, the tree fetch limit (a broad filter on
+    Account Tree is refused with `OBUIAPP_TooManyNodes`, with the limit of 200 the core ships) and
+    `ShowProductCharacteristicsParents` (with 1, a grouped value of the product form shows its group, with a
+    preference of the user without window, as the server reads it).
+  - `PREFaReadOnlyTabPreferencesTest.spec.ts`: audit section, Linked Items, notes in a read-only tab, page size and
+    filling the grid height, and window personalization.
+  - `PREFaSessionPreferencesTest.spec.ts`: StartPage (record and new record), LogoutRedirectURL and the filter
+    messages (closing, the funnel and "Never show this message again" after a reload and a new session).
 - `PREFbClassicSessionPreferencesTest.spec.ts`: one tab per window (`AllowMultiTab`, with the unsaved changes
   prompt and Y for one window), the SSO account link and provider logout (`ETRX_AllowSSOLogin`) and
   `ForcedLoginURL`. The core has no SSO and a real forced login address would reach every spec and the classic

@@ -31,6 +31,10 @@ const WINDOW = WINDOWS.businessPartner;
  * toast as well. Failures are simulated on one request, so no data or configuration changes.
  */
 test.describe("Session - server errors keep the session @smoke @session", () => {
+  // Independent tests (each test only breaks its own token and page): spread them over the workers instead of
+  // running them one after another in one worker, the tail of suite-01-base in CI (ETP-6295)
+  test.describe.configure({ mode: "parallel" });
+
   test("shows a server error in a toast and keeps the user on the same screen", async ({ app, page }) => {
     const failure = await answerWithStatus(page, GRID_CONFIGURATION, SERVER_ERROR);
 

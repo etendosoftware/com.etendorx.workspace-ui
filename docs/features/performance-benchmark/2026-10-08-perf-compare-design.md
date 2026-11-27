@@ -3,6 +3,8 @@
 - **Ticket:** ETP-5641 (branch `hotfix/ETP-5641`, PR #955)
 - **Status:** Approved
 - **Date:** 2026-10-08
+- **Update (2026-11-26, ETP-6295):** the Playwright pipeline now runs the quick comparison on every PR that changes
+  sensitive code, as a non-required "Performance" status: [ci-check.md](ci-check.md).
 
 ## 1. Goal
 

@@ -92,8 +92,10 @@ renders, not CPU: check what a reduction is worth with `bench.mjs` / `perf:compa
 ## Comparing a branch with its base (`pnpm perf:compare`)
 
 Machines differ too much to compare absolute numbers, so a branch is measured against its own base on the
-same machine, in the same session. Run it before opening a PR when the pre-push hook warns that the branch
-touches performance-sensitive code (`perf/sensitive-paths.txt`), and paste the report in the PR.
+same machine, in the same session. The PR pipeline runs the quick comparison by itself (see "Automatic check on
+PRs" below); run the full one before opening a PR when the pre-push hook warns that the branch touches
+performance-sensitive code (`perf/sensitive-paths.txt`) and the change needs more than Sales Invoice, and paste the
+report in the PR.
 
 ```bash
 # Local Etendo backend running (the one packages/MainUI/.env points to)
@@ -140,5 +142,29 @@ Options: `ROUNDS`, `EXTRA_ROUNDS` (0 disables the re-measure), `WINDOWS`, `QUICK
 `git worktree prune` after deleting the folders.
 
 The pre-push hook (`.githooks/pre-push`, enabled by `pnpm install`) only prints the warning; it never blocks
-a push. Unit tests of the comparison: `pnpm test:perf`.
+a push. It also reminds that the PR gets the quick comparison automatically. Unit tests of the comparison:
+`pnpm test:perf`.
+
+## Automatic check on PRs
+
+The Playwright pipeline runs the quick comparison on every PR that changes a file of `sensitive-paths.txt` and
+reports it as a **Performance** status (not required to merge) and a single PR comment, updated on every push.
+Behavior, decisions and cost: [docs/features/performance-benchmark/ci-check.md](../../docs/features/performance-benchmark/ci-check.md).
+
+Pieces the pipeline uses, which also work locally:
+
+```bash
+BASE_REF=origin/main node perf/sensitive-check.mjs   # exit 0 = sensitive files changed, 10 = none, 2 = cannot tell
+QUICK=1 RESULT_FILE=/tmp/perf/result.json REPORT_FILE=/tmp/perf/report.md pnpm perf:compare
+```
+
+- `RESULT_FILE`: JSON with `status` (`pass`, `regression` or `error`), the number of regressions, whether the
+  machine was busy (`noisy`), the report path and the status `description`. A run that cannot measure writes
+  `error` with the step that failed ("base build failed: …", "head server failed: …").
+- `REPORT_FILE`: where the report goes instead of `perf/results/compare-<date>.md`.
+- In a clone without the merge-base (CI clones shallow), the base is the tip of `BASE_REF` and the report says so.
+- Each round also records how long the container CPU quota held it back (cgroup v2, `null` outside a container);
+  above 2 s the report warns that the round is less reliable.
+- `perf/pr-comment.mjs` (`GITHUB_TOKEN`, `GITHUB_REPOSITORY`, `PR_NUMBER`, `RESULT_FILE`, `REPORT_FILE`,
+  `BUILD_URL`) creates or updates the comment marked `<!-- perf-compare-ci -->`.
 

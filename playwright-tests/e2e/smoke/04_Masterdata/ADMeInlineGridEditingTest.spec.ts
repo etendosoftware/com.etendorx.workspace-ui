@@ -22,6 +22,10 @@ function trackSaves(page: Page): Request[] {
 const sentData = (request: Request) => JSON.parse(request.postData() ?? "{}").data ?? {};
 
 test.describe("Master Data - Inline grid editing @smoke", () => {
+  // Independent tests (each test edits its own uniqueValue() records): spread them over the workers instead of
+  // running them one after another in one worker, the tail of suite-01-base in CI (ETP-6295)
+  test.describe.configure({ mode: "parallel" });
+
   test("Enter saves a new row exactly once", async ({ app, data, page }) => {
     const name = data.uniqueValue("PW Enter");
     await app.sidebar.navigateTo("title");

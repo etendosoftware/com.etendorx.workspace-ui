@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
+  isInvalidCsrfTokenAnswer,
   assertRemoved,
   datasourceAddBody,
   datasourceFetchBody,
@@ -184,5 +185,14 @@ test.describe("recentDocumentRemoveUrl", () => {
     const query = queryOf(url);
     expect(query.get("tabId")).toBe(TARGET.tabId);
     expect(query.get("recordId")).toBe(RECORD_ID);
+  });
+});
+
+test.describe("isInvalidCsrfTokenAnswer", () => {
+  test("tells a write rejected for its CSRF token from any other answer", () => {
+    expect(isInvalidCsrfTokenAnswer({ response: { status: -1, error: { message: "InvalidCSRFToken" } } })).toBe(true);
+    expect(isInvalidCsrfTokenAnswer({ response: { status: -1, error: { message: "Duplicated key" } } })).toBe(false);
+    expect(isInvalidCsrfTokenAnswer({ response: { status: 0, data: [] } })).toBe(false);
+    expect(isInvalidCsrfTokenAnswer(null)).toBe(false);
   });
 });
